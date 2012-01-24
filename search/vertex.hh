@@ -8,18 +8,18 @@
 
 namespace search {
 
-class Edge;
+template <class Final> class Edge;
 
 template <class Final> class Vertex {
   private:
     struct QueueEntry {
-      Edge *edge;
+      Edge<Final> *edge;
       Index index;
       // Cached score.  
       Score score;
       // Priority queue's order is annoying.  
       bool operator<(const QueueEntry &other) const {
-        return score > other.entry;
+        return score > other.score;
       }
     };
 
@@ -55,13 +55,18 @@ template <class Final> class Vertex {
           return;
         }
         edges_.pop();
-        Consider(beat, top);
+        if (Consider(beat, top)) {
+          // New hypothesis was generated.  May not have gone lower than beat_.  
+          bound_ = edges_.empty() ? -kScoreInf : edges_.top().score;
+          return;
+        }
       }
       bound_ = -kScoreInf;
     }
 
   private:
-    void Consider(const Score beat, QueueEntry &top) {
+    // Return true if a new final_ was generated.  
+    bool Consider(const Score beat, QueueEntry &top) {
       Edge &edge = *top.edge;
       if (edge.Size() > top.index) {
         // Have a concrete hypothesis.
@@ -69,18 +74,18 @@ template <class Final> class Vertex {
         if (top.score != got.Score()) {
           top.score = got.Score();
           edges_.push(top);
-          return;
+          return false;
         }
         // Hypothesis matches the cached score.  Use it.  
         final_.push_back(&got);
         ++top.index;
         PushLower(top);
-        return;
+        return true;
       }
       // No concrete hypothesis.
       if (top.score != edge.Bound()) {
         PushBound(top);
-        return;
+        return false;
       }
       Score to_beat;
       if (edges_.empty()) {
@@ -90,6 +95,7 @@ template <class Final> class Vertex {
       }
       edge.More(to_beat);
       PushLower(top);
+      return false;
     }
 
     void PushLower(QueueEntry &entry) {
