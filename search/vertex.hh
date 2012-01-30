@@ -1,6 +1,7 @@
 #ifndef SEARCH_VERTEX__
 #define SEARCH_VERTEX__
 
+#include "search/source.hh"
 #include "search/types.hh"
 
 #include <queue>
@@ -8,12 +9,16 @@
 
 namespace search {
 
-template <class Final> class Edge;
+// Option is typically an instantiation of Edge.
+template <class Option> class Vertex : public Source<typename Option::Final> {
+  public:
+    typedef typename Option::Final Final;
 
-template <class Final> class Vertex {
   private:
+    typedef Source<Final> P;
+
     struct QueueEntry {
-      Edge<Final> *edge;
+      Option *edge;
       Index index;
       // Cached score.  
       Score score;
@@ -24,50 +29,40 @@ template <class Final> class Vertex {
     };
 
   public:
-    Vertex() : bound_(kScoreInf) {}
+    Vertex() {}
 
-    void AddEdge(Edge *edge) {
+    void AddEdge(Option *edge) {
       QueueEntry entry;
       entry.edge = edge;
       entry.index = 0;
-      entry.score = kScoreInf;
+      entry.score = edge->ScoreOrBound(0);
       edges_.push(entry);
     }
 
-    Index Size() const {
-      return final_.size();
-    }
-
-    const Final &operator[](Index i) const {
-      return *final_[i];
-    }
-
-    Score Bound() const {
-      return bound_;
-    }
+    void FinishedAdding(Context &context) {}
 
     void More(const Score beat) {
-      if (bound_ < beat) return;
+      if (P::Bound() < beat) return;
       while (!edges_.empty()) {
         QueueEntry top(edges_.top());
         if (top.score < beat) {
-          bound_ = top.score;
+          P::SetBound(top.score);
           return;
         }
         edges_.pop();
         if (Consider(beat, top)) {
           // New hypothesis was generated.  May not have gone lower than beat_.  
-          bound_ = edges_.empty() ? -kScoreInf : edges_.top().score;
+          P::SetBound(edges_.empty() ? -kScoreInf : edges_.top().score);
           return;
         }
       }
-      bound_ = -kScoreInf;
+      P::SetEmpty();
     }
 
   private:
     // Return true if a new final_ was generated.  
     bool Consider(const Score beat, QueueEntry &top) {
-      Edge &edge = *top.edge;
+      Option &edge = *top.edge;
       if (edge.Size() > top.index) {
         // Have a concrete hypothesis.
         const Final &got = edge[top.index];
@@ -99,7 +94,7 @@ template <class Final> class Vertex {
     }
 
     void PushLower(QueueEntry &entry) {
-      const Edge &edge = *entry.edge;
+      const Option &edge = *entry.edge;
       if (edge.Size() > entry.index) {
         entry.score = edge[entry.index].Score();
         edges_.push(entry);
@@ -112,10 +107,6 @@ template <class Final> class Vertex {
       entry.score = entry.edge->Bound();
       if (entry.score != -kScoreInf) edges_.push(entry);
     }
-
-    std::vector<const Final*> final_;
-
-    Score bound_;
 
     std::priority_queue<QueueEntry> edges_;
 };
