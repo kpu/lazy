@@ -199,7 +199,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     std::priority_queue<const Final *, std::vector<const Final*>, FinalGreater> holding_;
 
     // Rule and pointers to rule arguments.  
-    Rule rule_;
+    const Rule rule_;
     std::vector<Vertex*> to_;
 
     boost::pool<> index_pool_;
