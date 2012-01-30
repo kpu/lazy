@@ -1,0 +1,5 @@
+project : default-build <threading>multi <warnings>on <variant>release ;
+
+path-constant TOP : . ;
+
+build-project search ;
