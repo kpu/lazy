@@ -39,7 +39,7 @@ template <class Option> class Vertex : public Source<typename Option::Final> {
       edges_.push(entry);
     }
 
-    void FinishedAdding(Context &context) {}
+    void FinishedAdding() {}
 
     void More(const Score beat) {
       if (P::Bound() < beat) return;
@@ -72,7 +72,7 @@ template <class Option> class Vertex : public Source<typename Option::Final> {
           return false;
         }
         // Hypothesis matches the cached score.  Use it.  
-        final_.push_back(&got);
+        AddFinal(&got);
         ++top.index;
         PushLower(top);
         return true;

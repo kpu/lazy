@@ -25,7 +25,7 @@ template <class Final> class Source {
     }
 
     Score ScoreOrBound(Index index) const {
-      return Size() > index ? final_[index]->Score() : Bound();
+      return Size() > index ? final_[index]->Total() : Bound();
     }
 
   protected:
@@ -37,8 +37,6 @@ template <class Final> class Source {
       assert(to <= bound_);
       bound_ = to;
     }
-
-    Score Bound() const { return bound_; }
 
   private:
     std::vector<const Final *> final_;

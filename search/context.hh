@@ -1,7 +1,9 @@
 #ifndef SEARCH_CONTEXT__
 #define SEARCH_CONTEXT__
 
-#include <boost/pool/allocator.hpp>
+#include <boost/pool/object_pool.hpp>
+
+#include <vector>
 
 namespace search {
 

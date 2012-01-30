@@ -1,8 +1,10 @@
 #ifndef SEARCH_EDGE__
 #define SEARCH_EDGE__
 
+#include "search/context.hh"
 #include "search/source.hh"
 #include "search/types.hh"
+#include "search/vertex.hh"
 
 #include <cmath>
 #include <queue>
@@ -13,7 +15,7 @@ namespace search {
 template <class Rule> class Edge : public Source<typename Rule::Final> {
   public:
     typedef typename Rule::Final Final;
-    typedef Vertex<Edge> Vertex;
+    typedef Vertex<Edge> Child;
 
   private:
     typedef Source<Final> P;
@@ -31,12 +33,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     explicit Edge(const Rule &rule) 
       : rule_(rule), index_pool_(sizeof(Index) * rule_.Variables()) {}
 
-    void AddVertex(Vertex &vertex) {
+    void AddChild(Child &vertex) {
       assert(vertex.Bound() != kScoreInf);
       to_.push_back(&vertex);
     }
 
-    void FinishedAdding(Context &context) {
+    void FinishedAdding(Context<Final> &context) {
       assert(to_.size() == rule_.Variables());
       if (to_.empty()) {
         // Special case for purely lexical rules.  
@@ -44,19 +46,18 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         Final *final = context.NewFinal();
         rule_.Apply(empty, final);
         AddFinal(*final);
-        SetBound(-kScoreInf);
+        P::SetBound(-kScoreInf);
       } else {
         // Seed the queue with zero.  
         QueueEntry entry;
-        entry.score = rule_.Score();
+        entry.score = rule_.Bound();
         for (Index i = 0; i < rule_.Variables(); ++i) {
-          Score got = to_[i]->ScoreOrBound(0);
           entry.score += to_[i]->ScoreOrBound(0);
         }
         SetBound(entry.score);
         assert(entry.score != kScoreInf);
         if (entry.score != kScoreInf) {
-          entry.indices = index_pool_.malloc();
+          entry.indices = static_cast<Index*>(index_pool_.malloc());
           if (!entry.indices) throw std::bad_alloc();
           memset(entry.indices, 0, sizeof(Index) * rule_.Variables());
           generate_.push(entry);
@@ -64,10 +65,10 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
     }
 
-    void More(Context &context, Score beat) {
+    void More(Context<Final> &context, Score beat) {
       // Ease off to beating the holding tank's best score.  
       if (!holding_.empty()) {
-        beat = std::max(beat, holding_.top().Score());
+        beat = std::max(beat, holding_.top().Total());
       }
       GenerateOrLower(context, beat);
       
@@ -75,15 +76,15 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       // Move hypotheses from holding tank to final.   
       while (!holding_.empty()) {
         const Final &top = holding_.top();
-        if (top.Score() < Bound()) break;
-        final_.push_back(top);
+        if (top.Total() < P::Bound()) break;
+        P::AddFinal(top);
         holding_.pop();
       }
     }
 
   private:
-    void GenerateOrLower(Context &context, const Score beat) {
-      std::vector<Vertex*> open_vertices;
+    void GenerateOrLower(Context<Final> &context, const Score beat) {
+      std::vector<Child*> open_vertices;
       while (!generate_.empty()) {
         QueueEntry top(generate_.top());
         assert(top.score != -kScoreInf);
@@ -92,12 +93,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         generate_.pop();
 
         // Recalculate score.  
-        Score accumulated = rule_.Score();
+        Score accumulated = rule_.Bound();
         Index *indices = top.indices;
-        for (typename std::vector<Vertex*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
-          Vertex &vertex = **t;
+        for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
+          Child &vertex = **t;
           if (vertex.Size() > *indices) {
-            accumulated += vertex[*indices].Score();
+            accumulated += vertex[*indices].Total();
           } else {
             accumulated += vertex.Bound();
             open_vertices.push_back(&vertex);
@@ -114,7 +115,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
           // Every variable has a value.  
           std::vector<const Final*> &have_values = context.ClearTemp();
           indices = top.indices;
-          for (typename std::vector<Vertex*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
+          for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
             have_values.push_back(&(*t)[*indices]);
           }
           Final *final = context.NewFinal();
@@ -133,16 +134,16 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
     }
 
-    Score PressureChildren(Context &context, std::vector<Vertex*> &open_vertices, Score accumulated, const Score beat) {
+    Score PressureChildren(Context<Final> &context, std::vector<Child*> &open_vertices, Score accumulated, const Score beat) {
       assert(!open_vertices.empty());
       // TODO: investigate algorithms.  
-      for (std::vector<Vertex*>::iterator i = open_vertices.begin(); ; ) {
-        Vertex &vertex = **i;
+      for (typename std::vector<Child*>::iterator i = open_vertices.begin(); ; ) {
+        Child &vertex = **i;
         Index pre_size = vertex.Size();
         accumulated -= vertex.Bound();
         vertex.More(context, vertex.Bound());
         if (vertex.Size() > pre_size) {
-          accumulated += vertex[pre_size].Score();
+          accumulated += vertex[pre_size].Total();
           i = open_vertices.erase(i);
           if (open_vertices.empty()) return accumulated;
         } else {
@@ -159,15 +160,15 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       if (to_.empty()) return;
       const Index *const end = indices + to_.size();
       const Index *const pre_end = end - 1;
-      std::vector<Vertex*>::const_iterator vertex = to_.begin();
+      typename std::vector<Child*>::const_iterator vertex = to_.begin();
       QueueEntry to_push;
       // Loop is exited by change == pre_end where we either free or use indices.
       // *change is incremented each time then decremented at the end of each loop.  
-      for (const Index *change = indices; ; --*change, ++change, ++vertex) {
-        to_push.score = accumulated - (*vertex)[*change].Score();
+      for (Index *change = indices; ; --*change, ++change, ++vertex) {
+        to_push.score = accumulated - (*vertex)[*change].Total();
         ++*change;
         if (vertex->Size() > *change) {
-          to_push.score += (*vertex)[*change].Score();
+          to_push.score += (*vertex)[*change].Total();
         } else if (vertex->Bound() == -kScoreInf) {
           // Don't bother because there's nothing more from this vertex.  
           if (change == pre_end) {
@@ -192,7 +193,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
 
     struct FinalGreater : public std::binary_function<const Final *, const Final *, bool> {
       bool operator()(const Final *first, const Final *second) const {
-        return final->Score() > second->Score();
+        return first->Total() > second->Total();
       }
     };
 
@@ -200,7 +201,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
 
     // Rule and pointers to rule arguments.  
     const Rule rule_;
-    std::vector<Vertex*> to_;
+    std::vector<Child*> to_;
 
     boost::pool<> index_pool_;
 
