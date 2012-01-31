@@ -25,7 +25,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       Score score;
 
       bool operator<(const QueueEntry &other) const {
-        return score > other.score;
+        return score < other.score;
       }
     };
 
@@ -175,13 +175,13 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
     }
 
-    struct FinalGreater : public std::binary_function<const Final *, const Final *, bool> {
+    struct FinalLess : public std::binary_function<const Final *, const Final *, bool> {
       bool operator()(const Final *first, const Final *second) const {
-        return first->Total() > second->Total();
+        return first->Total() < second->Total();
       }
     };
 
-    std::priority_queue<const Final *, std::vector<const Final*>, FinalGreater> holding_;
+    std::priority_queue<const Final *, std::vector<const Final*>, FinalLess> holding_;
 
     // Rule and pointers to rule arguments.  
     const Rule rule_;

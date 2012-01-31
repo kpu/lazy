@@ -24,7 +24,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
       Score score;
       // Priority queue's order is annoying.  
       bool operator<(const QueueEntry &other) const {
-        return score > other.score;
+        return score < other.score;
       }
     };
 
