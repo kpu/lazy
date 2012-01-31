@@ -9,16 +9,16 @@
 
 namespace search {
 
-// Option is typically an instantiation of Edge.
-template <class Option> class Vertex : public Source<typename Option::Final> {
+// Child is typically an instantiation of Edge.
+template <class Child> class Vertex : public Source<typename Child::Final> {
   public:
-    typedef typename Option::Final Final;
+    typedef typename Child::Final Final;
 
   private:
     typedef Source<Final> P;
 
     struct QueueEntry {
-      Option *edge;
+      Child *edge;
       Index index;
       // Cached score.  
       Score score;
@@ -31,17 +31,19 @@ template <class Option> class Vertex : public Source<typename Option::Final> {
   public:
     Vertex() {}
 
-    void AddEdge(Option *edge) {
+    void Add(Child &edge) {
       QueueEntry entry;
-      entry.edge = edge;
+      entry.edge = &edge;
       entry.index = 0;
-      entry.score = edge->ScoreOrBound(0);
-      edges_.push(entry);
+      entry.score = edge.ScoreOrBound(0);
+      if (entry.score != -kScoreInf) edges_.push(entry);
     }
 
-    void FinishedAdding() {}
+    void FinishedAdding() {
+      SetBound(edges_.empty() ? -kScoreInf : edges_.top().score);
+    }
 
-    void More(const Score beat) {
+    void More(Context<Final> &context, const Score beat) {
       if (P::Bound() < beat) return;
       while (!edges_.empty()) {
         QueueEntry top(edges_.top());
@@ -50,29 +52,29 @@ template <class Option> class Vertex : public Source<typename Option::Final> {
           return;
         }
         edges_.pop();
-        if (Consider(beat, top)) {
+        if (Consider(context, beat, top)) {
           // New hypothesis was generated.  May not have gone lower than beat_.  
           P::SetBound(edges_.empty() ? -kScoreInf : edges_.top().score);
           return;
         }
       }
-      P::SetEmpty();
+      P::SetBound(-kScoreInf);
     }
 
   private:
     // Return true if a new final_ was generated.  
-    bool Consider(const Score beat, QueueEntry &top) {
-      Option &edge = *top.edge;
+    bool Consider(Context<Final> &context, const Score beat, QueueEntry &top) {
+      Child &edge = *top.edge;
       if (edge.Size() > top.index) {
         // Have a concrete hypothesis.
         const Final &got = edge[top.index];
-        if (top.score != got.Score()) {
-          top.score = got.Score();
+        if (top.score != got.Total()) {
+          top.score = got.Total();
           edges_.push(top);
           return false;
         }
         // Hypothesis matches the cached score.  Use it.  
-        AddFinal(&got);
+        AddFinal(got);
         ++top.index;
         PushLower(top);
         return true;
@@ -88,15 +90,15 @@ template <class Option> class Vertex : public Source<typename Option::Final> {
       } else {
         to_beat = std::max(beat, edges_.top().score);
       }
-      edge.More(to_beat);
+      edge.More(context, to_beat);
       PushLower(top);
       return false;
     }
 
     void PushLower(QueueEntry &entry) {
-      const Option &edge = *entry.edge;
+      const Child &edge = *entry.edge;
       if (edge.Size() > entry.index) {
-        entry.score = edge[entry.index].Score();
+        entry.score = edge[entry.index].Total();
         edges_.push(entry);
         return;
       }
