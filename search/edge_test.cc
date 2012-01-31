@@ -11,6 +11,15 @@ struct FakeFinal {
   Score Total() const {
     return 3.14;
   }
+
+  uint64_t RecombineHash() const {
+    return 10;
+  }
+
+  void Recombine(Context<FakeFinal> &context, FakeFinal *with) {
+    std::cerr << "Recombination: " << with << std::endl;
+    context.DeleteFinal(with);
+  }
 };
 
 struct ZeroRule {

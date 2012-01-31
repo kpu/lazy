@@ -15,6 +15,10 @@ template <class Final> class Context {
       return ret;
     }
 
+    void DeleteFinal(Final *final) {
+      final_pool_.destroy(final);
+    }
+
     std::vector<const Final*> &ClearedTemp() {
       have_values_.clear();
       return have_values_;

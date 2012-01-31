@@ -14,6 +14,8 @@
 #include <queue>
 #include <vector>
 
+#include <stdint.h>
+
 namespace search {
 
 // This class has a 
@@ -25,38 +27,9 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
   private:
     typedef Source<Final> P;
 
-    struct GenerateEntry {
-      Index *indices;
-      Score score;
-
-      bool operator<(const GenerateEntry &other) const {
-        return score < other.score;
-      }
-    };
-    typedef std::priority_queue<GenerateEntry> Generate;
-    Generate generate_;
-
-    struct DedupeValue;
-    struct HoldingEntry {
-      Final *final;
-      DedupeValue *dedupe;
-      bool operator<(const HoldingEntry &other) const {
-        return final->Total() < other.final->Total();
-      }
-    };
-    typedef __gnu_pbds::priority_queue<HoldingEntry> Holding;
-    Holding holding_;
-
-    struct DedupeValue {
-      Final *array;
-      typename Holding::point_iterator hold;
-    };
-    typedef boost::unordered_map<uint64_t, DedupeValue> Dedupe;
-    Dedupe dedupe_;
-
   public:
     explicit Edge(const Rule &rule) 
-      : rule_(rule), index_pool_(sizeof(Index) * rule_.Variables()) {}
+      : index_pool_(sizeof(Index) * rule.Variables()), rule_(rule) {}
 
     void Add(Child &vertex) {
       assert(vertex.Bound() != kScoreInf);
@@ -100,9 +73,10 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       SetBound(generate_.empty() ? -kScoreInf : generate_.top().score);
       // Move hypotheses from holding tank to final.   
       while (!holding_.empty()) {
-        const Final &top = *holding_.top().final;
-        if (top.Total() < P::Bound()) break;
-        P::AddFinal(top);
+        const HoldingEntry &entry = holding_.top();
+        if (entry.final->Total() < P::Bound()) break;
+        entry.dedupe->best = entry.final;
+        P::AddFinal(*entry.final);
         holding_.pop();
       }
     }
@@ -138,15 +112,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         }
         if (!pressure) {
           // Every variable has a value.  
-          std::vector<const Final*> &have_values = context.ClearedTemp();
-          indices = top.indices;
-          for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
-            have_values.push_back(&(**t)[*indices]);
-          }
-          HoldingEntry entry;
-          entry.final = context.NewFinal();
-          rule_.Apply(have_values, *entry.final);
-          holding_.push(entry);
+          NewHypothesis(context, top.indices);
           PushNeighbors(accumulated, top.indices);
           return;
         }
@@ -163,6 +129,48 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
           generate_.push(top);
         }
       }
+    }
+
+    void NewHypothesis(Context<Final> &context, const Index *indices) {
+      std::vector<const Final*> &have_values = context.ClearedTemp();
+      for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
+        have_values.push_back(&(**t)[*indices]);
+      }
+      Final *adding = context.NewFinal();
+      rule_.Apply(have_values, *adding);
+
+      std::pair<uint64_t, DedupeValue> to_dedupe(adding->RecombineHash(), DedupeValue());
+      std::pair<typename Dedupe::iterator, bool> ret(dedupe_.insert(to_dedupe));
+      DedupeValue &dedupe_value = ret.first->second;
+      if (ret.second) {
+        // Unique recombination state.  Push.  
+        HoldingEntry holding_entry;
+        holding_entry.final = adding;
+        holding_entry.dedupe = &dedupe_value;
+        // Flag that it's still in the holding tank.  
+        dedupe_value.best = NULL;
+        dedupe_value.hold = holding_.push(holding_entry);
+        return;
+      }
+      // It's a duplicate.
+      if (dedupe_value.best) {
+        // Recombine with visible hypothesis.  
+        Final *competitor = dedupe_value.best;
+        assert(competitor->Total() >= adding->Total());
+        competitor->Recombine(context, adding);
+        return;
+      }
+      // Recombine with entry in the holding tank.  
+      Final *competitor = dedupe_value.hold->final;
+      if (adding->Total() > competitor->Total()) {
+        HoldingEntry modified;
+        modified.final = adding;
+        modified.dedupe = &dedupe_value;
+        holding_.modify(dedupe_value.hold, modified);
+        adding->Recombine(context, competitor);
+        return;
+      }
+      competitor->Recombine(context, adding);
     }
 
     // Takes ownership of indices.  
@@ -201,11 +209,44 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
     }
 
+    // Pool of indices backing generate_.
+    boost::pool<> index_pool_;
+    // Priority queue of potential new hypotheses.  
+    struct GenerateEntry {
+      Index *indices;
+      Score score;
+
+      bool operator<(const GenerateEntry &other) const {
+        return score < other.score;
+      }
+    };
+    typedef std::priority_queue<GenerateEntry> Generate;
+    Generate generate_;
+
+    // Priority queue of hypotheses that have been generated but not proven to score highest.  
+    struct DedupeValue;
+    struct HoldingEntry {
+      Final *final;
+      DedupeValue *dedupe;
+      bool operator<(const HoldingEntry &other) const {
+        return final->Total() < other.final->Total();
+      }
+    };
+    typedef __gnu_pbds::priority_queue<HoldingEntry> Holding;
+    Holding holding_;
+
+    // Deduplication hash table from hypothesis state (hashed to 64-bit as the
+    // key) to either the final hypothesis array or the holding tank.  
+    struct DedupeValue {
+      Final *best;
+      typename Holding::point_iterator hold;
+    };
+    typedef boost::unordered_map<uint64_t, DedupeValue> Dedupe;
+    Dedupe dedupe_;
+
     // Rule and pointers to rule arguments.  
     const Rule rule_;
     std::vector<Child*> to_;
-
-    boost::pool<> index_pool_;
 };
 
 } // namespace search
