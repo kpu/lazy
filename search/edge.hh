@@ -126,14 +126,14 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         }
         // Pressure bounds on children.  TODO: better algorithm for this.  
         Index start = pressure->Size();
-        accumulated -= pressure->Bound();
+        top.score = accumulated - pressure->Bound();
         // This might actually impact siblings, so recomputing is not unreasonable.  
         pressure->More(context, pressure->Bound());
         if (pressure->Size() > start) {
-          top.score = accumulated + (*pressure)[start].Total();
+          top.score += (*pressure)[start].Total();
           generate_.push(top);
         } else if (pressure->Bound() != -kScoreInf) {
-          top.score = accumulated + pressure->Bound();
+          top.score += pressure->Bound();
           generate_.push(top);
         }
       }
