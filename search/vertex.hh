@@ -33,9 +33,16 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
     };
 
   public:
-    Vertex() {}
+    Vertex() 
+#ifndef NDEBUG
+      : finished_adding_(false) {}
+#endif
+    {}
 
     void Add(Child &edge) {
+#ifndef NDEBUG
+      assert(!finished_adding_);
+#endif
       QueueEntry entry;
       entry.edge = &edge;
       entry.index = 0;
@@ -44,10 +51,17 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
     }
 
     void FinishedAdding() {
+#ifndef NDEBUG
+      assert(!finished_adding_);
+      finished_adding_ = true;
+#endif
       SetBound(edges_.empty() ? -kScoreInf : edges_.top().score);
     }
 
     void More(Context<Final> &context, const Score beat) {
+#ifndef NDEBUG
+      assert(finished_adding_);
+#endif
       if (P::Bound() < beat) return;
       while (!edges_.empty()) {
         QueueEntry top(edges_.top());
@@ -125,6 +139,10 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
     };
 
     boost::unordered_set<uint64_t> dedupe_;
+
+#ifndef NDEBUG
+    bool finished_adding_;
+#endif
 };
 
 } // namespace search
