@@ -41,9 +41,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       if (to_.empty()) {
         // Special case for purely lexical rules.  
         std::vector<const Final*> empty;
-        Final *final = context.NewFinal();
-        rule_.Apply(empty, *final);
-        AddFinal(*final);
+        AddFinal(*rule_.Apply(context, empty));
         P::SetBound(-kScoreInf);
       } else {
         // Seed the queue with zero.  
@@ -136,8 +134,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
         have_values.push_back(&(**t)[*indices]);
       }
-      Final *adding = context.NewFinal();
-      rule_.Apply(have_values, *adding);
+      Final *adding = rule_.Apply(context, have_values);
 
       std::pair<uint64_t, DedupeValue> to_dedupe(adding->RecombineHash(), DedupeValue());
       std::pair<typename Dedupe::iterator, bool> ret(dedupe_.insert(to_dedupe));
@@ -241,7 +238,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       Final *best;
       typename Holding::point_iterator hold;
     };
-    typedef boost::unordered_map<uint64_t, DedupeValue> Dedupe;
+    struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
+      uint64_t operator()(uint64_t value) const {
+        return value;
+      }
+    };
+    typedef boost::unordered_map<uint64_t, DedupeValue, IdentityHash> Dedupe;
     Dedupe dedupe_;
 
     // Rule and pointers to rule arguments.  

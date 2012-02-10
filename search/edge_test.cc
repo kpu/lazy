@@ -17,7 +17,6 @@ struct FakeFinal {
   }
 
   void Recombine(Context<FakeFinal> &context, FakeFinal *with) {
-    std::cerr << "Recombination: " << with << std::endl;
     context.DeleteFinal(with);
   }
 };
@@ -29,9 +28,9 @@ struct ZeroRule {
 
   Score Bound() const { return 5.78; }
 
-  void Apply(const std::vector<const Final*> &values, Final &to) const {
+  Final *Apply(Context<Final> &context, const std::vector<const Final*> &values) const {
     BOOST_CHECK(values.empty());
-    BOOST_CHECK_CLOSE(to.Total(), 3.14, 0.0001);
+    return context.NewFinal();
   }
 };
 
@@ -54,7 +53,10 @@ struct MockRule {
   Index Variables() const { return variables; }
   Score Bound() const { return bound; }
 
-  void Apply(const std::vector<const Final*> &values, Final &to) const {}
+  Final *Apply(Context<Final> &context, const std::vector<const Final*> &values) const {
+    BOOST_CHECK_EQUAL(variables, values.size());
+    return context.NewFinal();
+  }
 
   Index variables;
   Score bound;

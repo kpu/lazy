@@ -4,8 +4,12 @@
 #include "search/source.hh"
 #include "search/types.hh"
 
+#include <boost/unordered_set.hpp>
+
 #include <queue>
 #include <vector>
+
+#include <stdint.h>
 
 namespace search {
 
@@ -74,7 +78,9 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
           return false;
         }
         // Hypothesis matches the cached score.  Use it.  
-        AddFinal(got);
+        if (dedupe_.insert(got.RecombineHash()).second) {
+          AddFinal(got);
+        }
         ++top.index;
         PushLower(top);
         return true;
@@ -111,6 +117,14 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
     }
 
     std::priority_queue<QueueEntry> edges_;
+
+    struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
+      uint64_t operator()(uint64_t value) const {
+        return value;
+      } 
+    };
+
+    boost::unordered_set<uint64_t> dedupe_;
 };
 
 } // namespace search
