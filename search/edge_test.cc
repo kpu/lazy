@@ -5,10 +5,17 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
+#include <vector>
+
 namespace search {
 namespace {
 
+class ZeroRule;
+class MockRule;
 struct FakeFinal {
+  FakeFinal(const Context<FakeFinal> &, const ZeroRule &, std::vector<const FakeFinal *> &values);
+  FakeFinal(const Context<FakeFinal> &, const MockRule &, std::vector<const FakeFinal *> &values);
+
   Score Total() const {
     return 3.14;
   }
@@ -28,12 +35,11 @@ struct ZeroRule {
   Index Variables() const { return 0; }
 
   Score Bound() const { return 5.78; }
-
-  Final *Apply(Context<Final> &context, const std::vector<const Final*> &values) const {
-    BOOST_CHECK(values.empty());
-    return context.NewFinal();
-  }
 };
+
+FakeFinal::FakeFinal(const Context<FakeFinal> &, const ZeroRule &rule, std::vector<const FakeFinal*> &values) {
+  BOOST_CHECK_EQUAL(rule.Variables(), values.size());
+}
 
 BOOST_AUTO_TEST_CASE(empty) {
   ZeroRule fake;
@@ -54,14 +60,13 @@ struct MockRule {
   Index Variables() const { return variables; }
   Score Bound() const { return bound; }
 
-  Final *Apply(Context<Final> &context, const std::vector<const Final*> &values) const {
-    BOOST_CHECK_EQUAL(variables, values.size());
-    return context.NewFinal();
-  }
-
   Index variables;
   Score bound;
 };
+
+FakeFinal::FakeFinal(const Context<FakeFinal> &, const MockRule &rule, std::vector<const FakeFinal*> &values) {
+  BOOST_CHECK_EQUAL(rule.Variables(), values.size());
+}
 
 BOOST_AUTO_TEST_CASE(binary) {
   Context<FakeFinal> context;

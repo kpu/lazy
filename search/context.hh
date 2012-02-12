@@ -9,15 +9,10 @@ namespace search {
 
 template <class Final> class Context {
   public:
-    Final *NewFinal() {
-      Final *ret = final_pool_.construct();
+    template <class R> Final *ApplyRule(const R &rule, std::vector<const Final *> &values) {
+      Final *ret = final_pool_.construct(*this, rule, values);
       if (!ret) throw std::bad_alloc();
       return ret;
-    }
-
-    // Sometimes there are constructor arguments; this makes them easy to forward.
-    boost::object_pool<Final> &FinalPool() {
-      return final_pool_;
     }
 
     void DeleteFinal(Final *final) {
