@@ -15,6 +15,11 @@ template <class Final> class Context {
       return ret;
     }
 
+    // Sometimes there are constructor arguments; this makes them easy to forward.
+    boost::object_pool<Final> &FinalPool() {
+      return final_pool_;
+    }
+
     void DeleteFinal(Final *final) {
       final_pool_.destroy(final);
     }

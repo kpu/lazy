@@ -1,7 +1,6 @@
 #ifndef SEARCH_EDGE__
 #define SEARCH_EDGE__
 
-#include "search/context.hh"
 #include "search/source.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
@@ -36,7 +35,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       to_.push_back(&vertex);
     }
 
-    void FinishedAdding(Context<Final> &context) {
+    template <class Cont> void FinishedAdding(Cont &context) {
       assert(to_.size() == rule_.Variables());
       if (to_.empty()) {
         // Special case for purely lexical rules.  
@@ -61,7 +60,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
     }
 
-    void More(Context<Final> &context, Score beat) {
+    template <class Cont> void More(Cont &context, Score beat) {
       // Ease off to beating the holding tank's best score.  
       if (!holding_.empty()) {
         beat = std::max(beat, holding_.top().final->Total());
@@ -80,7 +79,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     }
 
   private:
-    void GenerateOrLower(Context<Final> &context, const Score beat) {
+    template <class Cont> void GenerateOrLower(Cont &context, const Score beat) {
       while (!generate_.empty()) {
         GenerateEntry top(generate_.top());
         assert(top.score != -kScoreInf);
@@ -129,7 +128,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
     }
 
-    void NewHypothesis(Context<Final> &context, const Index *indices) {
+    template <class Cont> void NewHypothesis(Cont &context, const Index *indices) {
       std::vector<const Final*> &have_values = context.ClearedTemp();
       for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
         have_values.push_back(&(**t)[*indices]);

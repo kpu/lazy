@@ -1,3 +1,4 @@
+#include "search/context.hh"
 #include "search/edge.hh"
 
 #define BOOST_TEST_MODULE EdgeTest

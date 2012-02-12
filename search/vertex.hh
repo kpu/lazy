@@ -58,7 +58,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
       SetBound(edges_.empty() ? -kScoreInf : edges_.top().score);
     }
 
-    void More(Context<Final> &context, const Score beat) {
+    template <class Cont> void More(Cont &context, const Score beat) {
 #ifndef NDEBUG
       assert(finished_adding_);
 #endif
@@ -81,7 +81,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
 
   private:
     // Return true if a new final_ was generated.  
-    bool Consider(Context<Final> &context, const Score beat, QueueEntry &top) {
+    template <class Cont> bool Consider(Cont &context, const Score beat, QueueEntry &top) {
       Child &edge = *top.edge;
       if (edge.Size() > top.index) {
         // Have a concrete hypothesis.
