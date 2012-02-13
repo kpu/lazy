@@ -1,1 +1,1 @@
-lib standalone : vocab.cc final.cc : <include>.. : : <include>.. ;
+lib standalone : final.cc read.cc rule.cc vocab.cc weights.cc : <include>.. : : <include>.. ;

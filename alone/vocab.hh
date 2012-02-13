@@ -35,7 +35,7 @@ class Word {
 
 class Vocab {
   public:
-    Vocab(lm::base::Vocabulary &backing) : backing_(backing) {}
+    Vocab(const lm::base::Vocabulary &backing) : backing_(backing) {}
 
     Word FindOrAdd(const StringPiece &str);
 
@@ -43,7 +43,7 @@ class Vocab {
     typedef boost::unordered_map<std::string, lm::WordIndex> Map;
     Map map_;
 
-    lm::base::Vocabulary &backing_;
+    const lm::base::Vocabulary &backing_;
 };
 
 } // namespace alone
