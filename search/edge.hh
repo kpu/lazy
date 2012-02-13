@@ -27,8 +27,9 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     typedef Source<Final> P;
 
   public:
-    explicit Edge(const Rule &rule) 
-      : index_pool_(sizeof(Index) * rule.Variables()), rule_(rule) {}
+    Edge() {}
+
+    Rule &InitRule() { return rule_; }
 
     void Add(Child &vertex) {
       assert(vertex.Bound() != kScoreInf);
@@ -37,6 +38,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
 
     template <class Cont> void FinishedAdding(Cont &context) {
       assert(to_.size() == rule_.Variables());
+      context.EnsureIndexPool(rule_.Variables());
       if (to_.empty()) {
         // Special case for purely lexical rules.  
         std::vector<const Final*> empty;
@@ -52,8 +54,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         SetBound(entry.score);
         assert(entry.score != kScoreInf);
         if (entry.score != kScoreInf) {
-          entry.indices = static_cast<Index*>(index_pool_.malloc());
-          if (!entry.indices) throw std::bad_alloc();
+          entry.indices = context.NewIndices(rule_.Variables());
           memset(entry.indices, 0, sizeof(Index) * rule_.Variables());
           generate_.push(entry);
         }
@@ -110,7 +111,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         if (!pressure) {
           // Every variable has a value.  
           NewHypothesis(context, top.indices);
-          PushNeighbors(accumulated, top.indices);
+          PushNeighbors(context, accumulated, top.indices);
           return;
         }
         // Pressure bounds on children.  TODO: better algorithm for this.  
@@ -170,7 +171,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     }
 
     // Takes ownership of indices.  
-    void PushNeighbors(Score accumulated, Index *indices) {
+    template <class Cont> void PushNeighbors(Cont &context, Score accumulated, Index *indices) {
       if (to_.empty()) return;
       Index *const end = indices + to_.size();
       const Index *const pre_end = end - 1;
@@ -186,7 +187,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         } else if ((*vertex)->Bound() == -kScoreInf) {
           // Don't bother because there's nothing more from this vertex.  
           if (change == pre_end) {
-            index_pool_.free(indices);
+            context.DeleteIndices(rule_.Variables(), indices);
             break;
           }
           continue;
@@ -198,15 +199,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
           generate_.push(to_push);
           break;
         }
-        to_push.indices = static_cast<Index*>(index_pool_.malloc());
-        if (!to_push.indices) throw std::bad_alloc();
+        to_push.indices = context.NewIndices(rule_.Variables());
         std::copy(indices, end, to_push.indices);
         generate_.push(to_push);
       }
     }
 
-    // Pool of indices backing generate_.
-    boost::pool<> index_pool_;
     // Priority queue of potential new hypotheses.  
     struct GenerateEntry {
       Index *indices;
@@ -246,7 +244,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     Dedupe dedupe_;
 
     // Rule and pointers to rule arguments.  
-    const Rule rule_;
+    Rule rule_;
     std::vector<Child*> to_;
 };
 

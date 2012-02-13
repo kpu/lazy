@@ -42,8 +42,7 @@ FakeFinal::FakeFinal(const Context<FakeFinal> &, const ZeroRule &rule, std::vect
 }
 
 BOOST_AUTO_TEST_CASE(empty) {
-  ZeroRule fake;
-  Edge<ZeroRule> edge(fake);
+  Edge<ZeroRule> edge;
   Context<FakeFinal> context;
   edge.FinishedAdding(context);
   BOOST_REQUIRE_EQUAL(1, edge.Size());
@@ -52,6 +51,8 @@ BOOST_AUTO_TEST_CASE(empty) {
 }
 
 struct MockRule {
+  MockRule() {}
+
   MockRule(Index in_variables, Score in_bound) {
     variables = in_variables;
     bound = in_bound;
@@ -71,8 +72,8 @@ FakeFinal::FakeFinal(const Context<FakeFinal> &, const MockRule &rule, std::vect
 BOOST_AUTO_TEST_CASE(binary) {
   Context<FakeFinal> context;
 
-  MockRule zero(0, 5.78);
-  Edge<MockRule> base_edge(zero);
+  Edge<MockRule> base_edge;
+  base_edge.InitRule() = MockRule(0, 5.78);
   base_edge.FinishedAdding(context);
   BOOST_REQUIRE_EQUAL(1, base_edge.Size());
   BOOST_CHECK_CLOSE(3.14, base_edge[0].Total(), 0.0001);
@@ -81,8 +82,8 @@ BOOST_AUTO_TEST_CASE(binary) {
   vertex.Add(base_edge);
   vertex.FinishedAdding();
 
-  MockRule binary(2, 13.2);
-  Edge<MockRule> edge(binary);
+  Edge<MockRule> edge;
+  edge.InitRule() = MockRule(2, 13.2);
   edge.Add(vertex);
   edge.Add(vertex);
   edge.FinishedAdding(context);
