@@ -27,6 +27,9 @@ class Weights {
 
     search::Score LMWeight() const { return lm_weight_; }
 
+    // Mostly for testing.  
+    const boost::unordered_map<std::string, search::Score> &GetMap() const { return map_; }
+
   private:
     typedef boost::unordered_map<std::string, search::Score> Map;
 
