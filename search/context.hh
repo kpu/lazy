@@ -12,8 +12,8 @@ namespace search {
 
 template <class Final> class Context {
   public:
-    template <class R> Final *ApplyRule(const R &rule, std::vector<const Final *> &values) {
-      Final *ret = final_pool_.construct(*this, rule, values);
+    template <class Child, class R> Final *ApplyRule(Child &child_class, const R &rule, std::vector<const Final *> &values) {
+      Final *ret = final_pool_.construct(child_class, rule, values);
       if (!ret) throw std::bad_alloc();
       return ret;
     }

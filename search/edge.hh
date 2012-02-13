@@ -42,7 +42,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       if (to_.empty()) {
         // Special case for purely lexical rules.  
         std::vector<const Final*> empty;
-        AddFinal(*context.ApplyRule(rule_, empty));
+        AddFinal(*context.ApplyRule(context, rule_, empty));
         P::SetBound(-kScoreInf);
       } else {
         // Seed the queue with zero.  
