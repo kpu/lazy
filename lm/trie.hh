@@ -25,6 +25,24 @@ struct UnigramValue {
   uint64_t Next() const { return next; }
 };
 
+class UnigramPointer {
+  public:
+    explicit UnigramPointer(const ProbBackoff &to, bool independent_left) : to_(&to), independent_left_(independent_left) {}
+
+    UnigramPointer() : to_(NULL) {}
+
+    bool Found() const { return to_ != NULL; }
+
+    float Prob() const { return to_->prob; }
+    float Backoff() const { return to_->backoff; }
+
+    bool IndependentLeft() const { return independent_left_; }
+
+  private:
+    const ProbBackoff *to_;
+    bool independent_left_;
+};
+
 class Unigram {
   public:
     Unigram() {}
@@ -48,12 +66,11 @@ class Unigram {
     
     void LoadedBinary() {}
 
-    void Find(WordIndex word, float &prob, float &backoff, NodeRange &next) const {
+    UnigramPointer Find(WordIndex word, NodeRange &next) const {
       UnigramValue *val = unigram_ + word;
-      prob = val->weights.prob;
-      backoff = val->weights.backoff;
       next.begin = val->next;
       next.end = (val+1)->next;
+      return UnigramPointer(val->weights, next.begin == next.end);
     }
 
   private:

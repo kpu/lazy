@@ -132,7 +132,7 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
 } // namespace
 namespace detail {
  
-template <class MiddleT, class LongestT> uint8_t *TemplateHashedSearch<MiddleT, LongestT>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
+template <class Middle, class Longest> uint8_t *TemplateHashedSearch<Middle, Longest>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
   std::size_t allocated = Unigram::Size(counts[0]);
   unigram = Unigram(start, allocated);
   start += allocated;
@@ -142,12 +142,12 @@ template <class MiddleT, class LongestT> uint8_t *TemplateHashedSearch<MiddleT, 
     start += allocated;
   }
   allocated = Longest::Size(counts.back(), config.probing_multiplier);
-  longest = Longest(start, allocated);
+  longest_ = Longest(start, allocated);
   start += allocated;
   return start;
 }
 
-template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
+template <class Middle, class Longest> template <class Voc> void TemplateHashedSearch<Middle, Longest>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
   // TODO: fix sorted.
   SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), Size(counts, config), backing), counts, config);
 
@@ -164,9 +164,9 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
       ReadNGrams(f, n, counts[n-1], vocab, unigram.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
     }
     if (counts.size() > 2) {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest, warn);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest_, warn);
     } else {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateUnigram(unigram.Raw()), longest, warn);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateUnigram(unigram.Raw()), longest_, warn);
     }
   } catch (util::ProbingSizeException &e) {
     UTIL_THROW(util::ProbingSizeException, "Avoid pruning n-grams like \"bar baz quux\" when \"foo bar baz quux\" is still in the model.  KenLM will work when this pruning happens, but the probing model assumes these events are rare enough that using blank space in the probing hash table will cover all of them.  Increase probing_multiplier (-p to build_binary) to add more blank spaces.\n");
@@ -174,17 +174,17 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
   ReadEnd(f);
 }
 
-template <class MiddleT, class LongestT> void TemplateHashedSearch<MiddleT, LongestT>::LoadedBinary() {
+template <class Middle, class Longest> void TemplateHashedSearch<Middle, Longest>::LoadedBinary() {
   unigram.LoadedBinary();
   for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
     i->LoadedBinary();
   }
-  longest.LoadedBinary();
+  longest_.LoadedBinary();
 }
 
-template class TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>;
+template class TemplateHashedSearch<util::ProbingHashTable<ProbBackoffEntry, util::IdentityHash>, util::ProbingHashTable<ProbEntry, util::IdentityHash> >;
 
-template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
+template void TemplateHashedSearch<util::ProbingHashTable<ProbBackoffEntry, util::IdentityHash>, util::ProbingHashTable<ProbEntry, util::IdentityHash> >::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
 
 } // namespace detail
 } // namespace ngram

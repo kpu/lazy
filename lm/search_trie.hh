@@ -31,10 +31,9 @@ template <class Quant, class Bhiksha> class TrieSearch {
     typedef ::lm::ngram::trie::Unigram Unigram;
     Unigram unigram;
 
-    typedef trie::BitPackedMiddle<typename Quant::Middle, Bhiksha> Middle;
-
-    typedef trie::BitPackedLongest<typename Quant::Longest> Longest;
-    Longest longest;
+    typedef ::lm::ngram::trie::UnigramPointer UnigramPointer;
+    typedef typename Quant::MiddlePointer MiddlePointer;
+    typedef typename Quant::LongestPointer LongestPointer;
 
     static const ModelType kModelType = static_cast<ModelType>(TRIE_SORTED + Quant::kModelTypeAdd + Bhiksha::kModelTypeAdd);
 
@@ -62,53 +61,44 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     void LoadedBinary();
 
-    typedef const Middle *MiddleIter;
-
-    const Middle *MiddleBegin() const { return middle_begin_; }
-    const Middle *MiddleEnd() const { return middle_end_; }
-
     void InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing);
 
-    void LookupUnigram(WordIndex word, float &backoff, Node &node, FullScoreReturn &ret) const {
-      unigram.Find(word, ret.prob, backoff, node);
-      ret.independent_left = (node.begin == node.end);
-      ret.extend_left = static_cast<uint64_t>(word);
+    unsigned char Order() const {
+      return middle_end_ - middle_begin_ + 2;
     }
 
-    bool LookupMiddle(const Middle &mid, WordIndex word, float &backoff, Node &node, FullScoreReturn &ret) const {
-      if (!mid.Find(word, ret.prob, backoff, node, ret.extend_left)) return false;
-      ret.independent_left = (node.begin == node.end);
-      return true;
+    UnigramPointer LookupUnigram(WordIndex word, Node &next, uint64_t &extend) const {
+      extend = static_cast<uint64_t>(word);
+      return unigram.Find(word, next);
     }
 
-    bool LookupMiddleNoProb(const Middle &mid, WordIndex word, float &backoff, Node &node) const {
-      return mid.FindNoProb(word, backoff, node);
+    float Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
+      if (extend_length == 1) {
+        return unigram.Find(static_cast<WordIndex>(extend_pointer), node).Prob();
+      }
+      util::BitAddress address(middle_begin_[extend_length - 2].ReadEntry(extend_pointer, node));
+      return MiddlePointer(quant_, extend_length - 2, address, node.begin == node.end).Prob();
     }
 
-    bool LookupLongest(WordIndex word, float &prob, const Node &node) const {
-      return longest.Find(word, prob, node);
+
+    MiddlePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, uint64_t &extend_pointer) const {
+      util::BitAddress address(middle_begin_[order_minus_2].Find(word, node, extend_pointer));
+      return MiddlePointer(quant_, order_minus_2, address, node.begin == node.end);
+    }
+
+    LongestPointer LookupLongest(WordIndex word, const Node &node) const {
+      return LongestPointer(quant_, longest_.Find(word, node));
     }
 
     bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
       // TODO: don't decode backoff.
       assert(begin != end);
-      FullScoreReturn ignored;
-      float ignored_backoff;
-      LookupUnigram(*begin, ignored_backoff, node, ignored);
+      unigram.Find(*begin, node);
+      uint64_t ignored;
       for (const WordIndex *i = begin + 1; i < end; ++i) {
-        if (!LookupMiddleNoProb(middle_begin_[i - begin - 1], *i, ignored_backoff, node)) return false;
+        if (!LookupMiddle(i - begin - 1, *i, node, ignored).Found()) return false;
       }
       return true;
-    }
-
-    Node Unpack(uint64_t extend_pointer, unsigned char extend_length, float &prob) const {
-      if (extend_length == 1) {
-        float ignored;
-        Node ret;
-        unigram.Find(static_cast<WordIndex>(extend_pointer), prob, ignored, ret);
-        return ret;
-      }
-      return middle_begin_[extend_length - 2].ReadEntry(extend_pointer, prob);
     }
 
   private:
@@ -121,6 +111,11 @@ template <class Quant, class Bhiksha> class TrieSearch {
       }
       free(middle_begin_);
     }
+
+    typedef trie::BitPackedMiddle<Bhiksha> Middle;
+
+    typedef trie::BitPackedLongest Longest;
+    Longest longest_;
 
     Middle *middle_begin_, *middle_end_;
     Quant quant_;

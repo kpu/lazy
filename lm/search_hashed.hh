@@ -26,6 +26,55 @@ inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
   return ret;
 }
 
+class ValuePointer {
+  public:
+    explicit ValuePointer(const ProbBackoff &to) : to_(&to) {}
+
+    ValuePointer() : to_(NULL) {}
+
+    bool Found() const {
+      return to_ != NULL;
+    }
+
+    float Prob() const {
+      util::FloatEnc enc;
+      enc.f = to_->prob;
+      enc.i |= util::kSignBit;
+      return enc.f;
+    }
+
+    float Backoff() const {
+      return to_->backoff;
+    }
+
+    bool IndependentLeft() const {
+      util::FloatEnc enc;
+      enc.f = to_->prob;
+      return enc.i & util::kSignBit;
+    }
+
+  private:
+    const ProbBackoff *to_;
+};
+
+class LongestPointer {
+  public:
+    explicit LongestPointer(const float &to) : to_(&to) {}
+
+    LongestPointer() : to_(NULL) {}
+
+    bool Found() const {
+      return to_ != NULL;
+    }
+
+    float Prob() const {
+      return *to_;
+    }
+
+  private:
+    const float *to_;
+};
+
 struct HashedSearch {
   typedef uint64_t Node;
 
@@ -54,26 +103,19 @@ struct HashedSearch {
 
   Unigram unigram;
 
-  void LookupUnigram(WordIndex word, float &backoff, Node &next, FullScoreReturn &ret) const {
-    const ProbBackoff &entry = unigram.Lookup(word);
-    util::FloatEnc val;
-    val.f = entry.prob;
-    ret.independent_left = (val.i & util::kSignBit);
-    ret.extend_left = static_cast<uint64_t>(word);
-    val.i |= util::kSignBit;
-    ret.prob = val.f;
-    backoff = entry.backoff;
-    next = static_cast<Node>(word);
+  typedef ValuePointer UnigramPointer;
+  typedef ValuePointer MiddlePointer;
+  typedef ::lm::ngram::detail::LongestPointer LongestPointer;
+
+  ValuePointer LookupUnigram(WordIndex word, Node &next, uint64_t &extend) const {
+    extend = static_cast<uint64_t>(word);
+    next = extend;
+    return ValuePointer(unigram.Lookup(word));
   }
 };
 
-template <class MiddleT, class LongestT> class TemplateHashedSearch : public HashedSearch {
+template <class Middle, class Longest> class TemplateHashedSearch : public HashedSearch {
   public:
-    typedef MiddleT Middle;
-
-    typedef LongestT Longest;
-    Longest longest;
-
     static const unsigned int kVersion = 0;
 
     // TODO: move probing_multiplier here with next binary file format update.  
@@ -91,62 +133,42 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
 
     template <class Voc> void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing);
 
-    typedef typename std::vector<Middle>::const_iterator MiddleIter;
-
-    MiddleIter MiddleBegin() const { return middle_.begin(); }
-    MiddleIter MiddleEnd() const { return middle_.end(); }
-
-    Node Unpack(uint64_t extend_pointer, unsigned char extend_length, float &prob) const {
-      util::FloatEnc val;
-      if (extend_length == 1) {
-        val.f = unigram.Lookup(static_cast<uint64_t>(extend_pointer)).prob;
-      } else {
-        typename Middle::ConstIterator found;
-        if (!middle_[extend_length - 2].Find(extend_pointer, found)) {
-          std::cerr << "Extend pointer " << extend_pointer << " should have been found for length " << (unsigned) extend_length << std::endl;
-          abort();
-        }
-        val.f = found->value.prob;
-      }
-      val.i |= util::kSignBit;
-      prob = val.f;
-      return extend_pointer;
-    }
-
-    bool LookupMiddle(const Middle &middle, WordIndex word, float &backoff, Node &node, FullScoreReturn &ret) const {
-      node = CombineWordHash(node, word);
-      typename Middle::ConstIterator found;
-      if (!middle.Find(node, found)) return false;
-      util::FloatEnc enc;
-      enc.f = found->value.prob;
-      ret.independent_left = (enc.i & util::kSignBit);
-      ret.extend_left = node;
-      enc.i |= util::kSignBit;
-      ret.prob = enc.f;
-      backoff = found->value.backoff;
-      return true;
-    }
-
     void LoadedBinary();
 
-    bool LookupMiddleNoProb(const Middle &middle, WordIndex word, float &backoff, Node &node) const {
+    unsigned char Order() const {
+      return middle_.size() + 2;
+    }
+
+#pragma GCC diagnostic ignored "-Wuninitialized"
+    float Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
+      node = extend_pointer;
+      if (extend_length == 1) {
+        return ValuePointer(unigram.Lookup(extend_pointer)).Prob();
+      } else {
+        typename Middle::ConstIterator found;
+        bool got = middle_[extend_length - 2].Find(extend_pointer, found);
+        assert(got);
+        (void)got;
+        return ValuePointer(found->value).Prob();
+      }
+    }
+
+    ValuePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, uint64_t &extend_pointer) const {
       node = CombineWordHash(node, word);
       typename Middle::ConstIterator found;
-      if (!middle.Find(node, found)) return false;
-      backoff = found->value.backoff;
-      return true;
+      if (!middle_[order_minus_2].Find(node, found)) return ValuePointer();
+      extend_pointer = node;
+      return ValuePointer(found->value);
     }
 
-    bool LookupLongest(WordIndex word, float &prob, Node &node) const {
+    LongestPointer LookupLongest(WordIndex word, const Node &node) const {
       // Sign bit is always on because longest n-grams do not extend left.  
-      node = CombineWordHash(node, word);
       typename Longest::ConstIterator found;
-      if (!longest.Find(node, found)) return false;
-      prob = found->value.prob;
-      return true;
+      if (!longest_.Find(CombineWordHash(node, word), found)) return LongestPointer();
+      return LongestPointer(found->value.prob);
     }
 
-    // Geenrate a node without necessarily checking that it actually exists.  
+    // Generate a node without necessarily checking that it actually exists.  
     // Optionally return false if it's know to not exist.  
     bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
       assert(begin != end);
@@ -159,6 +181,7 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
 
   private:
     std::vector<Middle> middle_;
+    Longest longest_;
 };
 
 /* These look like perfect candidates for a template, right?  Ancient gcc (4.1
@@ -200,7 +223,6 @@ struct ProbEntry {
 };
 
 #pragma pack(pop)
-
 
 struct ProbingHashedSearch : public TemplateHashedSearch<
   util::ProbingHashTable<ProbBackoffEntry, util::IdentityHash>,
