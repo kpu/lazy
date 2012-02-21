@@ -30,9 +30,9 @@ class DontQuantize {
 
     class MiddlePointer {
       public:
-        MiddlePointer(const DontQuantize & /*quant*/, unsigned char /*order_minus_2*/, util::BitAddress address, bool independent_left) : address_(address), independent_left_(independent_left) {}
+        MiddlePointer(const DontQuantize & /*quant*/, unsigned char /*order_minus_2*/, util::BitAddress address) : address_(address) {}
 
-        MiddlePointer() : address_(NULL, 0), independent_left_(false) {}
+        MiddlePointer() : address_(NULL, 0) {}
 
         bool Found() const {
           return address_.base != NULL;
@@ -46,10 +46,6 @@ class DontQuantize {
           return util::ReadFloat32(address_.base, address_.offset + 31);
         }
 
-        bool IndependentLeft() const {
-          return independent_left_;
-        }
-
         void Write(float prob, float backoff) {
           util::WriteNonPositiveFloat31(address_.base, address_.offset, prob);
           util::WriteFloat32(address_.base, address_.offset + 31, backoff);
@@ -57,7 +53,6 @@ class DontQuantize {
 
       private:
         util::BitAddress address_;
-        bool independent_left_;
     };
 
     class LongestPointer {
@@ -153,7 +148,7 @@ class SeparatelyQuantize {
 
     class MiddlePointer {
       public:
-        MiddlePointer(const SeparatelyQuantize &quant, unsigned char order_minus_2, const util::BitAddress &address, bool independent_left) : bins_(quant.GetTables(order_minus_2)), address_(address), independent_left_(independent_left) {}
+        MiddlePointer(const SeparatelyQuantize &quant, unsigned char order_minus_2, const util::BitAddress &address) : bins_(quant.GetTables(order_minus_2)), address_(address) {}
 
         MiddlePointer() : address_(NULL, 0) {}
 
@@ -178,16 +173,12 @@ class SeparatelyQuantize {
               (ProbBins().EncodeProb(prob) << BackoffBins().Bits()) | BackoffBins().EncodeBackoff(backoff));
         }
 
-        bool IndependentLeft() const { return independent_left_; }
-
       private:
         const Bins &ProbBins() const { return bins_[0]; }
         const Bins &BackoffBins() const { return bins_[1]; }
         const Bins *bins_;
 
         util::BitAddress address_;
-
-        bool independent_left_;
     };
 
     class LongestPointer {

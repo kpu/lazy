@@ -109,19 +109,20 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   // Add the backoff weights for n-grams of order start to (context_rend - context_rbegin).
   unsigned char start = ret.ngram_length;
   if (context_rend - context_rbegin < static_cast<std::ptrdiff_t>(start)) return ret;
-  if (start <= 1) {
-    ret.prob += search_.unigram.Lookup(*context_rbegin).backoff;
-    start = 2;
-  }
+
+  bool independent_left;
+  uint64_t extend_left;
   typename Search::Node node;
-  if (!search_.FastMakeNode(context_rbegin, context_rbegin + start - 1, node)) {
+  if (start <= 1) {
+    ret.prob += search_.LookupUnigram(*context_rbegin, node, independent_left, extend_left).Backoff();
+    start = 2;
+  } else if (!search_.FastMakeNode(context_rbegin, context_rbegin + start - 1, node)) {
     return ret;
   }
   // i is the order of the backoff we're looking for.
   unsigned char order_minus_2 = 0;
   for (const WordIndex *i = context_rbegin + start - 1; i < context_rend; ++i, ++order_minus_2) {
-    uint64_t extend_pointer;
-    typename Search::MiddlePointer p(search_.LookupMiddle(order_minus_2, *i, node, extend_pointer));
+    typename Search::MiddlePointer p(search_.LookupMiddle(order_minus_2, *i, node, independent_left, extend_left));
     if (!p.Found()) break;
     ret.prob += p.Backoff();
   }
@@ -136,13 +137,14 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     return;
   }
   typename Search::Node node;
-  uint64_t ignored;
-  out_state.backoff[0] = search_.LookupUnigram(*context_rbegin, node, ignored).Backoff();
+  bool independent_left;
+  uint64_t extend_left;
+  out_state.backoff[0] = search_.LookupUnigram(*context_rbegin, node, independent_left, extend_left).Backoff();
   out_state.length = HasExtension(out_state.backoff[0]) ? 1 : 0;
   float *backoff_out = out_state.backoff + 1;
   unsigned char order_minus_2 = 0;
   for (const WordIndex *i = context_rbegin + 1; i < context_rend; ++i, ++backoff_out, ++order_minus_2) {
-    typename Search::MiddlePointer p(search_.LookupMiddle(order_minus_2, *i, node, ignored));
+    typename Search::MiddlePointer p(search_.LookupMiddle(order_minus_2, *i, node, independent_left, extend_left));
     if (!p.Found()) {
       std::copy(context_rbegin, context_rbegin + out_state.length, out_state.words);
       return;
@@ -162,13 +164,19 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     unsigned char &next_use) const {
   FullScoreReturn ret;
   typename Search::Node node;
-  float subtract_me = search_.Unpack(extend_pointer, extend_length, node);
+  float subtract_me;
+  if (extend_length == 1) {
+    subtract_me = search_.LookupUnigram(static_cast<WordIndex>(extend_pointer), node, ret.independent_left, ret.extend_left).Prob();
+    assert(!ret.independent_left);
+  } else {
+    subtract_me = search_.Unpack(extend_pointer, extend_length, node).Prob();
+    ret.extend_left = extend_pointer;
+    // If this function is called, then it does depend on left words.   
+    ret.independent_left = false;
+  }
   ret.prob = subtract_me;
   ret.ngram_length = extend_length;
   next_use = 0;
-  // If this function is called, then it does depend on left words.   
-  ret.independent_left = false;
-  ret.extend_left = extend_pointer;
   unsigned char order_minus_2 = extend_length - 1;
   const WordIndex *i = add_rbegin;
   typename Search::MiddlePointer pointer;
@@ -180,16 +188,13 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       return ret;
     }
     if (order_minus_2 == P::Order() - 2) break;
-    if (ret.independent_left || !(pointer = search_.LookupMiddle(order_minus_2, *i, node, ret.extend_left)).Found()) {
-      // Didn't match a word. 
-      ret.independent_left = true;
+    if (ret.independent_left || !(pointer = search_.LookupMiddle(order_minus_2, *i, node, ret.independent_left, ret.extend_left)).Found()) {
       for (const float *b = backoff_in + ret.ngram_length - extend_length; b < backoff_in + (add_rend - add_rbegin); ++b) ret.prob += *b;
       ret.prob -= subtract_me;
       return ret;
     }
     *backoff_out = pointer.Backoff();
     ret.prob = pointer.Prob();
-    ret.independent_left = pointer.IndependentLeft();
     ret.ngram_length = order_minus_2 + 2;
     if (HasExtension(*backoff_out)) next_use = i - add_rbegin + 1;
   }
@@ -234,9 +239,8 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
   float *backoff_out(out_state.backoff);
   typename Search::Node node;
-  typename Search::UnigramPointer uni(search_.LookupUnigram(new_word, node, ret.extend_left));
+  typename Search::UnigramPointer uni(search_.LookupUnigram(new_word, node, ret.independent_left, ret.extend_left));
   *backoff_out = uni.Backoff();
-  ret.independent_left = uni.IndependentLeft();
   ret.prob = uni.Prob();
 
   // This is the length of the context that should be used for continuation to the right.  
@@ -260,16 +264,14 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
     if (order_minus_2 == P::Order() - 2) break;
 
-    if (ret.independent_left || !(pointer = search_.LookupMiddle(order_minus_2, *hist_iter, node, ret.extend_left)).Found()) {
+    if (ret.independent_left || !(pointer = search_.LookupMiddle(order_minus_2, *hist_iter, node, ret.independent_left, ret.extend_left)).Found()) {
       // Didn't find an ngram using hist_iter.  
       CopyRemainingHistory(context_rbegin, out_state);
       // ret.prob was already set.
-      ret.independent_left = true;
       return ret;
     }
     *backoff_out = pointer.Backoff();
     ret.prob = pointer.Prob();
-    ret.independent_left = pointer.IndependentLeft();
     ret.ngram_length = hist_iter - context_rbegin + 2;
     if (HasExtension(*backoff_out)) {
       out_state.length = ret.ngram_length;

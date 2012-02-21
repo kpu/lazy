@@ -291,7 +291,7 @@ template <class Quant, class Bhiksha> class WriteEntries {
 
     void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char /*lower*/, float /*prob_base*/) {
       ProbBackoff weights = sri_.GetBlank(order_, order, indices);
-      typename Quant::MiddlePointer(quant_, order - 2, middle_[order - 2].Insert(indices[order - 1]), false).Write(weights.prob, weights.backoff);
+      typename Quant::MiddlePointer(quant_, order - 2, middle_[order - 2].Insert(indices[order - 1])).Write(weights.prob, weights.backoff);
     }
 
     void Middle(const unsigned char order, const void *data) {
@@ -302,7 +302,7 @@ template <class Quant, class Bhiksha> class WriteEntries {
         SetExtension(weights.backoff);
         ++context;
       }
-      typename Quant::MiddlePointer(quant_, order - 2, middle_[order - 2].Insert(words[order - 1]), false).Write(weights.prob, weights.backoff);
+      typename Quant::MiddlePointer(quant_, order - 2, middle_[order - 2].Insert(words[order - 1])).Write(weights.prob, weights.backoff);
     }
 
     void Longest(const void *data) {

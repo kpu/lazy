@@ -107,10 +107,12 @@ struct HashedSearch {
   typedef ValuePointer MiddlePointer;
   typedef ::lm::ngram::detail::LongestPointer LongestPointer;
 
-  ValuePointer LookupUnigram(WordIndex word, Node &next, uint64_t &extend) const {
-    extend = static_cast<uint64_t>(word);
-    next = extend;
-    return ValuePointer(unigram.Lookup(word));
+  ValuePointer LookupUnigram(WordIndex word, Node &next, bool &independent_left, uint64_t &extend_left) const {
+    extend_left = static_cast<uint64_t>(word);
+    next = extend_left;
+    ValuePointer ret(unigram.Lookup(word));
+    independent_left = ret.IndependentLeft();
+    return ret;
   }
 };
 
@@ -140,25 +142,26 @@ template <class Middle, class Longest> class TemplateHashedSearch : public Hashe
     }
 
 #pragma GCC diagnostic ignored "-Wuninitialized"
-    float Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
+    ValuePointer Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
       node = extend_pointer;
-      if (extend_length == 1) {
-        return ValuePointer(unigram.Lookup(extend_pointer)).Prob();
-      } else {
-        typename Middle::ConstIterator found;
-        bool got = middle_[extend_length - 2].Find(extend_pointer, found);
-        assert(got);
-        (void)got;
-        return ValuePointer(found->value).Prob();
-      }
+      typename Middle::ConstIterator found;
+      bool got = middle_[extend_length - 2].Find(extend_pointer, found);
+      assert(got);
+      (void)got;
+      return ValuePointer(found->value);
     }
 
-    ValuePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, uint64_t &extend_pointer) const {
+    ValuePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, bool &independent_left, uint64_t &extend_pointer) const {
       node = CombineWordHash(node, word);
       typename Middle::ConstIterator found;
-      if (!middle_[order_minus_2].Find(node, found)) return ValuePointer();
+      if (!middle_[order_minus_2].Find(node, found)) {
+        independent_left = true;
+        return ValuePointer();
+      }
       extend_pointer = node;
-      return ValuePointer(found->value);
+      ValuePointer ret(found->value);
+      independent_left = ret.IndependentLeft();
+      return ret;
     }
 
     LongestPointer LookupLongest(WordIndex word, const Node &node) const {

@@ -67,23 +67,21 @@ template <class Quant, class Bhiksha> class TrieSearch {
       return middle_end_ - middle_begin_ + 2;
     }
 
-    UnigramPointer LookupUnigram(WordIndex word, Node &next, uint64_t &extend) const {
-      extend = static_cast<uint64_t>(word);
-      return unigram.Find(word, next);
+    UnigramPointer LookupUnigram(WordIndex word, Node &next, bool &independent_left, uint64_t &extend_left) const {
+      extend_left = static_cast<uint64_t>(word);
+      UnigramPointer ret(unigram.Find(word, next));
+      independent_left = (next.begin == next.end);
+      return ret;
     }
 
-    float Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
-      if (extend_length == 1) {
-        return unigram.Find(static_cast<WordIndex>(extend_pointer), node).Prob();
-      }
-      util::BitAddress address(middle_begin_[extend_length - 2].ReadEntry(extend_pointer, node));
-      return MiddlePointer(quant_, extend_length - 2, address, node.begin == node.end).Prob();
+    MiddlePointer Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
+      return MiddlePointer(quant_, extend_length - 2, middle_begin_[extend_length - 2].ReadEntry(extend_pointer, node));
     }
 
-
-    MiddlePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, uint64_t &extend_pointer) const {
-      util::BitAddress address(middle_begin_[order_minus_2].Find(word, node, extend_pointer));
-      return MiddlePointer(quant_, order_minus_2, address, node.begin == node.end);
+    MiddlePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, bool &independent_left, uint64_t &extend_left) const {
+      util::BitAddress address(middle_begin_[order_minus_2].Find(word, node, extend_left));
+      independent_left = (address.base == NULL) || (node.begin == node.end);
+      return MiddlePointer(quant_, order_minus_2, address);
     }
 
     LongestPointer LookupLongest(WordIndex word, const Node &node) const {
@@ -91,12 +89,12 @@ template <class Quant, class Bhiksha> class TrieSearch {
     }
 
     bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
-      // TODO: don't decode backoff.
       assert(begin != end);
-      unigram.Find(*begin, node);
+      bool independent_left;
       uint64_t ignored;
+      LookupUnigram(*begin, node, independent_left, ignored);
       for (const WordIndex *i = begin + 1; i < end; ++i) {
-        if (!LookupMiddle(i - begin - 1, *i, node, ignored).Found()) return false;
+        if (independent_left || !LookupMiddle(i - begin - 1, *i, node, independent_left, ignored).Found()) return false;
       }
       return true;
     }

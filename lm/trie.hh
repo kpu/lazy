@@ -27,7 +27,7 @@ struct UnigramValue {
 
 class UnigramPointer {
   public:
-    explicit UnigramPointer(const ProbBackoff &to, bool independent_left) : to_(&to), independent_left_(independent_left) {}
+    explicit UnigramPointer(const ProbBackoff &to) : to_(&to) {}
 
     UnigramPointer() : to_(NULL) {}
 
@@ -36,11 +36,8 @@ class UnigramPointer {
     float Prob() const { return to_->prob; }
     float Backoff() const { return to_->backoff; }
 
-    bool IndependentLeft() const { return independent_left_; }
-
   private:
     const ProbBackoff *to_;
-    bool independent_left_;
 };
 
 class Unigram {
@@ -70,7 +67,7 @@ class Unigram {
       UnigramValue *val = unigram_ + word;
       next.begin = val->next;
       next.end = (val+1)->next;
-      return UnigramPointer(val->weights, next.begin == next.end);
+      return UnigramPointer(val->weights);
     }
 
   private:
