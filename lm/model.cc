@@ -179,38 +179,11 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   }
   ret.prob = subtract_me;
   ret.ngram_length = extend_length;
-  next_use = 0;
-  unsigned char order_minus_2 = extend_length - 1;
-  const WordIndex *i = add_rbegin;
-  typename Search::MiddlePointer pointer;
-  for (; ; ++i, ++backoff_out, ++order_minus_2) {
-    if (i == add_rend) {
-      // Ran out of words.
-      for (const float *b = backoff_in + ret.ngram_length - extend_length; b < backoff_in + (add_rend - add_rbegin); ++b) ret.prob += *b;
-      ret.prob -= subtract_me;
-      return ret;
-    }
-    if (order_minus_2 == P::Order() - 2) break;
-    if (ret.independent_left || !(pointer = search_.LookupMiddle(order_minus_2, *i, node, ret.independent_left, ret.extend_left)).Found()) {
-      for (const float *b = backoff_in + ret.ngram_length - extend_length; b < backoff_in + (add_rend - add_rbegin); ++b) ret.prob += *b;
-      ret.prob -= subtract_me;
-      return ret;
-    }
-    *backoff_out = pointer.Backoff();
-    ret.prob = pointer.Prob();
-    ret.ngram_length = order_minus_2 + 2;
-    if (HasExtension(*backoff_out)) next_use = i - add_rbegin + 1;
-  }
-
-  typename Search::LongestPointer longest;
-  if (ret.independent_left || !(longest = search_.LookupLongest(*i, node)).Found()) {
-    // The last backoff weight, for Order() - 1.
-    ret.prob += backoff_in[i - add_rbegin];
-  } else {
-    ret.prob = longest.Prob();
-    ret.ngram_length = P::Order();
-  }
-  ret.independent_left = true;
+  next_use = extend_length;
+  ResumeScore(add_rbegin, add_rend, extend_length - 1, node, backoff_out, next_use, ret);
+  next_use -= extend_length;
+  // Charge backoffs.  
+  for (const float *b = backoff_in + ret.ngram_length - extend_length; b < backoff_in + (add_rend - add_rbegin); ++b) ret.prob += *b;
   ret.prob -= subtract_me;
   return ret;
 }
@@ -232,67 +205,52 @@ void CopyRemainingHistory(const WordIndex *from, State &out_state) {
  * new_word.  
  */
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::ScoreExceptBackoff(
-    const WordIndex *context_rbegin,
-    const WordIndex *context_rend,
+    const WordIndex *const context_rbegin,
+    const WordIndex *const context_rend,
     const WordIndex new_word,
     State &out_state) const {
   FullScoreReturn ret;
   // ret.ngram_length contains the last known non-blank ngram length.  
   ret.ngram_length = 1;
 
-  float *backoff_out(out_state.backoff);
   typename Search::Node node;
   typename Search::UnigramPointer uni(search_.LookupUnigram(new_word, node, ret.independent_left, ret.extend_left));
-  *backoff_out = uni.Backoff();
+  out_state.backoff[0] = uni.Backoff();
   ret.prob = uni.Prob();
 
   // This is the length of the context that should be used for continuation to the right.  
-  out_state.length = HasExtension(*backoff_out) ? 1 : 0;
+  out_state.length = HasExtension(out_state.backoff[0]) ? 1 : 0;
   // We'll write the word anyway since it will probably be used and does no harm being there.  
   out_state.words[0] = new_word;
   if (context_rbegin == context_rend) return ret;
-  ++backoff_out;
 
-  // Ok start by looking up the bigram.
-  const WordIndex *hist_iter = context_rbegin;
-  unsigned char order_minus_2 = 0;
-  typename Search::MiddlePointer pointer;
+  ResumeScore(context_rbegin, context_rend, 0, node, out_state.backoff + 1, out_state.length, ret);
+  CopyRemainingHistory(context_rbegin, out_state);
+  return ret;
+}
+
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::ResumeScore(const WordIndex *hist_iter, const WordIndex *const context_rend, unsigned char order_minus_2, typename Search::Node &node, float *backoff_out, unsigned char &next_use, FullScoreReturn &ret) const {
   for (; ; ++order_minus_2, ++hist_iter, ++backoff_out) {
-    if (hist_iter == context_rend) {
-      // Ran out of history.  Typically no backoff, but this could be a blank.  
-      CopyRemainingHistory(context_rbegin, out_state);
-      // ret.prob was already set.
-      return ret;
-    }
-
+    if (hist_iter == context_rend) return;
+    if (ret.independent_left) return;
     if (order_minus_2 == P::Order() - 2) break;
 
-    if (ret.independent_left || !(pointer = search_.LookupMiddle(order_minus_2, *hist_iter, node, ret.independent_left, ret.extend_left)).Found()) {
-      // Didn't find an ngram using hist_iter.  
-      CopyRemainingHistory(context_rbegin, out_state);
-      // ret.prob was already set.
-      return ret;
-    }
+    typename Search::MiddlePointer pointer(search_.LookupMiddle(order_minus_2, *hist_iter, node, ret.independent_left, ret.extend_left));
+    if (!pointer.Found()) return;
     *backoff_out = pointer.Backoff();
     ret.prob = pointer.Prob();
-    ret.ngram_length = hist_iter - context_rbegin + 2;
+    ret.ngram_length = order_minus_2 + 2;
     if (HasExtension(*backoff_out)) {
-      out_state.length = ret.ngram_length;
+      next_use = ret.ngram_length;
     }
   }
-
-  if (!ret.independent_left) {
-    typename Search::LongestPointer longest(search_.LookupLongest(*hist_iter, node));
-    if (longest.Found()) {
-      ret.prob = longest.Prob();
-      // There is no blank in longest_.
-      ret.ngram_length = P::Order();
-    }
-  }
-  // This handles (N-1)-grams and N-grams.  
-  CopyRemainingHistory(context_rbegin, out_state);
   ret.independent_left = true;
-  return ret;
+  typename Search::LongestPointer longest(search_.LookupLongest(*hist_iter, node));
+  if (longest.Found()) {
+    ret.prob = longest.Prob();
+    // There is no blank in longest_.
+    ret.ngram_length = P::Order();
+  }
 }
 
 template class GenericModel<ProbingHashedSearch, ProbingVocabulary>;  // HASH_PROBING

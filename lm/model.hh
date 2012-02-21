@@ -141,7 +141,10 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
 
-    FullScoreReturn ScoreExceptBackoff(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, State &out_state) const;
+    FullScoreReturn ScoreExceptBackoff(const WordIndex *const context_rbegin, const WordIndex *const context_rend, const WordIndex new_word, State &out_state) const;
+
+    // Score bigrams and above.  Do not include backoff.   
+    void ResumeScore(const WordIndex *context_rbegin, const WordIndex *const context_rend, unsigned char starting_order_minus_2, typename Search::Node &node, float *backoff_out, unsigned char &next_use, FullScoreReturn &ret) const;
 
     // Appears after Size in the cc file.
     void SetupMemory(void *start, const std::vector<uint64_t> &counts, const Config &config);
