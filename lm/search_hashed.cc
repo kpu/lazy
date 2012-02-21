@@ -134,7 +134,7 @@ namespace detail {
  
 template <class Middle, class Longest> uint8_t *TemplateHashedSearch<Middle, Longest>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
   std::size_t allocated = Unigram::Size(counts[0]);
-  unigram = Unigram(start, allocated);
+  unigram_ = Unigram(start, allocated);
   start += allocated;
   for (unsigned int n = 2; n < counts.size(); ++n) {
     allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
@@ -153,20 +153,20 @@ template <class Middle, class Longest> template <class Voc> void TemplateHashedS
 
   PositiveProbWarn warn(config.positive_log_probability);
 
-  Read1Grams(f, counts[0], vocab, unigram.Raw(), warn);
+  Read1Grams(f, counts[0], vocab, unigram_.Raw(), warn);
   CheckSpecials(config, vocab);
 
   try {
     if (counts.size() > 2) {
-      ReadNGrams(f, 2, counts[1], vocab, unigram.Raw(), middle_, ActivateUnigram(unigram.Raw()), middle_[0], warn);
+      ReadNGrams(f, 2, counts[1], vocab, unigram_.Raw(), middle_, ActivateUnigram(unigram_.Raw()), middle_[0], warn);
     }
     for (unsigned int n = 3; n < counts.size(); ++n) {
-      ReadNGrams(f, n, counts[n-1], vocab, unigram.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
+      ReadNGrams(f, n, counts[n-1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
     }
     if (counts.size() > 2) {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest_, warn);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest_, warn);
     } else {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateUnigram(unigram.Raw()), longest_, warn);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateUnigram(unigram_.Raw()), longest_, warn);
     }
   } catch (util::ProbingSizeException &e) {
     UTIL_THROW(util::ProbingSizeException, "Avoid pruning n-grams like \"bar baz quux\" when \"foo bar baz quux\" is still in the model.  KenLM will work when this pruning happens, but the probing model assumes these events are rare enough that using blank space in the probing hash table will cover all of them.  Increase probing_multiplier (-p to build_binary) to add more blank spaces.\n");
@@ -175,7 +175,7 @@ template <class Middle, class Longest> template <class Voc> void TemplateHashedS
 }
 
 template <class Middle, class Longest> void TemplateHashedSearch<Middle, Longest>::LoadedBinary() {
-  unigram.LoadedBinary();
+  unigram_.LoadedBinary();
   for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
     i->LoadedBinary();
   }

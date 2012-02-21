@@ -38,7 +38,10 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   State begin_sentence = State();
   begin_sentence.length = 1;
   begin_sentence.words[0] = vocab_.BeginSentence();
-  begin_sentence.backoff[0] = search_.unigram.Lookup(begin_sentence.words[0]).backoff;
+  typename Search::Node ignored_node;
+  bool ignored_independent_left;
+  uint64_t ignored_extend_left;
+  begin_sentence.backoff[0] = search_.LookupUnigram(begin_sentence.words[0], ignored_node, ignored_independent_left, ignored_extend_left).Backoff();
   State null_context = State();
   null_context.length = 0;
   P::Init(begin_sentence, null_context, vocab_, search_.Order());
@@ -79,8 +82,8 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     if (!vocab_.SawUnk()) {
       assert(config.unknown_missing != THROW_UP);
       // Default probabilities for unknown.  
-      search_.unigram.Unknown().backoff = 0.0;
-      search_.unigram.Unknown().prob = config.unknown_missing_logprob;
+      search_.UnknownUnigram().backoff = 0.0;
+      search_.UnknownUnigram().prob = config.unknown_missing_logprob;
     }
     FinishFile(config, kModelType, kVersion, counts, vocab_.UnkCountChangePadding(), backing_);
   } catch (util::Exception &e) {

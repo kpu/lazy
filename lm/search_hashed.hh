@@ -75,45 +75,50 @@ class LongestPointer {
     const float *to_;
 };
 
-struct HashedSearch {
-  typedef uint64_t Node;
+class HashedSearch {
+  public:
+    typedef uint64_t Node;
 
-  class Unigram {
-    public:
-      Unigram() {}
+    class Unigram {
+      public:
+        Unigram() {}
 
-      Unigram(void *start, std::size_t /*allocated*/) : unigram_(static_cast<ProbBackoff*>(start)) {}
+        Unigram(void *start, std::size_t /*allocated*/) : unigram_(static_cast<ProbBackoff*>(start)) {}
 
-      static std::size_t Size(uint64_t count) {
-        return (count + 1) * sizeof(ProbBackoff); // +1 for hallucinate <unk>
-      }
+        static std::size_t Size(uint64_t count) {
+          return (count + 1) * sizeof(ProbBackoff); // +1 for hallucinate <unk>
+        }
 
-      const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index]; }
+        const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index]; }
 
-      ProbBackoff &Unknown() { return unigram_[0]; }
+        ProbBackoff &Unknown() { return unigram_[0]; }
 
-      void LoadedBinary() {}
+        void LoadedBinary() {}
 
-      // For building.
-      ProbBackoff *Raw() { return unigram_; }
+        // For building.
+        ProbBackoff *Raw() { return unigram_; }
 
-    private:
-      ProbBackoff *unigram_;
-  };
+      private:
+        ProbBackoff *unigram_;
+    };
 
-  Unigram unigram;
 
-  typedef ValuePointer UnigramPointer;
-  typedef ValuePointer MiddlePointer;
-  typedef ::lm::ngram::detail::LongestPointer LongestPointer;
+    typedef ValuePointer UnigramPointer;
+    typedef ValuePointer MiddlePointer;
+    typedef ::lm::ngram::detail::LongestPointer LongestPointer;
 
-  ValuePointer LookupUnigram(WordIndex word, Node &next, bool &independent_left, uint64_t &extend_left) const {
-    extend_left = static_cast<uint64_t>(word);
-    next = extend_left;
-    ValuePointer ret(unigram.Lookup(word));
-    independent_left = ret.IndependentLeft();
-    return ret;
-  }
+    ProbBackoff &UnknownUnigram() { return unigram_.Unknown(); }
+
+    ValuePointer LookupUnigram(WordIndex word, Node &next, bool &independent_left, uint64_t &extend_left) const {
+      extend_left = static_cast<uint64_t>(word);
+      next = extend_left;
+      ValuePointer ret(unigram_.Lookup(word));
+      independent_left = ret.IndependentLeft();
+      return ret;
+    }
+
+  protected:
+    Unigram unigram_;
 };
 
 template <class Middle, class Longest> class TemplateHashedSearch : public HashedSearch {

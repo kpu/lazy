@@ -28,9 +28,6 @@ template <class Quant, class Bhiksha> class TrieSearch {
   public:
     typedef NodeRange Node;
 
-    typedef ::lm::ngram::trie::Unigram Unigram;
-    Unigram unigram;
-
     typedef ::lm::ngram::trie::UnigramPointer UnigramPointer;
     typedef typename Quant::MiddlePointer MiddlePointer;
     typedef typename Quant::LongestPointer LongestPointer;
@@ -67,9 +64,11 @@ template <class Quant, class Bhiksha> class TrieSearch {
       return middle_end_ - middle_begin_ + 2;
     }
 
+    ProbBackoff &UnknownUnigram() { return unigram_.Unknown(); }
+
     UnigramPointer LookupUnigram(WordIndex word, Node &next, bool &independent_left, uint64_t &extend_left) const {
       extend_left = static_cast<uint64_t>(word);
-      UnigramPointer ret(unigram.Find(word, next));
+      UnigramPointer ret(unigram_.Find(word, next));
       independent_left = (next.begin == next.end);
       return ret;
     }
@@ -117,6 +116,9 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     Middle *middle_begin_, *middle_end_;
     Quant quant_;
+
+    typedef ::lm::ngram::trie::Unigram Unigram;
+    Unigram unigram_;
 };
 
 } // namespace trie

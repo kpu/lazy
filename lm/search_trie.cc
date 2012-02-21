@@ -512,7 +512,7 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
     quant.FinishedLoading(config);
   }
 
-  UnigramValue *unigrams = out.unigram.Raw();
+  UnigramValue *unigrams = out.unigram_.Raw();
   PopulateUnigramWeights(unigram_file.get(), counts[0], contexts[0], unigrams);
   unigram_file.reset();
 
@@ -553,7 +553,7 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
 template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
   quant_.SetupMemory(start, counts.size(), config);
   start += Quant::Size(counts.size(), config);
-  unigram.Init(start);
+  unigram_.Init(start);
   start += Unigram::Size(counts[0]);
   FreeMiddles();
   middle_begin_ = static_cast<Middle*>(malloc(sizeof(Middle) * (counts.size() - 2)));
@@ -579,7 +579,7 @@ template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::Setup
 }
 
 template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::LoadedBinary() {
-  unigram.LoadedBinary();
+  unigram_.LoadedBinary();
   for (Middle *i = middle_begin_; i != middle_end_; ++i) {
     i->LoadedBinary();
   }
