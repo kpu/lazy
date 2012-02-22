@@ -9,6 +9,7 @@
 #include "lm/quantize.hh"
 #include "lm/search_hashed.hh"
 #include "lm/search_trie.hh"
+#include "lm/value.hh"
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 
@@ -164,18 +165,17 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
 } // namespace detail
 
-// These must also be instantiated in the cc file.  
-typedef ::lm::ngram::ProbingVocabulary Vocabulary;
-typedef detail::GenericModel<detail::ProbingHashedSearch, Vocabulary> ProbingModel; // HASH_PROBING
+typedef detail::GenericModel<detail::HashedSearch<BackoffValue>, ProbingVocabulary> ProbingModel;
+typedef detail::GenericModel<detail::HashedSearch<RestValue>, ProbingVocabulary> RestProbingModel;
 // Default implementation.  No real reason for it to be the default.  
+typedef ::lm::ngram::ProbingVocabulary Vocabulary;
 typedef ProbingModel Model;
 
 // Smaller implementation.
-typedef ::lm::ngram::SortedVocabulary SortedVocabulary;
-typedef detail::GenericModel<trie::TrieSearch<DontQuantize, trie::DontBhiksha>, SortedVocabulary> TrieModel; // TRIE_SORTED
+typedef detail::GenericModel<trie::TrieSearch<DontQuantize, trie::DontBhiksha>, SortedVocabulary> TrieModel;
 typedef detail::GenericModel<trie::TrieSearch<DontQuantize, trie::ArrayBhiksha>, SortedVocabulary> ArrayTrieModel;
 
-typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiksha>, SortedVocabulary> QuantTrieModel; // QUANT_TRIE_SORTED
+typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiksha>, SortedVocabulary> QuantTrieModel;
 typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::ArrayBhiksha>, SortedVocabulary> QuantArrayTrieModel;
 
 } // namespace ngram

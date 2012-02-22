@@ -26,36 +26,19 @@ inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
   return ret;
 }
 
-class ValuePointer {
-  public:
-    explicit ValuePointer(const ProbBackoff &to) : to_(&to) {}
-
-    ValuePointer() : to_(NULL) {}
-
-    bool Found() const {
-      return to_ != NULL;
-    }
-
-    float Prob() const {
-      util::FloatEnc enc;
-      enc.f = to_->prob;
-      enc.i |= util::kSignBit;
-      return enc.f;
-    }
-
-    float Backoff() const {
-      return to_->backoff;
-    }
-
-    bool IndependentLeft() const {
-      util::FloatEnc enc;
-      enc.f = to_->prob;
-      return enc.i & util::kSignBit;
-    }
-
-  private:
-    const ProbBackoff *to_;
+#pragma pack(push)
+#pragma pack(4)
+struct ProbEntry {
+  uint64_t key;
+  Prob value;
+  typedef uint64_t Key;
+  typedef Prob Value;
+  uint64_t GetKey() const {
+    return key;
+  }
 };
+
+#pragma pack(pop)
 
 class LongestPointer {
   public:
@@ -75,54 +58,15 @@ class LongestPointer {
     const float *to_;
 };
 
-class HashedSearch {
+template <class Value> class HashedSearch {
   public:
     typedef uint64_t Node;
 
-    class Unigram {
-      public:
-        Unigram() {}
-
-        Unigram(void *start, std::size_t /*allocated*/) : unigram_(static_cast<ProbBackoff*>(start)) {}
-
-        static std::size_t Size(uint64_t count) {
-          return (count + 1) * sizeof(ProbBackoff); // +1 for hallucinate <unk>
-        }
-
-        const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index]; }
-
-        ProbBackoff &Unknown() { return unigram_[0]; }
-
-        void LoadedBinary() {}
-
-        // For building.
-        ProbBackoff *Raw() { return unigram_; }
-
-      private:
-        ProbBackoff *unigram_;
-    };
-
-
-    typedef ValuePointer UnigramPointer;
-    typedef ValuePointer MiddlePointer;
+    typedef typename Value::ProbingProxy UnigramPointer;
+    typedef typename Value::ProbingProxy MiddlePointer;
     typedef ::lm::ngram::detail::LongestPointer LongestPointer;
 
-    ProbBackoff &UnknownUnigram() { return unigram_.Unknown(); }
-
-    ValuePointer LookupUnigram(WordIndex word, Node &next, bool &independent_left, uint64_t &extend_left) const {
-      extend_left = static_cast<uint64_t>(word);
-      next = extend_left;
-      ValuePointer ret(unigram_.Lookup(word));
-      independent_left = ret.IndependentLeft();
-      return ret;
-    }
-
-  protected:
-    Unigram unigram_;
-};
-
-template <class Middle, class Longest> class TemplateHashedSearch : public HashedSearch {
-  public:
+    static const ModelType kModelType = Value::kProbingModelType;
     static const unsigned int kVersion = 0;
 
     // TODO: move probing_multiplier here with next binary file format update.  
@@ -146,25 +90,35 @@ template <class Middle, class Longest> class TemplateHashedSearch : public Hashe
       return middle_.size() + 2;
     }
 
+    typename Value::Weights &UnknownUnigram() { return unigram_.Unknown(); }
+
+    UnigramPointer LookupUnigram(WordIndex word, Node &next, bool &independent_left, uint64_t &extend_left) const {
+      extend_left = static_cast<uint64_t>(word);
+      next = extend_left;
+      UnigramPointer ret(unigram_.Lookup(word));
+      independent_left = ret.IndependentLeft();
+      return ret;
+    }
+
 #pragma GCC diagnostic ignored "-Wuninitialized"
-    ValuePointer Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
+    MiddlePointer Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
       node = extend_pointer;
       typename Middle::ConstIterator found;
       bool got = middle_[extend_length - 2].Find(extend_pointer, found);
       assert(got);
       (void)got;
-      return ValuePointer(found->value);
+      return MiddlePointer(found->value);
     }
 
-    ValuePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, bool &independent_left, uint64_t &extend_pointer) const {
+    MiddlePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, bool &independent_left, uint64_t &extend_pointer) const {
       node = CombineWordHash(node, word);
       typename Middle::ConstIterator found;
       if (!middle_[order_minus_2].Find(node, found)) {
         independent_left = true;
-        return ValuePointer();
+        return MiddlePointer();
       }
       extend_pointer = node;
-      ValuePointer ret(found->value);
+      MiddlePointer ret(found->value);
       independent_left = ret.IndependentLeft();
       return ret;
     }
@@ -188,43 +142,36 @@ template <class Middle, class Longest> class TemplateHashedSearch : public Hashe
     }
 
   private:
+    class Unigram {
+      public:
+        Unigram() {}
+
+        Unigram(void *start, std::size_t /*allocated*/) : unigram_(static_cast<typename Value::Weights*>(start)) {}
+
+        static std::size_t Size(uint64_t count) {
+          return (count + 1) * sizeof(ProbBackoff); // +1 for hallucinate <unk>
+        }
+
+        const typename Value::Weights &Lookup(WordIndex index) const { return unigram_[index]; }
+
+        typename Value::Weights &Unknown() { return unigram_[0]; }
+
+        void LoadedBinary() {}
+
+        // For building.
+        typename Value::Weights *Raw() { return unigram_; }
+
+      private:
+        typename Value::Weights *unigram_;
+    };
+
+    Unigram unigram_;
+
+    typedef util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> Middle;
     std::vector<Middle> middle_;
+
+    typedef util::ProbingHashTable<ProbEntry, util::IdentityHash> Longest;
     Longest longest_;
-};
-
-/* These look like perfect candidates for a template, right?  Ancient gcc (4.1
- * on RedHat stale linux) doesn't pack templates correctly.  ProbBackoffEntry
- * is a multiple of 8 bytes anyway.  ProbEntry is 12 bytes so it's set to pack.
- */
-struct ProbBackoffEntry {
-  uint64_t key;
-  ProbBackoff value;
-  typedef uint64_t Key;
-  typedef ProbBackoff Value;
-  uint64_t GetKey() const {
-    return key;
-  }
-};
-
-#pragma pack(push)
-#pragma pack(4)
-struct ProbEntry {
-  uint64_t key;
-  Prob value;
-  typedef uint64_t Key;
-  typedef Prob Value;
-  uint64_t GetKey() const {
-    return key;
-  }
-};
-
-#pragma pack(pop)
-
-struct ProbingHashedSearch : public TemplateHashedSearch<
-  util::ProbingHashTable<ProbBackoffEntry, util::IdentityHash>,
-  util::ProbingHashTable<ProbEntry, util::IdentityHash> > {
-
-  static const ModelType kModelType = HASH_PROBING;
 };
 
 } // namespace detail

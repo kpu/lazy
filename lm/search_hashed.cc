@@ -4,6 +4,7 @@
 #include "lm/blank.hh"
 #include "lm/lm_exception.hh"
 #include "lm/read_arpa.hh"
+#include "lm/value.hh"
 #include "lm/vocab.hh"
 
 #include "util/bit_packing.hh"
@@ -37,9 +38,9 @@ template <class Middle> class ActivateLowerMiddle {
     Middle &modify_;
 };
 
-class ActivateUnigram {
+template <class Weights> class ActivateUnigram {
   public:
-    explicit ActivateUnigram(ProbBackoff *unigram) : modify_(unigram) {}
+    explicit ActivateUnigram(Weights *unigram) : modify_(unigram) {}
 
     void operator()(const WordIndex *vocab_ids, const unsigned int /*n*/) {
       // assert(n == 2);
@@ -47,10 +48,10 @@ class ActivateUnigram {
     }
 
   private:
-    ProbBackoff *modify_;
+    Weights *modify_;
 };
 
-template <class Middle> void FixSRI(int lower, float negative_lower_prob, unsigned int n, const uint64_t *keys, const WordIndex *vocab_ids, ProbBackoff *unigrams, std::vector<Middle> &middle) {
+template <class Weights, class Middle> void FixSRI(int lower, float negative_lower_prob, unsigned int n, const uint64_t *keys, const WordIndex *vocab_ids, Weights *unigrams, std::vector<Middle> &middle) {
   typename Middle::Entry blank;
   blank.value.backoff = kNoExtensionBackoff;
 
@@ -86,7 +87,17 @@ template <class Middle> void FixSRI(int lower, float negative_lower_prob, unsign
   }
 }
 
-template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, ProbBackoff *unigrams, std::vector<Middle> &middle, Activate activate, Store &store, PositiveProbWarn &warn) {
+template <class Value, class Activate, class Store> void ReadNGrams(
+    util::FilePiece &f,
+    const unsigned int n,
+    const size_t count,
+    const ProbingVocabulary &vocab,
+    typename Value::Weights *unigrams,
+    std::vector<util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> > &middle,
+    Activate activate,
+    Store &store,
+    PositiveProbWarn &warn) {
+  typedef util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> Middle;
   assert(n >= 2);
   ReadNGramHeader(f, n);
 
@@ -126,7 +137,8 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
         break;
       }
     }
-    if (lower != static_cast<int>(n) - 3) FixSRI(lower, fix_prob.f, n, &*keys.begin(), &*vocab_ids.begin(), unigrams, middle);
+    if (lower != static_cast<int>(n) - 3)
+      FixSRI(lower, fix_prob.f, n, &*keys.begin(), &*vocab_ids.begin(), unigrams, middle);
     activate(&*vocab_ids.begin(), n);
   }
 
@@ -136,7 +148,7 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
 } // namespace
 namespace detail {
  
-template <class Middle, class Longest> uint8_t *TemplateHashedSearch<Middle, Longest>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
+template <class Value> uint8_t *HashedSearch<Value>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
   std::size_t allocated = Unigram::Size(counts[0]);
   unigram_ = Unigram(start, allocated);
   start += allocated;
@@ -151,7 +163,7 @@ template <class Middle, class Longest> uint8_t *TemplateHashedSearch<Middle, Lon
   return start;
 }
 
-template <class Middle, class Longest> template <class Voc> void TemplateHashedSearch<Middle, Longest>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
+template <class Value> template <class Voc> void HashedSearch<Value>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
   // TODO: fix sorted.
   SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), Size(counts, config), backing), counts, config);
 
@@ -162,15 +174,18 @@ template <class Middle, class Longest> template <class Voc> void TemplateHashedS
 
   try {
     if (counts.size() > 2) {
-      ReadNGrams(f, 2, counts[1], vocab, unigram_.Raw(), middle_, ActivateUnigram(unigram_.Raw()), middle_[0], warn);
+      ReadNGrams<Value, ActivateUnigram<typename Value::Weights>, Middle>(f, 2, counts[1], vocab, unigram_.Raw(), middle_, ActivateUnigram<typename Value::Weights>(unigram_.Raw()), middle_[0], warn);
     }
     for (unsigned int n = 3; n < counts.size(); ++n) {
-      ReadNGrams(f, n, counts[n-1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
+      ReadNGrams<Value, ActivateLowerMiddle<Middle>, Middle>(
+          f, n, counts[n-1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
     }
     if (counts.size() > 2) {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest_, warn);
+      ReadNGrams<Value, ActivateLowerMiddle<Middle>, Longest>(
+          f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest_, warn);
     } else {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateUnigram(unigram_.Raw()), longest_, warn);
+      ReadNGrams<Value, ActivateUnigram<typename Value::Weights>, Longest>(
+          f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateUnigram<typename Value::Weights>(unigram_.Raw()), longest_, warn);
     }
   } catch (util::ProbingSizeException &e) {
     UTIL_THROW(util::ProbingSizeException, "Avoid pruning n-grams like \"bar baz quux\" when \"foo bar baz quux\" is still in the model.  KenLM will work when this pruning happens, but the probing model assumes these events are rare enough that using blank space in the probing hash table will cover all of them.  Increase probing_multiplier (-p to build_binary) to add more blank spaces.\n");
@@ -178,7 +193,7 @@ template <class Middle, class Longest> template <class Voc> void TemplateHashedS
   ReadEnd(f);
 }
 
-template <class Middle, class Longest> void TemplateHashedSearch<Middle, Longest>::LoadedBinary() {
+template <class Value> void HashedSearch<Value>::LoadedBinary() {
   unigram_.LoadedBinary();
   for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
     i->LoadedBinary();
@@ -186,9 +201,11 @@ template <class Middle, class Longest> void TemplateHashedSearch<Middle, Longest
   longest_.LoadedBinary();
 }
 
-template class TemplateHashedSearch<util::ProbingHashTable<ProbBackoffEntry, util::IdentityHash>, util::ProbingHashTable<ProbEntry, util::IdentityHash> >;
+template class HashedSearch<BackoffValue>;
+template class HashedSearch<RestValue>;
 
-template void TemplateHashedSearch<util::ProbingHashTable<ProbBackoffEntry, util::IdentityHash>, util::ProbingHashTable<ProbEntry, util::IdentityHash> >::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
+template void HashedSearch<BackoffValue>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
+template void HashedSearch<RestValue>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
 
 } // namespace detail
 } // namespace ngram

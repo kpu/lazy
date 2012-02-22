@@ -30,7 +30,15 @@ const char *TestNoUnkLocation() {
     return "test_nounk.arpa";
   }
   return boost::unit_test::framework::master_test_suite().argv[2];
+}
 
+template <class Model> State GetState(const Model &model, const char *word, const State &in) {
+  WordIndex context[in.length + 1];
+  context[0] = model.GetVocabulary().Index(word);
+  std::copy(in.words, in.words + in.length, context + 1);
+  State ret;
+  model.GetState(context, context + in.length + 1, ret);
+  return ret;
 }
 
 #define StartTest(word, ngram, score, indep_left) \
@@ -42,14 +50,7 @@ const char *TestNoUnkLocation() {
   BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length); \
   BOOST_CHECK_GE(std::min<unsigned char>(ngram, 5 - 1), out.length); \
   BOOST_CHECK_EQUAL(indep_left, ret.independent_left); \
-  {\
-    WordIndex context[state.length + 1]; \
-    context[0] = model.GetVocabulary().Index(word); \
-    std::copy(state.words, state.words + state.length, context + 1); \
-    State get_state; \
-    model.GetState(context, context + state.length + 1, get_state); \
-    BOOST_CHECK_EQUAL(out, get_state); \
-  }
+  BOOST_CHECK_EQUAL(out, GetState(model, word, state));
 
 #define AppendTest(word, ngram, score, indep_left) \
   StartTest(word, ngram, score, indep_left) \
@@ -399,7 +400,10 @@ template <class ModelT> void BinaryTest() {
 }
 
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {
-  BinaryTest<Model>();
+  BinaryTest<ProbingModel>();
+}
+BOOST_AUTO_TEST_CASE(write_and_read_rest_probing) {
+  BinaryTest<RestProbingModel>();
 }
 BOOST_AUTO_TEST_CASE(write_and_read_trie) {
   BinaryTest<TrieModel>();
