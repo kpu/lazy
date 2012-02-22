@@ -51,21 +51,23 @@ class ActivateUnigram {
 };
 
 template <class Middle> void FixSRI(int lower, float negative_lower_prob, unsigned int n, const uint64_t *keys, const WordIndex *vocab_ids, ProbBackoff *unigrams, std::vector<Middle> &middle) {
-  ProbBackoff blank;
-  blank.backoff = kNoExtensionBackoff;
+  typename Middle::Entry blank;
+  blank.value.backoff = kNoExtensionBackoff;
+
   // Fix SRI's stupidity. 
   // Note that negative_lower_prob is the negative of the probability (so it's currently >= 0).  We still want the sign bit off to indicate left extension, so I just do -= on the backoffs.  
-  blank.prob = negative_lower_prob;
+  blank.value.prob = negative_lower_prob;
   // An entry was found at lower (order lower + 2).  
   // We need to insert blanks starting at lower + 1 (order lower + 3).
   unsigned int fix = static_cast<unsigned int>(lower + 1);
   uint64_t backoff_hash = detail::CombineWordHash(static_cast<uint64_t>(vocab_ids[1]), vocab_ids[2]);
   if (fix == 0) {
     // Insert a missing bigram.  
-    blank.prob -= unigrams[vocab_ids[1]].backoff;
+    blank.value.prob -= unigrams[vocab_ids[1]].backoff;
     SetExtension(unigrams[vocab_ids[1]].backoff);
     // Bigram including a unigram's backoff
-    middle[0].Insert(detail::ProbBackoffEntry::Make(keys[0], blank));
+    blank.key = keys[0];
+    middle[0].Insert(blank);
     fix = 1;
   } else {
     for (unsigned int i = 3; i < fix + 2; ++i) backoff_hash = detail::CombineWordHash(backoff_hash, vocab_ids[i]);
@@ -76,9 +78,10 @@ template <class Middle> void FixSRI(int lower, float negative_lower_prob, unsign
     if (middle[fix - 1].UnsafeMutableFind(backoff_hash, gotit)) {
       float &backoff = gotit->value.backoff;
       SetExtension(backoff);
-      blank.prob -= backoff;
+      blank.value.prob -= backoff;
     }
-    middle[fix].Insert(detail::ProbBackoffEntry::Make(keys[fix], blank));
+    blank.key = keys[fix];
+    middle[fix].Insert(blank);
     backoff_hash = detail::CombineWordHash(backoff_hash, vocab_ids[fix + 2]);
   }
 }
@@ -91,18 +94,19 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
   // vocab ids of words in reverse order.
   std::vector<WordIndex> vocab_ids(n);
   std::vector<uint64_t> keys(n-1);
-  typename Store::Entry::Value value;
+  typename Store::Entry entry;
   typename Middle::MutableIterator found;
   for (size_t i = 0; i < count; ++i) {
-    ReadNGram(f, n, vocab, &*vocab_ids.begin(), value, warn);
+    ReadNGram(f, n, vocab, &*vocab_ids.begin(), entry.value, warn);
 
     keys[0] = detail::CombineWordHash(static_cast<uint64_t>(vocab_ids.front()), vocab_ids[1]);
     for (unsigned int h = 1; h < n - 1; ++h) {
       keys[h] = detail::CombineWordHash(keys[h-1], vocab_ids[h+1]);
     }
     // Initially the sign bit is on, indicating it does not extend left.  Most already have this but there might +0.0.  
-    util::SetSign(value.prob);
-    store.Insert(Store::Entry::Make(keys[n-2], value));
+    util::SetSign(entry.value.prob);
+    entry.key = keys[n-2];
+    store.Insert(entry);
     // Go back and find the longest right-aligned entry, informing it that it extends left.  Normally this will match immediately, but sometimes SRI is dumb.  
     int lower;
     util::FloatEnc fix_prob;
