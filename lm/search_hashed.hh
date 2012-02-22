@@ -204,12 +204,6 @@ struct ProbBackoffEntry {
   uint64_t GetKey() const {
     return key;
   }
-  static ProbBackoffEntry Make(uint64_t key, ProbBackoff value) {
-    ProbBackoffEntry ret;
-    ret.key = key;
-    ret.value = value;
-    return ret;
-  }
 };
 
 #pragma pack(push)
@@ -221,12 +215,6 @@ struct ProbEntry {
   typedef Prob Value;
   uint64_t GetKey() const {
     return key;
-  }
-  static ProbEntry Make(uint64_t key, Prob value) {
-    ProbEntry ret;
-    ret.key = key;
-    ret.value = value;
-    return ret;
   }
 };
 
