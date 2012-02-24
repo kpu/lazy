@@ -35,6 +35,7 @@ class UnigramPointer {
 
     float Prob() const { return to_->prob; }
     float Backoff() const { return to_->backoff; }
+    float Rest() const { return Prob(); }
 
   private:
     const ProbBackoff *to_;

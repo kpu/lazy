@@ -51,39 +51,101 @@ template <class Weights> class ActivateUnigram {
     Weights *modify_;
 };
 
-template <class Weights, class Middle> void FixSRI(int lower, float negative_lower_prob, unsigned int n, const uint64_t *keys, const WordIndex *vocab_ids, Weights *unigrams, std::vector<Middle> &middle) {
-  typename Middle::Entry blank;
-  blank.value.backoff = kNoExtensionBackoff;
-
-  // Fix SRI's stupidity. 
-  // Note that negative_lower_prob is the negative of the probability (so it's currently >= 0).  We still want the sign bit off to indicate left extension, so I just do -= on the backoffs.  
-  blank.value.prob = negative_lower_prob;
-  // An entry was found at lower (order lower + 2).  
-  // We need to insert blanks starting at lower + 1 (order lower + 3).
-  unsigned int fix = static_cast<unsigned int>(lower + 1);
-  uint64_t backoff_hash = detail::CombineWordHash(static_cast<uint64_t>(vocab_ids[1]), vocab_ids[2]);
-  if (fix == 0) {
-    // Insert a missing bigram.  
-    blank.value.prob -= unigrams[vocab_ids[1]].backoff;
-    SetExtension(unigrams[vocab_ids[1]].backoff);
-    // Bigram including a unigram's backoff
-    blank.key = keys[0];
-    middle[0].Insert(blank);
-    fix = 1;
-  } else {
-    for (unsigned int i = 3; i < fix + 2; ++i) backoff_hash = detail::CombineWordHash(backoff_hash, vocab_ids[i]);
+// Find the lower order entry, inserting blanks along the way as necessary.  
+template <class Value> void FindLower(
+    const std::vector<uint64_t> &keys,
+    typename Value::Weights &unigram,
+    std::vector<util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> > &middle,
+    std::vector<typename Value::Weights *> &between) {
+  typename util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash>::MutableIterator iter;
+  typename Value::ProbingEntry entry;
+  // Backoff will always be 0.0.  We'll get the probability and rest in another pass.
+  entry.value.backoff = kNoExtensionBackoff;
+  // Go back and find the longest right-aligned entry, informing it that it extends left.  Normally this will match immediately, but sometimes SRI is dumb.  
+  for (int lower = keys.size() - 2; ; --lower) {
+    if (lower == -1) {
+      between.push_back(&unigram);
+      return;
+    }
+    entry.key = keys[lower];
+    bool found = middle[lower].FindOrInsert(entry, iter);
+    between.push_back(&iter->value);
+    if (found) return;
   }
-  // fix >= 1.  Insert trigrams and above.  
-  for (; fix <= n - 3; ++fix) {
+}
+
+// Between usually has  single entry, the value to adjust.  But sometimes SRI stupidly pruned entries so it has unitialized blank values to be set here.  
+template <class Added, class Value> void AdjustLower(
+    const Added &added,
+    std::vector<typename Value::Weights *> &between, 
+    const unsigned int n,
+    const std::vector<WordIndex> &vocab_ids,
+    typename Value::Weights *unigrams,
+    std::vector<util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> > &middle) {
+  if (between.size() == 1) {
+    Value::MarkExtends(*between.front(), added);
+    return;
+  }
+  typedef util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> Middle;
+  float prob = -fabs(between.back()->prob);
+  // Order of the n-gram on which probabilities are based.  
+  unsigned char basis = n - between.size();
+  assert(basis != 0);
+  typename Value::Weights **change = &between.back();
+  // Skip the basis.
+  --change;
+  if (basis == 1) {
+    float &backoff = unigrams[vocab_ids[1]].backoff;
+    SetExtension(backoff);
+    prob += backoff;
+    (*change)->prob = prob;
+    Value::SetRest(**change);
+    basis = 2;
+    --change;
+  }
+  uint64_t backoff_hash = static_cast<uint64_t>(vocab_ids[1]);
+  for (unsigned char i = 2; i <= basis; ++i) {
+    backoff_hash = detail::CombineWordHash(backoff_hash, vocab_ids[i]);
+  }
+  for (; basis < n - 1; ++basis, --change) {
     typename Middle::MutableIterator gotit;
-    if (middle[fix - 1].UnsafeMutableFind(backoff_hash, gotit)) {
+    if (middle[basis - 2].UnsafeMutableFind(backoff_hash, gotit)) {
       float &backoff = gotit->value.backoff;
       SetExtension(backoff);
-      blank.value.prob -= backoff;
+      prob += backoff;
     }
-    blank.key = keys[fix];
-    middle[fix].Insert(blank);
-    backoff_hash = detail::CombineWordHash(backoff_hash, vocab_ids[fix + 2]);
+    (*change)->prob = prob;
+    Value::SetRest(**change);
+    backoff_hash = detail::CombineWordHash(backoff_hash, vocab_ids[basis+1]);
+  }
+
+  typename std::vector<typename Value::Weights *>::const_iterator i(between.begin());
+  Value::MarkExtends(**i, added);
+  const typename Value::Weights *longer = *i;
+  // Everything has probability but is not marked as extending.  
+  for (++i; i != between.end(); ++i) {
+    Value::MarkExtends(**i, *longer);
+    longer = *i;
+  }
+}
+
+// Continue marking lower entries even they know that they extend left.  This is used for upper/lower bounds.  
+template <class Value> void MarkLower(
+    const std::vector<uint64_t> &keys,
+    typename Value::Weights &unigram,
+    std::vector<util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> > &middle,
+    int start_order,
+    const typename Value::Weights &longer) {
+  if (start_order == 0) return;
+  typename util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash>::MutableIterator iter;
+  // Hopefully the compiler will realize that if MarkExtends always returns false, it can simplify this code.  
+  for (int even_lower = start_order - 2 /* index in middle */; ; --even_lower) {
+    if (even_lower == -1) {
+      Value::MarkExtends(unigram, longer);
+      return;
+    }
+    middle[even_lower].UnsafeMutableFind(keys[even_lower], iter);
+    if (!Value::MarkExtends(iter->value, longer)) return;
   }
 }
 
@@ -106,9 +168,10 @@ template <class Value, class Activate, class Store> void ReadNGrams(
   std::vector<WordIndex> vocab_ids(n);
   std::vector<uint64_t> keys(n-1);
   typename Store::Entry entry;
-  typename Middle::MutableIterator found;
+  std::vector<typename Value::Weights *> between;
   for (size_t i = 0; i < count; ++i) {
     ReadNGram(f, n, vocab, &*vocab_ids.begin(), entry.value, warn);
+    Value::SetRest(entry.value);
 
     keys[0] = detail::CombineWordHash(static_cast<uint64_t>(vocab_ids.front()), vocab_ids[1]);
     for (unsigned int h = 1; h < n - 1; ++h) {
@@ -117,28 +180,12 @@ template <class Value, class Activate, class Store> void ReadNGrams(
     // Initially the sign bit is on, indicating it does not extend left.  Most already have this but there might +0.0.  
     util::SetSign(entry.value.prob);
     entry.key = keys[n-2];
+
     store.Insert(entry);
-    // Go back and find the longest right-aligned entry, informing it that it extends left.  Normally this will match immediately, but sometimes SRI is dumb.  
-    int lower;
-    util::FloatEnc fix_prob;
-    for (lower = n - 3; ; --lower) {
-      if (lower == -1) {
-        fix_prob.f = unigrams[vocab_ids.front()].prob;
-        fix_prob.i &= ~util::kSignBit;
-        unigrams[vocab_ids.front()].prob = fix_prob.f;
-        break;
-      }
-      if (middle[lower].UnsafeMutableFind(keys[lower], found)) {
-        // Turn off sign bit to indicate that it extends left.  
-        fix_prob.f = found->value.prob;
-        fix_prob.i &= ~util::kSignBit;
-        found->value.prob = fix_prob.f;
-        // We don't need to recurse further down because this entry already set the bits for lower entries.  
-        break;
-      }
-    }
-    if (lower != static_cast<int>(n) - 3)
-      FixSRI(lower, fix_prob.f, n, &*keys.begin(), &*vocab_ids.begin(), unigrams, middle);
+    between.clear();
+    FindLower<Value>(keys, unigrams[vocab_ids.front()], middle, between);
+    AdjustLower<typename Store::Entry::Value, Value>(entry.value, between, n, vocab_ids, unigrams, middle);
+    if (Value::kMarkEvenLower) MarkLower<Value>(keys, unigrams[vocab_ids.front()], middle, n - between.size() - 1, *between.back());
     activate(&*vocab_ids.begin(), n);
   }
 
@@ -170,6 +217,9 @@ template <class Value> template <class Voc> void HashedSearch<Value>::Initialize
   PositiveProbWarn warn(config.positive_log_probability);
 
   Read1Grams(f, counts[0], vocab, unigram_.Raw(), warn);
+  for (uint64_t i = 0; i < counts[0]; ++i) {
+    Value::SetRest(unigram_.Raw()[i]);
+  }
   CheckSpecials(config, vocab);
 
   try {

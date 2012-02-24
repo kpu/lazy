@@ -45,6 +45,7 @@ template <class Weights> class GenericTrieUnigramProxy {
     bool Found() const { return to_ != NULL; }
     float Prob() const { return to_->prob; }
     float Backoff() const { return to_->backoff; }
+    float Rest() const { return Prob(); }
 
   protected:
     const Weights *to_;
@@ -81,6 +82,21 @@ struct BackoffValue {
     uint64_t next;
     uint64_t Next() const { return next; }
   };
+
+  static void SetRest(const Prob &/*prob*/) {}
+  static void SetRest(const Weights &/*weights*/) {}
+  static bool MarkExtends(Weights &weights, const Weights &/*from*/) {
+    util::UnsetSign(weights.prob);
+    return false;
+  }
+
+  static bool MarkExtends(Weights &weights, const Prob &/*from*/) {
+    util::UnsetSign(weights.prob);
+    return false;
+  }
+
+  // Probing doesn't need to go back to unigram.
+  const static bool kMarkEvenLower = false;
 };
 
 struct RestValue {
@@ -118,6 +134,30 @@ struct RestValue {
     uint64_t Next() const { return next; }
   };
 #pragma pack(pop)
+
+  static void SetRest(const Prob &/*prob*/) {}
+  static void SetRest(Weights &weights) {
+    weights.rest = weights.prob;
+    util::SetSign(weights.rest);
+  }
+
+  static bool MarkExtends(Weights &weights, const Weights &from) {
+    util::UnsetSign(weights.prob);
+    if (weights.rest >= from.rest) return false;
+    weights.rest = from.rest;
+    return true;
+  }
+
+  static bool MarkExtends(Weights &weights, const Prob &from) {
+    util::UnsetSign(weights.prob);
+    if (weights.rest >= from.prob) return false;
+    weights.rest = from.prob;
+    return true;
+  }
+
+
+  // Probing does need to go back to unigram.  
+  const static bool kMarkEvenLower = true;
 };
 
 } // namespace ngram

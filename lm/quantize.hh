@@ -46,6 +46,8 @@ class DontQuantize {
           return util::ReadFloat32(address_.base, address_.offset + 31);
         }
 
+        float Rest() const { return Prob(); }
+
         void Write(float prob, float backoff) {
           util::WriteNonPositiveFloat31(address_.base, address_.offset, prob);
           util::WriteFloat32(address_.base, address_.offset + 31, backoff);
@@ -162,11 +164,7 @@ class SeparatelyQuantize {
           return BackoffBins().Decode(util::ReadInt25(address_.base, address_.offset, BackoffBins().Bits(), BackoffBins().Mask()));
         }
 
-/*        void Read(float &prob, float &backoff) const {
-          uint64_t both = util::ReadInt57(address_.base, address_.offset, _, total_mask_);
-          prob = prob_.Decode(both >> backoff_.Bits());
-          backoff = BackoffBins().Decode(both & BackoffBins().Mask());
-        }*/
+        float Rest() const { return Prob(); }
 
         void Write(float prob, float backoff) const {
           util::WriteInt57(address_.base, address_.offset, ProbBins().Bits() + BackoffBins().Bits(), 
