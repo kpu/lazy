@@ -91,9 +91,9 @@ template <class M> void Charge(const M &m) {
   BOOST_CHECK_EQUAL(1, tobos.right.length);
 }
 
-template <class M> float LeftToRight(const M &m, const std::vector<WordIndex> &words) {
+template <class M> float LeftToRight(const M &m, const std::vector<WordIndex> &words, bool begin_sentence = false) {
   float ret = 0.0;
-  State right = m.NullContextState();
+  State right = begin_sentence ? m.BeginSentenceState() : m.NullContextState();
   for (std::vector<WordIndex>::const_iterator i = words.begin(); i != words.end(); ++i) {
     State copy(right);
     ret += m.Score(copy, *i, right);
@@ -101,7 +101,7 @@ template <class M> float LeftToRight(const M &m, const std::vector<WordIndex> &w
   return ret;
 }
 
-template <class M> float RightToLeft(const M &m, const std::vector<WordIndex> &words) {
+template <class M> float RightToLeft(const M &m, const std::vector<WordIndex> &words, bool begin_sentence = false) {
   float ret = 0.0;
   ChartState state;
   state.left.length = 0;
@@ -114,10 +114,17 @@ template <class M> float RightToLeft(const M &m, const std::vector<WordIndex> &w
     score.NonTerminal(copy, ret);
     ret = score.Finish();
   }
+  if (begin_sentence) {
+    ChartState copy(state);
+    RuleScore<M> score(m, state);
+    score.BeginSentence();
+    score.NonTerminal(copy, ret);
+    ret = score.Finish();
+  }
   return ret;
 }
 
-template <class M> float TreeMiddle(const M &m, const std::vector<WordIndex> &words) {
+template <class M> float TreeMiddle(const M &m, const std::vector<WordIndex> &words, bool begin_sentence = false) {
   std::vector<std::pair<ChartState, float> > states(words.size());
   for (unsigned int i = 0; i < words.size(); ++i) {
     RuleScore<M> score(m, states[i].first);
@@ -137,7 +144,19 @@ template <class M> float TreeMiddle(const M &m, const std::vector<WordIndex> &wo
     }
     std::swap(states, upper);
   }
-  return states.empty() ? 0 : states.back().second;
+
+  if (states.empty()) return 0.0;
+
+  if (begin_sentence) {
+    ChartState ignored;
+    RuleScore<M> score(m, ignored);
+    score.BeginSentence();
+    score.NonTerminal(states.front().first, states.front().second);
+    return score.Finish();
+  } else {
+    return states.front().second;
+  }
+
 }
 
 template <class M> void LookupVocab(const M &m, const StringPiece &str, std::vector<WordIndex> &out) {
@@ -147,17 +166,24 @@ template <class M> void LookupVocab(const M &m, const StringPiece &str, std::vec
   }
 }
 
+template <class M> void FullSentence(const M &m) {
+  std::vector<WordIndex> words;
+  LookupVocab(m, "in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>", words);
+  float expect = LeftToRight(m, words, true);
+  BOOST_CHECK_CLOSE(expect, RightToLeft(m, words, true), 0.001);
+  BOOST_CHECK_CLOSE(expect, TreeMiddle(m, words, true), 0.001);
+}
+
 #define TEXT_TEST(str) \
-{ \
-  std::vector<WordIndex> words; \
   LookupVocab(m, str, words); \
-  float expect = LeftToRight(m, words); \
+  expect = LeftToRight(m, words); \
   BOOST_CHECK_CLOSE(expect, RightToLeft(m, words), 0.001); \
   BOOST_CHECK_CLOSE(expect, TreeMiddle(m, words), 0.001); \
-}
 
 // Build sentences, or parts thereof, from right to left.  
 template <class M> void GrowBig(const M &m) {
+  std::vector<WordIndex> words;
+  float expect;
   TEXT_TEST("in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
   TEXT_TEST("on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
   TEXT_TEST("on a little more loin also would consider higher to look good");
@@ -169,6 +195,14 @@ template <class M> void GrowBig(const M &m) {
   TEXT_TEST("consider higher to look");
   TEXT_TEST("consider higher to");
   TEXT_TEST("consider higher");
+}
+
+template <class M> void GrowSmall(const M &m) {
+  std::vector<WordIndex> words;
+  float expect;
+  TEXT_TEST("in biarritz watching considering looking . </s>");
+  TEXT_TEST("in biarritz watching considering looking .");
+  TEXT_TEST("in biarritz");
 }
 
 template <class M> void AlsoWouldConsiderHigher(const M &m) {
@@ -244,12 +278,6 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
     BOOST_CHECK_CLOSE(-10.6879, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(4, full.right.length);
-}
-
-template <class M> void GrowSmall(const M &m) {
-  TEXT_TEST("in biarritz watching considering looking . </s>");
-  TEXT_TEST("in biarritz watching considering looking .");
-  TEXT_TEST("in biarritz");
 }
 
 #define CHECK_SCORE(str, val) \
@@ -344,6 +372,7 @@ template <class M> void Everything() {
   AlsoWouldConsiderHigher(m);
   GrowSmall(m);
   FullGrow(m);
+  FullSentence(m);
 }
 
 BOOST_AUTO_TEST_CASE(ProbingAll) {
@@ -360,6 +389,13 @@ BOOST_AUTO_TEST_CASE(ArrayQuantTrieAll) {
 }
 BOOST_AUTO_TEST_CASE(ArrayTrieAll) {
   Everything<ArrayTrieModel>();
+}
+
+BOOST_AUTO_TEST_CASE(RestProbing) {
+  Config config;
+  config.messages = NULL;
+  RestProbingModel m(FileLocation(), config);
+  FullSentence(m);
 }
 
 } // namespace
