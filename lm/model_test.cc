@@ -183,7 +183,7 @@ template <class M> void ExtendLeftTest(const M &model) {
   FullScoreReturn extend_none(model.ExtendLeft(NULL, NULL, NULL, little.extend_left, 1, NULL, next_use));
   BOOST_CHECK_EQUAL(0, next_use);
   BOOST_CHECK_EQUAL(little.extend_left, extend_none.extend_left);
-  BOOST_CHECK_CLOSE(0.0, extend_none.prob, 0.001);
+  BOOST_CHECK_CLOSE(little.prob - little.rest, extend_none.prob, 0.001);
   BOOST_CHECK_EQUAL(1, extend_none.ngram_length);
 
   const WordIndex a = model.GetVocabulary().Index("a");
@@ -192,7 +192,7 @@ template <class M> void ExtendLeftTest(const M &model) {
   FullScoreReturn extend_a(model.ExtendLeft(&a, &a + 1, &backoff_in, little.extend_left, 1, backoff_out, next_use));
   BOOST_CHECK_EQUAL(1, next_use);
   BOOST_CHECK_CLOSE(-0.69897, backoff_out[0], 0.001);
-  BOOST_CHECK_CLOSE(-0.09132547 - kLittleProb, extend_a.prob, 0.001);
+  BOOST_CHECK_CLOSE(-0.09132547 - little.rest, extend_a.prob, 0.001);
   BOOST_CHECK_EQUAL(2, extend_a.ngram_length);
   BOOST_CHECK(!extend_a.independent_left);
 
@@ -200,7 +200,7 @@ template <class M> void ExtendLeftTest(const M &model) {
   FullScoreReturn extend_on(model.ExtendLeft(&on, &on + 1, &backoff_in, extend_a.extend_left, 2, backoff_out, next_use));
   BOOST_CHECK_EQUAL(1, next_use);
   BOOST_CHECK_CLOSE(-0.4771212, backoff_out[0], 0.001);
-  BOOST_CHECK_CLOSE(-0.0283603 - -0.09132547, extend_on.prob, 0.001);
+  BOOST_CHECK_CLOSE(-0.0283603 - (extend_a.rest + little.rest), extend_on.prob, 0.001);
   BOOST_CHECK_EQUAL(3, extend_on.ngram_length);
   BOOST_CHECK(!extend_on.independent_left);
 
@@ -210,7 +210,7 @@ template <class M> void ExtendLeftTest(const M &model) {
   BOOST_CHECK_EQUAL(2, next_use);
   BOOST_CHECK_CLOSE(-0.69897, backoff_out[0], 0.001);
   BOOST_CHECK_CLOSE(-0.4771212, backoff_out[1], 0.001);
-  BOOST_CHECK_CLOSE(-0.0283603 - kLittleProb, extend_both.prob, 0.001);
+  BOOST_CHECK_CLOSE(-0.0283603 - little.rest, extend_both.prob, 0.001);
   BOOST_CHECK_EQUAL(3, extend_both.ngram_length);
   BOOST_CHECK(!extend_both.independent_left);
   BOOST_CHECK_EQUAL(extend_on.extend_left, extend_both.extend_left);
@@ -416,6 +416,18 @@ BOOST_AUTO_TEST_CASE(write_and_read_array_trie) {
 }
 BOOST_AUTO_TEST_CASE(write_and_read_quant_array_trie) {
   BinaryTest<QuantArrayTrieModel>();
+}
+
+BOOST_AUTO_TEST_CASE(rest_max) {
+  Config config;
+  config.arpa_complain = Config::NONE;
+  config.messages = NULL;
+
+  RestProbingModel model(TestLocation(), config);
+  State state, out;
+  FullScoreReturn ret(model.FullScore(model.NullContextState(), model.GetVocabulary().Index("."), state));
+  BOOST_CHECK_CLOSE(-0.2705918, ret.rest, 0.001);
+  BOOST_CHECK_CLOSE(-0.01916512, model.FullScore(state, model.GetVocabulary().EndSentence(), out).rest, 0.001);
 }
 
 } // namespace

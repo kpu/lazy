@@ -97,6 +97,8 @@ struct BackoffValue {
 
   // Probing doesn't need to go back to unigram.
   const static bool kMarkEvenLower = false;
+
+  const static bool kDifferentRest = false;
 };
 
 struct RestValue {
@@ -154,10 +156,11 @@ struct RestValue {
     weights.rest = from.prob;
     return true;
   }
-
-
+ 
   // Probing does need to go back to unigram.  
   const static bool kMarkEvenLower = true;
+
+  const static bool kDifferentRest = true;
 };
 
 } // namespace ngram

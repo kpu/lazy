@@ -67,6 +67,7 @@ template <class Value> class HashedSearch {
     typedef ::lm::ngram::detail::LongestPointer LongestPointer;
 
     static const ModelType kModelType = Value::kProbingModelType;
+    static const bool kDifferentRest = Value::kDifferentRest;
     static const unsigned int kVersion = 0;
 
     // TODO: move probing_multiplier here with next binary file format update.  

@@ -120,8 +120,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
     /* More efficient version of FullScore where a partial n-gram has already
      * been scored.  
-     * NOTE: THE RETURNED .prob IS RELATIVE, NOT ABSOLUTE.  So for example, if
-     * the n-gram does not end up extending further left, then 0 is returned.
+     * NOTE: THE RETURNED .rest AND .prob ARE RELATIVE TO THE .rest RETURNED BEFORE.  
      */
     FullScoreReturn ExtendLeft(
         // Additional context in reverse order.  This will update add_rend to 
@@ -136,6 +135,15 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
         float *backoff_out,
         // Amount of additional content that should be considered by the next call.
         unsigned char &next_use) const;
+
+    /* Return probabilities minus rest costs for an array of pointers.  The
+     * first length should be the length of the n-gram to which pointers_begin
+     * points.  
+     */
+    float UnRest(const uint64_t *pointers_begin, const uint64_t *pointers_end, unsigned char first_length) const {
+      // Compiler should optimize this if away.  
+      return Search::kDifferentRest ? InternalUnRest(pointers_begin, pointers_end, first_length) : 0.0;
+    }
 
   private:
     friend void lm::ngram::LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
@@ -153,6 +161,8 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     void InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd);
 
     void InitializeFromARPA(const char *file, const Config &config);
+
+    float InternalUnRest(const uint64_t *pointers_begin, const uint64_t *pointers_end, unsigned char first_length) const;
 
     Backing &MutableBacking() { return backing_; }
 

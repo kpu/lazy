@@ -131,13 +131,14 @@ template <class M> class RuleScore {
     void Terminal(WordIndex word) {
       State copy(out_.right);
       FullScoreReturn ret(model_.FullScore(copy, word, out_.right));
-      prob_ += ret.prob;
-      if (left_done_) return;
+      if (left_done_) { prob_ += ret.prob; return; }
       if (ret.independent_left) {
+        prob_ += ret.prob;
         left_done_ = true;
         return;
       }
       out_.left.pointers[out_.left.length++] = ret.extend_left;
+      prob_ += ret.rest;
       if (out_.right.length != copy.length + 1)
         left_done_ = true;
     }
@@ -163,6 +164,7 @@ template <class M> class RuleScore {
 
       if (!out_.right.length) {
         out_.right = in.right;
+        prob_ += model_.UnRest(in.left.pointers, in.left.pointers + in.left.length, 1);
         if (left_done_) return;
         if (out_.left.length) {
           left_done_ = true;
@@ -228,8 +230,9 @@ template <class M> class RuleScore {
       if (next_use != out_.right.length) {
         left_done_ = true;
         if (!next_use) {
-          out_.right = in.right;
           // Early exit.  
+          out_.right = in.right;
+          prob_ += model_.UnRest(in.left.pointers + extend_length, in.left.pointers + in.left.length, extend_length + 1);
           return true;
         }
       }
@@ -238,13 +241,17 @@ template <class M> class RuleScore {
     }
 
     void ProcessRet(const FullScoreReturn &ret) {
-      prob_ += ret.prob;
-      if (left_done_) return;
+      if (left_done_) {
+        prob_ += ret.prob;
+        return;
+      }
       if (ret.independent_left) {
+        prob_ += ret.prob;
         left_done_ = true;
         return;
       }
       out_.left.pointers[out_.left.length++] = ret.extend_left;
+      prob_ += ret.rest;
     }
 
     const M &model_;

@@ -32,6 +32,8 @@ template <class Quant, class Bhiksha> class TrieSearch {
     typedef typename Quant::MiddlePointer MiddlePointer;
     typedef typename Quant::LongestPointer LongestPointer;
 
+    static const bool kDifferentRest = false;
+
     static const ModelType kModelType = static_cast<ModelType>(TRIE_SORTED + Quant::kModelTypeAdd + Bhiksha::kModelTypeAdd);
 
     static const unsigned int kVersion = 1;

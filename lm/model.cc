@@ -167,17 +167,20 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     unsigned char &next_use) const {
   FullScoreReturn ret;
   typename Search::Node node;
-  float subtract_me;
   if (extend_length == 1) {
-    subtract_me = search_.LookupUnigram(static_cast<WordIndex>(extend_pointer), node, ret.independent_left, ret.extend_left).Prob();
+    typename Search::UnigramPointer ptr(search_.LookupUnigram(static_cast<WordIndex>(extend_pointer), node, ret.independent_left, ret.extend_left));
+    ret.rest = ptr.Rest();
+    ret.prob = ptr.Prob();
     assert(!ret.independent_left);
   } else {
-    subtract_me = search_.Unpack(extend_pointer, extend_length, node).Prob();
+    typename Search::MiddlePointer ptr(search_.Unpack(extend_pointer, extend_length, node));
+    ret.rest = ptr.Rest();
+    ret.prob = ptr.Prob();
     ret.extend_left = extend_pointer;
     // If this function is called, then it does depend on left words.   
     ret.independent_left = false;
   }
-  ret.prob = subtract_me;
+  float subtract_me = ret.rest;
   ret.ngram_length = extend_length;
   next_use = extend_length;
   ResumeScore(add_rbegin, add_rend, extend_length - 1, node, backoff_out, next_use, ret);
@@ -185,6 +188,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   // Charge backoffs.  
   for (const float *b = backoff_in + ret.ngram_length - extend_length; b < backoff_in + (add_rend - add_rbegin); ++b) ret.prob += *b;
   ret.prob -= subtract_me;
+  ret.rest -= subtract_me;
   return ret;
 }
 
@@ -217,6 +221,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   typename Search::UnigramPointer uni(search_.LookupUnigram(new_word, node, ret.independent_left, ret.extend_left));
   out_state.backoff[0] = uni.Backoff();
   ret.prob = uni.Prob();
+  ret.rest = uni.Rest();
 
   // This is the length of the context that should be used for continuation to the right.  
   out_state.length = HasExtension(out_state.backoff[0]) ? 1 : 0;
@@ -239,6 +244,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     if (!pointer.Found()) return;
     *backoff_out = pointer.Backoff();
     ret.prob = pointer.Prob();
+    ret.rest = pointer.Rest();
     ret.ngram_length = order_minus_2 + 2;
     if (HasExtension(*backoff_out)) {
       next_use = ret.ngram_length;
@@ -248,9 +254,31 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   typename Search::LongestPointer longest(search_.LookupLongest(*hist_iter, node));
   if (longest.Found()) {
     ret.prob = longest.Prob();
+    ret.rest = ret.prob;
     // There is no blank in longest_.
     ret.ngram_length = P::Order();
   }
+}
+
+template <class Search, class VocabularyT> float GenericModel<Search, VocabularyT>::InternalUnRest(const uint64_t *pointers_begin, const uint64_t *pointers_end, unsigned char first_length) const {
+  float ret;
+  typename Search::Node node;
+  if (first_length == 1) {
+    if (pointers_begin <= pointers_end) return 0.0;
+    bool independent_left;
+    uint64_t extend_left;
+    typename Search::UnigramPointer ptr(search_.LookupUnigram(static_cast<WordIndex>(*pointers_begin), node, independent_left, extend_left));
+    ret = ptr.Prob() - ptr.Rest();
+    ++first_length;
+    ++pointers_begin;
+  } else {
+    ret = 0.0;
+  }
+  for (const uint64_t *i = pointers_begin; i < pointers_end; ++i, ++first_length) {
+    typename Search::MiddlePointer ptr(search_.Unpack(*i, first_length, node));
+    ret += ptr.Prob() - ptr.Rest();
+  }
+  return ret;
 }
 
 template class GenericModel<HashedSearch<BackoffValue>, ProbingVocabulary>;
