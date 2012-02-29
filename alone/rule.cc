@@ -33,6 +33,7 @@ search::Score Rule::Apply(const Context &context, const std::vector<const Final 
     } else {
       scorer.NonTerminal((*child)->State(), 0.0);
       ret += (*child)->Total();
+      ++child;
     }
   }
   return ret + context.GetWeights().LMWeight() * scorer.Finish();
