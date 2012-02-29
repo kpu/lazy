@@ -25,12 +25,12 @@ class Word {
 
   protected:
     friend class Vocab;
-    explicit Word(const std::pair<std::string, lm::WordIndex> &entry) {
+    explicit Word(const std::pair<const std::string, lm::WordIndex> &entry) {
       entry_ = &entry;
     }
 
   private:
-    const std::pair<std::string, lm::WordIndex> *entry_;
+    const std::pair<const std::string, lm::WordIndex> *entry_;
 };
 
 class Vocab {
