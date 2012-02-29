@@ -42,8 +42,6 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool f
 // TODO: refactor
 void JustVocab(util::FilePiece &from, std::ostream &out) {
   boost::unordered_set<std::string> seen;
-  // Eat sentence
-  from.ReadLine();
   unsigned long int vertices = from.ReadULong();
   from.ReadULong(); // edges
   UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
@@ -62,11 +60,11 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
       from.ReadLine(); // weights
     }
   }
+  // Eat sentence
+  from.ReadLine();
 }
 
 void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
-  // Eat sentence
-  from.ReadLine();
   unsigned long int vertices = from.ReadULong();
   unsigned long int edges = from.ReadULong();
   UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
@@ -85,6 +83,8 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
     if (root) break;
   }
   to.SetRoot(vertex);
+  // Eat sentence
+  from.ReadLine();
 }
 
 } // namespace alone
