@@ -70,12 +70,13 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::vector<uint64_t> counts;
   util::FilePiece f(file);
   lm::ReadARPACounts(f, counts);
-  std::size_t sizes[5];
+  std::size_t sizes[6];
   sizes[0] = ProbingModel::Size(counts, config);
-  sizes[1] = TrieModel::Size(counts, config);
-  sizes[2] = QuantTrieModel::Size(counts, config);
-  sizes[3] = ArrayTrieModel::Size(counts, config);
-  sizes[4] = QuantArrayTrieModel::Size(counts, config);
+  sizes[1] = RestProbingModel::Size(counts, config);
+  sizes[2] = TrieModel::Size(counts, config);
+  sizes[3] = QuantTrieModel::Size(counts, config);
+  sizes[4] = ArrayTrieModel::Size(counts, config);
+  sizes[5] = QuantArrayTrieModel::Size(counts, config);
   std::size_t max_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
   std::size_t min_length = *std::min_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
   std::size_t divide;
@@ -99,10 +100,11 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   for (long int i = 0; i < length - 2; ++i) std::cout << ' ';
   std::cout << prefix << "B\n"
     "probing " << std::setw(length) << (sizes[0] / divide) << " assuming -p " << config.probing_multiplier << "\n"
-    "trie    " << std::setw(length) << (sizes[1] / divide) << " without quantization\n"
-    "trie    " << std::setw(length) << (sizes[2] / divide) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n"
-    "trie    " << std::setw(length) << (sizes[3] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " array pointer compression\n"
-    "trie    " << std::setw(length) << (sizes[4] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits<< " array pointer compression and quantization\n";
+    "probing " << std::setw(length) << (sizes[1] / divide) << " assuming -r -p " << config.probing_multiplier << "\n"
+    "trie    " << std::setw(length) << (sizes[2] / divide) << " without quantization\n"
+    "trie    " << std::setw(length) << (sizes[3] / divide) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n"
+    "trie    " << std::setw(length) << (sizes[4] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " array pointer compression\n"
+    "trie    " << std::setw(length) << (sizes[5] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits<< " array pointer compression and quantization\n";
 }
 
 void ProbingQuantizationUnsupported() {
