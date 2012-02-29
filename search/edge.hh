@@ -5,9 +5,8 @@
 #include "search/types.hh"
 #include "search/vertex.hh"
 
+#include <boost/heap/fibonacci_heap.hpp>
 #include <boost/unordered_map.hpp>
-
-#include <ext/pb_ds/priority_queue.hpp>
 
 #include <cmath>
 #include <queue>
@@ -144,9 +143,9 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         HoldingEntry holding_entry;
         holding_entry.final = adding;
         holding_entry.dedupe = &dedupe_value;
-        // Flag that it's still in the holding tank.  
-        dedupe_value.best = NULL;
+        dedupe_value.best = adding;
         dedupe_value.hold = holding_.push(holding_entry);
+        dedupe_value.in_holding = true;
         return;
       }
       // It's a duplicate.
@@ -158,12 +157,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         return;
       }
       // Recombine with entry in the holding tank.  
-      Final *competitor = dedupe_value.hold->final;
+      Final *competitor = (*dedupe_value.hold).final;
       if (adding->Total() > competitor->Total()) {
         HoldingEntry modified;
         modified.final = adding;
         modified.dedupe = &dedupe_value;
-        holding_.modify(dedupe_value.hold, modified);
+        holding_.increase(dedupe_value.hold, modified);
         adding->Recombine(context, competitor);
         return;
       }
@@ -226,14 +225,15 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         return final->Total() < other.final->Total();
       }
     };
-    typedef __gnu_pbds::priority_queue<HoldingEntry> Holding;
+    typedef boost::heap::fibonacci_heap<HoldingEntry> Holding;
     Holding holding_;
 
     // Deduplication hash table from hypothesis state (hashed to 64-bit as the
     // key) to either the final hypothesis array or the holding tank.  
     struct DedupeValue {
       Final *best;
-      typename Holding::point_iterator hold;
+      typename Holding::handle_type hold;
+      bool in_holding;
     };
     struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
       uint64_t operator()(uint64_t value) const {

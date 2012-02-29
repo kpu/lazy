@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(empty) {
   Edge<ZeroRule> edge;
   Context<FakeFinal> context;
   edge.FinishedAdding(context);
-  BOOST_REQUIRE_EQUAL(1, edge.Size());
+  BOOST_REQUIRE_EQUAL((unsigned int)1, edge.Size());
   BOOST_CHECK_CLOSE(3.14, edge[0].Total(), 0.0001);
   BOOST_CHECK_EQUAL(-kScoreInf, edge.Bound());
 }
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(binary) {
   Edge<MockRule> base_edge;
   base_edge.InitRule() = MockRule(0, 5.78);
   base_edge.FinishedAdding(context);
-  BOOST_REQUIRE_EQUAL(1, base_edge.Size());
+  BOOST_REQUIRE_EQUAL((unsigned)1, base_edge.Size());
   BOOST_CHECK_CLOSE(3.14, base_edge[0].Total(), 0.0001);
 
   Vertex<Edge<MockRule> > vertex;
@@ -88,10 +88,10 @@ BOOST_AUTO_TEST_CASE(binary) {
   edge.Add(vertex);
   edge.FinishedAdding(context);
 
-  BOOST_CHECK_EQUAL(0, edge.Size());
+  BOOST_CHECK_EQUAL((unsigned)0, edge.Size());
   BOOST_CHECK_CLOSE(13.2 + 3.14 * 2, edge.Bound(), 0.0001);
   edge.More(context, edge.Bound());
-  BOOST_CHECK_EQUAL(1, edge.Size());
+  BOOST_CHECK_EQUAL((unsigned)1, edge.Size());
   BOOST_CHECK_CLOSE(3.14, edge[0].Total(), 0.0001);
   BOOST_CHECK_EQUAL(-kScoreInf, edge.Bound());
 }

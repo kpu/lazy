@@ -6,4 +6,6 @@ build-project search ;
 
 lib z ;
 
-lib boost_unit_test_framework : : : : <link>shared:<define>BOOST_TEST_DYN_LINK ;
+lib inner_boost_unit_test_framework : : <threading>single <name>boost_unit_test_framework ;
+lib inner_boost_unit_test_framework : : <threading>multi <name>boost_unit_test_framework-mt ;
+alias boost_unit_test_framework : inner_boost_unit_test_framework : : : <link>shared:<define>BOOST_TEST_DYN_LINK ;
