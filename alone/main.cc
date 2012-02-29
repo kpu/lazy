@@ -18,7 +18,7 @@ void Decode(const char *lm, const char *graph_name, StringPiece weights) {
   if (root.Size() == 0) {
     std::cout << "Empty" << std::endl;
   } else {
-    std::cout << root[0] << std::endl;
+    std::cout << root[0] << "||| " << root[0].Total() << std::endl;
   }
 }
 
