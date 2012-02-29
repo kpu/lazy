@@ -67,9 +67,9 @@ class Graph {
       return edges_.New();
     }
 
-    void SetRoot(Vertex *root) {
-      root_ = root;
-    }
+    void SetRoot(Vertex *root) { root_ = root; }
+
+    Vertex &Root() { return *root_; }
 
   private:
     FixedAllocator<Vertex> vertices_;
