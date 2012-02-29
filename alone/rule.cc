@@ -10,7 +10,7 @@ void Rule::FinishedAdding(const Context &context, search::Score additive) {
   search::Score lm_score = 0.0;
   lm::ngram::ChartState ignored;
   for (std::vector<Word>::const_iterator word = items_.begin(); ; ++word) {
-    lm::ngram::RuleScore<lm::ngram::Model> scorer(context.LanguageModel(), ignored);
+    lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), ignored);
     for (; ; ++word) {
       if (word == items_.end()) {
         bound_ = additive_ + context.GetWeights().LMWeight() * lm_score;
@@ -24,7 +24,7 @@ void Rule::FinishedAdding(const Context &context, search::Score additive) {
 }
 
 search::Score Rule::Apply(const Context &context, const std::vector<const Final *> &children, lm::ngram::ChartState &state) const {
-  lm::ngram::RuleScore<lm::ngram::Model> scorer(context.LanguageModel(), state);
+  lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
   std::vector<const Final*>::const_iterator child(children.begin());
   search::Score ret = additive_;
   for (std::vector<Word>::const_iterator i = items_.begin(); i != items_.end(); ++i) {

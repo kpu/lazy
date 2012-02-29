@@ -1,5 +1,7 @@
 lib standalone : final.cc read.cc rule.cc vocab.cc weights.cc ../lm//lm ../util//util ../search//search : <include>.. : : <include>.. ;
 
+exe decode : standalone main.cc ;
+
 import testing ;
 
 unit-test weights_test : weights_test.cc standalone ..//boost_unit_test_framework ;

@@ -14,14 +14,14 @@ class Context : public search::Context<Final> {
   public:
     explicit Context(const char *file, StringPiece weights) : lm_(file), vocab_(lm_.BaseVocabulary()), weights_(weights) {}
 
-    const lm::ngram::Model &LanguageModel() const { return lm_; }
+    const lm::ngram::RestProbingModel &LanguageModel() const { return lm_; }
 
     Vocab &MutableVocab() { return vocab_; }
 
     const Weights &GetWeights() const { return weights_; }
 
   private:
-    lm::ngram::Model lm_;
+    lm::ngram::RestProbingModel lm_;
 
     Vocab vocab_;
 
