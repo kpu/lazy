@@ -1,3 +1,4 @@
+#include "alone/assemble.hh"
 #include "alone/context.hh"
 #include "alone/graph.hh"
 #include "alone/read.hh"
@@ -17,7 +18,7 @@ void Decode(const char *lm, const char *graph_name, StringPiece weights) {
   if (root.Size() == 0) {
     std::cout << "Empty" << std::endl;
   } else {
-    std::cout << "Got a solution." << std::endl;
+    std::cout << root[0] << std::endl;
   }
 }
 

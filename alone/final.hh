@@ -25,6 +25,8 @@ class Final {
 
     const std::vector<const Final *> &Children() const { return children_; }
 
+    const Rule &From() const { return from_; }
+
   private:
     search::Score total_;
     lm::ngram::ChartState lm_state_;

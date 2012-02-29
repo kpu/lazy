@@ -30,6 +30,10 @@ class Rule {
 
     search::Score Apply(const Context &context, const std::vector<const Final *> &children, lm::ngram::ChartState &state) const;
 
+    // For printing.  
+    typedef const std::vector<Word> ItemsRet;
+    ItemsRet &Items() const { return items_; }
+
   private:
     search::Score bound_, additive_;
 
