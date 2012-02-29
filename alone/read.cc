@@ -5,6 +5,7 @@
 #include "alone/weights.hh"
 #include "util/file_piece.hh"
 
+#include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <cstdlib>
@@ -37,6 +38,31 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool f
 }
 
 } // namespace
+
+// TODO: refactor
+void JustVocab(util::FilePiece &from, std::ostream &out) {
+  boost::unordered_set<std::string> seen;
+  // Eat sentence
+  from.ReadLine();
+  unsigned long int vertices = from.ReadULong();
+  from.ReadULong(); // edges
+  UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
+  UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after counts");
+  std::string temp;
+  for (unsigned long int i = 0; i < vertices; ++i) {
+    unsigned long int edge_count = from.ReadULong();
+    UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
+    for (unsigned long int e = 0; e < edge_count; ++e) {
+      StringPiece got;
+      while ("|||" != (got = from.ReadDelimited())) {
+        if ('[' == *got.data() && ']' == got.data()[got.size() - 1]) continue;
+        temp.assign(got.data(), got.size());
+        if (seen.insert(temp).second) out << temp << '\n';
+      }
+      from.ReadLine(); // weights
+    }
+  }
+}
 
 void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
   // Eat sentence
