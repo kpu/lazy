@@ -12,8 +12,11 @@ int main(int argc, char *argv[]) {
   util::FilePiece f(0, "stdin");
   StringPiece str;
   while (true) {
-    float test = f.ReadFloat();
-    try { str = f.ReadLine(); } catch (const util::EndOfFileException &e) { break; }
+    float test;
+    try {
+      test = f.ReadFloat();
+    } catch (const util::EndOfFileException &e) { break; }
+    str = f.ReadLine();
     lm::ngram::ChartState state;
     lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(m, state);
     for (util::TokenIter<util::SingleCharacter, true> i(str, ' '); i; ++i) {
