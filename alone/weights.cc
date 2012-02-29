@@ -44,7 +44,7 @@ template <class Map, class Op> void Parse(StringPiece text, Map &map, Op &op) {
 Weights::Weights(StringPiece text) {
   Insert op;
   Parse<Map, Insert>(text, map_, op);
-  Map::iterator i(map_.find("lm"));
+  Map::iterator i(map_.find("LanguageModel"));
   if (i == map_.end()) {
     lm_weight_ = 0.0;
   } else {
