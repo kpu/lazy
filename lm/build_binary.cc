@@ -118,10 +118,10 @@ int main(int argc, char *argv[]) {
   using namespace lm::ngram;
 
   try {
-    bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false;
+    bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false, rest = false;
     lm::ngram::Config config;
     int opt;
-    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:m:w:si")) != -1) {
+    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:m:w:sir")) != -1) {
       switch(opt) {
         case 'q':
           config.prob_bits = ParseBitCount(optarg);
@@ -164,6 +164,9 @@ int main(int argc, char *argv[]) {
         case 'i':
           config.positive_log_probability = lm::SILENT;
           break;
+        case 'r':
+          rest = true;
+          break;
         default:
           Usage(argv[0]);
       }
@@ -174,35 +177,48 @@ int main(int argc, char *argv[]) {
     }
     if (optind + 1 == argc) {
       ShowSizes(argv[optind], config);
-    } else if (optind + 2 == argc) {
+      return 0;
+    }
+    const char *model_type;
+    const char *from_file;
+
+    if (optind + 2 == argc) {
+      model_type = "probing";
+      from_file = argv[optind];
       config.write_mmap = argv[optind + 1];
-      if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
-      ProbingModel(argv[optind], config);
     } else if (optind + 3 == argc) {
-      const char *model_type = argv[optind];
-      const char *from_file = argv[optind + 1];
+      model_type = argv[optind];
+      from_file = argv[optind + 1];
       config.write_mmap = argv[optind + 2];
-      if (!strcmp(model_type, "probing")) {
-        if (!set_write_method) config.write_method = Config::WRITE_AFTER;
-        if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
+    } else {
+      Usage(argv[0]);
+    }
+    if (!strcmp(model_type, "probing")) {
+      if (!set_write_method) config.write_method = Config::WRITE_AFTER;
+      if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
+      if (rest) {
+        RestProbingModel(from_file, config);
+      } else {
         ProbingModel(from_file, config);
-      } else if (!strcmp(model_type, "trie")) {
-        if (!set_write_method) config.write_method = Config::WRITE_MMAP;
-        if (quantize) {
-          if (bhiksha) {
-            QuantArrayTrieModel(from_file, config);
-          } else {
-            QuantTrieModel(from_file, config);
-          }
+      }
+    } else if (!strcmp(model_type, "trie")) {
+      if (rest) {
+        std::cerr << "Rest + trie is not supported yet." << std::endl;
+        return 1;
+      }
+      if (!set_write_method) config.write_method = Config::WRITE_MMAP;
+      if (quantize) {
+        if (bhiksha) {
+          QuantArrayTrieModel(from_file, config);
         } else {
-          if (bhiksha) {
-            ArrayTrieModel(from_file, config);
-          } else {
-            TrieModel(from_file, config);
-          }
+          QuantTrieModel(from_file, config);
         }
       } else {
-        Usage(argv[0]);
+        if (bhiksha) {
+          ArrayTrieModel(from_file, config);
+        } else {
+          TrieModel(from_file, config);
+        }
       }
     } else {
       Usage(argv[0]);
