@@ -134,7 +134,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
         have_values.push_back(&(**t)[*indices]);
       }
-      Final *adding = context.ApplyRule(rule_, have_values);
+      Final *adding = context.ApplyRule(context, rule_, have_values);
 
       std::pair<uint64_t, DedupeValue> to_dedupe(adding->RecombineHash(), DedupeValue());
       std::pair<typename Dedupe::iterator, bool> ret(dedupe_.insert(to_dedupe));
