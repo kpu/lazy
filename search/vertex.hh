@@ -35,7 +35,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
   public:
     Vertex() 
 #ifndef NDEBUG
-      : finished_adding_(false) {}
+      : finished_adding_(false)
 #endif
     {}
 
