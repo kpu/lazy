@@ -34,13 +34,13 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
 
   public:
     Vertex() 
-#ifndef NDEBUG
+#ifdef DEBUG
       : finished_adding_(false)
 #endif
     {}
 
     void Add(Child &edge) {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(!finished_adding_);
 #endif
       QueueEntry entry;
@@ -51,7 +51,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
     }
 
     void FinishedAdding() {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(!finished_adding_);
       finished_adding_ = true;
 #endif
@@ -59,7 +59,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
     }
 
     template <class Cont> void More(Cont &context, const Score beat) {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(finished_adding_);
 #endif
       if (P::Bound() < beat) return;
@@ -140,7 +140,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
 
     boost::unordered_set<uint64_t> dedupe_;
 
-#ifndef NDEBUG
+#ifdef DEBUG
     bool finished_adding_;
 #endif
 };
