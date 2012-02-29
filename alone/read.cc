@@ -13,7 +13,7 @@ namespace alone {
 
 namespace {
 
-Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to) {
+Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool final) {
   Graph::Edge *ret = to.NewEdge();
   Rule &rule = ret->InitRule();
   StringPiece got;
@@ -30,7 +30,8 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to) {
       rule.AppendTerminal(context.MutableVocab().FindOrAdd(got));
     }
   }
-  rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()));
+  if (final) rule.AppendTerminal(context.GetVocab().EndSentence());
+  rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
   ret->FinishedAdding(context);
   return *ret;
 }
@@ -46,14 +47,16 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
   UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after counts");
   to.SetCounts(vertices, edges);
   Graph::Vertex *vertex;
-  for (unsigned long int i = 0; i < vertices; ++i) {
+  for (unsigned long int i = 0; ; ++i) {
     vertex = to.NewVertex();
     unsigned long int edge_count = from.ReadULong();
+    bool root = (i == vertices - 1);
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      vertex->Add(ReadEdge(context, from, to));
+      vertex->Add(ReadEdge(context, from, to, root));
     }
     vertex->FinishedAdding();
+    if (root) break;
   }
   to.SetRoot(vertex);
 }

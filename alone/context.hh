@@ -18,6 +18,8 @@ class Context : public search::Context<Final> {
 
     Vocab &MutableVocab() { return vocab_; }
 
+    const Vocab &GetVocab() const { return vocab_; }
+
     const Weights &GetWeights() const { return weights_; }
 
   private:

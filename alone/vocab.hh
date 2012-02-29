@@ -35,15 +35,21 @@ class Word {
 
 class Vocab {
   public:
-    Vocab(const lm::base::Vocabulary &backing) : backing_(backing) {}
+    explicit Vocab(const lm::base::Vocabulary &backing);
 
     Word FindOrAdd(const StringPiece &str);
+
+    Word EndSentence() const {
+      return end_sentence_;
+    }
 
   private:
     typedef boost::unordered_map<std::string, lm::WordIndex> Map;
     Map map_;
 
     const lm::base::Vocabulary &backing_;
+
+    Word end_sentence_;
 };
 
 } // namespace alone

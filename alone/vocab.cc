@@ -5,6 +5,10 @@
 
 namespace alone {
 
+Vocab::Vocab(const lm::base::Vocabulary &backing) : backing_(backing) {
+  end_sentence_ = FindOrAdd("</s>");
+}
+
 Word Vocab::FindOrAdd(const StringPiece &str) {
   Map::const_iterator i(FindStringPiece(map_, str));
   if (i != map_.end()) return Word(*i);
