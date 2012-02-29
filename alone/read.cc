@@ -42,10 +42,12 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
   from.ReadLine();
   unsigned long int vertices = from.ReadULong();
   unsigned long int edges = from.ReadULong();
+  UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
   UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after counts");
   to.SetCounts(vertices, edges);
+  Graph::Vertex *vertex;
   for (unsigned long int i = 0; i < vertices; ++i) {
-    Graph::Vertex *vertex = to.NewVertex();
+    vertex = to.NewVertex();
     unsigned long int edge_count = from.ReadULong();
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
@@ -53,6 +55,7 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
     }
     vertex->FinishedAdding();
   }
+  to.SetRoot(vertex);
 }
 
 } // namespace alone
