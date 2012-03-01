@@ -14,7 +14,7 @@ namespace util {
 namespace {
 #if !defined(_WIN32) && !defined(_WIN64)
 float FloatSec(const struct timeval &tv) {
-  return static_cast<float>(tv.tv_sec) + (static_cast<float>(tv.tv_usec) / 1000000000.0);
+  return static_cast<float>(tv.tv_sec) + (static_cast<float>(tv.tv_usec) / 1000000.0);
 }
 #endif
 } // namespace
