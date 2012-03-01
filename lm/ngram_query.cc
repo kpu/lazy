@@ -34,8 +34,8 @@ int main(int argc, char *argv[]) {
     } else {
       Query<ProbingModel>(argv[1], sentence_context, std::cin, std::cout);
     }
-
-    PrintUsage("Total time including destruction:\n");
+    std::cerr << "Total time including destruction:\n";
+    util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
     return 1;

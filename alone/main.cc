@@ -3,6 +3,7 @@
 #include "alone/graph.hh"
 #include "alone/read.hh"
 #include "util/file_piece.hh"
+#include "util/usage.hh"
 
 namespace alone {
 
