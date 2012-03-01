@@ -1,5 +1,7 @@
 project : default-build <threading>multi <warnings>on <variant>release ;
 
+import os ;
+
 cxxflags = [ os.environ "CXXFLAGS" ] ;
 cflags = [ os.environ "CFLAGS" ] ;
 ldflags = [ os.environ "LDFLAGS" ] ;
