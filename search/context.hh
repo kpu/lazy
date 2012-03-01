@@ -22,19 +22,14 @@ class PoolOut : public util::Exception {
 
 template <class Final> class Context {
   public:
-    template <class Child, class R> Final *ApplyRule(Child &child_class, const R &rule, std::vector<const Final *> &values) {
-      Final *ret = final_pool_.construct(child_class, rule, values);
+    template <class Child, class R> Final *ApplyRule(Child &child_class, const R &rule, const typename Final::ChildArray &children) {
+      Final *ret = final_pool_.construct(child_class, rule, children);
       UTIL_THROW_IF(!ret, PoolOut, " for finals");
       return ret;
     }
 
     void DeleteFinal(Final *final) {
       final_pool_.destroy(final);
-    }
-
-    std::vector<const Final*> &ClearedTemp() {
-      have_values_.clear();
-      return have_values_;
     }
 
     void EnsureIndexPool(Index arity) {
@@ -58,9 +53,6 @@ template <class Final> class Context {
     boost::object_pool<Final> final_pool_;
 
     boost::ptr_vector<boost::pool<> > index_pools_;
-
-    // Temporary used internally by edges.  
-    std::vector<const Final*> have_values_;
 };
 
 } // namespace search

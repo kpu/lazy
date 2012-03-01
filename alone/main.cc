@@ -22,12 +22,20 @@ void Decode(const char *lm_file, StringPiece weight_str) {
     // TODO: mid-section EOF is still bad
     } catch (const util::EndOfFileException &e) { break; }
     Graph::Vertex &root = graph.Root();
-    root.More(context, -search::kScoreInf);
+    float beat = root.Bound();
+    while (root.Bound() > -32.0) {
+      if (root.Bound() < beat) {
+        std::cerr << root.Bound() << '\n';
+        beat = beat - 0.01;
+      }
+      root.More(context, beat);
+    }
     if (root.Size() == 0) {
       std::cout << "Empty" << std::endl;
     } else {
       std::cout << root[0] << "||| " << root[0].Total() << std::endl;
     }
+    util::PrintUsage(std::cerr);
   }
 }
 

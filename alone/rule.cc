@@ -35,10 +35,10 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool b
   }
 }
 
-search::Score Rule::Apply(const Context &context, const std::vector<const Final *> &children, lm::ngram::ChartState &state) const {
+search::Score Rule::Apply(const Context &context, const Final::ChildArray &children, lm::ngram::ChartState &state) const {
   lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
   if (bos_) scorer.BeginSentence();
-  std::vector<const Final*>::const_iterator child(children.begin());
+  const Final *const *child = children.data();
   search::Score ret = additive_;
   for (std::vector<Word>::const_iterator i = items_.begin(); i != items_.end(); ++i) {
     if (i->Terminal()) {

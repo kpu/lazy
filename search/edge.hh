@@ -1,11 +1,13 @@
 #ifndef SEARCH_EDGE__
 #define SEARCH_EDGE__
 
+#include "search/arity.hh"
 #include "search/source.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
 #include "util/murmur_hash.hh"
 
+#include <boost/array.hpp>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
@@ -42,7 +44,9 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       context.EnsureIndexPool(rule_.Variables());
       if (to_.empty()) {
         // Special case for purely lexical rules.  
-        std::vector<const Final*> empty;
+        boost::array<const Final*, kMaxArity> empty;
+        empty[0] = NULL;
+        empty[1] = NULL;
         AddFinal(*context.ApplyRule(context, rule_, empty));
         P::SetBound(-kScoreInf);
       } else {
@@ -131,11 +135,13 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     }
 
     template <class Cont> void NewHypothesis(Cont &context, const Index *indices) {
-      std::vector<const Final*> &have_values = context.ClearedTemp();
-      for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
-        have_values.push_back(&(**t)[*indices]);
+      boost::array<const Final*, kMaxArity> children;
+      const Final **child = children.c_array();
+      for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices, ++child) {
+        *child = (&(**t)[*indices]);
       }
-      Final *adding = context.ApplyRule(context, rule_, have_values);
+      if (to_.size() < kMaxArity) *child = NULL;
+      Final *adding = context.ApplyRule(context, rule_, children);
 
       std::pair<uint64_t, DedupeValue> to_dedupe(adding->RecombineHash(), DedupeValue());
       std::pair<typename Dedupe::iterator, bool> ret(dedupe_.insert(to_dedupe));
@@ -152,9 +158,10 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       // It's a duplicate.
       if (dedupe_value.best) {
         // Recombine with visible hypothesis.  
-        Final *competitor = dedupe_value.best;
-        assert(competitor->Total() >= adding->Total());
-        competitor->Recombine(context, adding);
+//        Final *competitor = dedupe_value.best;
+//        assert(competitor->Total() >= adding->Total());
+        context.DeleteFinal(adding);
+//        competitor->Recombine(context, adding);
         return;
       }
       // Recombine with entry in the holding tank.  
@@ -164,10 +171,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         modified.final = adding;
         modified.dedupe = &dedupe_value;
         holding_.increase(dedupe_value.hold, modified);
-        adding->Recombine(context, competitor);
+        context.DeleteFinal(competitor);
+//        adding->Recombine(context, competitor);
         return;
       }
-      competitor->Recombine(context, adding);
+      context.DeleteFinal(adding);
+  //    competitor->Recombine(context, adding);
     }
 
     // Takes ownership of indices.  

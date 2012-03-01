@@ -7,7 +7,7 @@ namespace alone {
 
 std::ostream &operator<<(std::ostream &o, const Final &final) {
   const Rule::ItemsRet &words = final.From().Items();
-  std::vector<const Final *>::const_iterator child(final.Children().begin());
+  const Final *const *child = final.Children().data();
   for (Rule::ItemsRet::const_iterator i(words.begin()); i != words.end(); ++i) {
     if (i->Terminal()) {
       o << i->String() << ' ';

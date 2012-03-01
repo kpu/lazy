@@ -14,7 +14,7 @@ namespace alone {
 
 namespace {
 
-Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool final) {
+Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool final, unsigned int &max_child) {
   Graph::Edge *ret = to.NewEdge();
   Rule &rule = ret->InitRule();
   StringPiece got;
@@ -33,6 +33,7 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool f
   }
   if (final) rule.AppendTerminal(context.GetVocab().EndSentence());
   rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
+  max_child = std::max(max_child, rule.Variables());
   ret->FinishedAdding(context);
   return *ret;
 }
@@ -65,6 +66,7 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
 }
 
 void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
+  unsigned int max_child = 0;
   unsigned long int vertices = from.ReadULong();
   unsigned long int edges = from.ReadULong();
   UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
@@ -77,7 +79,7 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
     bool root = (i == vertices - 1);
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      vertex->Add(ReadEdge(context, from, to, root));
+      vertex->Add(ReadEdge(context, from, to, root, max_child));
     }
     vertex->FinishedAdding();
     if (root) break;
@@ -85,6 +87,7 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
   to.SetRoot(vertex);
   // Eat sentence
   from.ReadLine();
+  std::cerr << "Maximum children: " << max_child << std::endl;
 }
 
 } // namespace alone
