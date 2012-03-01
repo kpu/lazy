@@ -195,7 +195,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
           to_push.score += (*vertex)->Bound();
         }
         // TODO: avoid rehash if possible
-        bool seen = seen_indices_.insert(util::MurmurHashNative(indices, (const uint8_t*)end - (const uint8_t*)indices, 0)).second;
+        bool seen = !seen_indices_.insert(util::MurmurHashNative(indices, (const uint8_t*)end - (const uint8_t*)indices, 0)).second;
         if (change == pre_end) {
           if (seen) {
             context.DeleteIndices(rule_.Variables(), indices);
