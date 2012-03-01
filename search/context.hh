@@ -2,6 +2,7 @@
 #define SEARCH_CONTEXT__
 
 #include "search/types.hh"
+#include "util/exception.hh"
 
 #include <boost/pool/object_pool.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -10,11 +11,20 @@
 
 namespace search {
 
+class PoolOut : public util::Exception {
+  public:
+    PoolOut() throw() {
+      *this << "Pool returned NULL";
+    }
+
+    ~PoolOut() throw() {}
+};
+
 template <class Final> class Context {
   public:
     template <class Child, class R> Final *ApplyRule(Child &child_class, const R &rule, std::vector<const Final *> &values) {
       Final *ret = final_pool_.construct(child_class, rule, values);
-      if (!ret) throw std::bad_alloc();
+      UTIL_THROW_IF(!ret, PoolOut, " for finals");
       return ret;
     }
 
@@ -36,7 +46,7 @@ template <class Final> class Context {
     Index *NewIndices(Index arity) {
       assert(index_pools_.size() > arity);
       Index *ret = static_cast<Index*>(index_pools_[arity].malloc());
-      if (!ret) throw std::bad_alloc();
+      UTIL_THROW_IF(!ret, PoolOut, " for indexes of arity " << arity);
       return ret;
     }
 

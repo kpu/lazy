@@ -1,4 +1,4 @@
-alias search : : : : <include>.. ;
+alias search : ../util//util : : : <include>.. ;
 
 import testing ;
 

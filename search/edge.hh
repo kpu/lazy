@@ -5,7 +5,7 @@
 #include "search/types.hh"
 #include "search/vertex.hh"
 
-#include <boost/heap/fibonacci_heap.hpp>
+#include <boost/heap/binomial_heap.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <cmath>
@@ -225,7 +225,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         return final->Total() < other.final->Total();
       }
     };
-    typedef boost::heap::fibonacci_heap<HoldingEntry> Holding;
+    typedef boost::heap::binomial_heap<HoldingEntry> Holding;
     Holding holding_;
 
     // Deduplication hash table from hypothesis state (hashed to 64-bit as the
