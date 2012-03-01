@@ -4,9 +4,11 @@
 #include "search/source.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
+#include "util/murmur_hash.hh"
 
-#include <boost/heap/binomial_heap.hpp>
+#include <boost/heap/fibonacci_heap.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 #include <cmath>
 #include <queue>
@@ -192,11 +194,18 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         } else {
           to_push.score += (*vertex)->Bound();
         }
+        // TODO: avoid rehash if possible
+        bool seen = seen_indices_.insert(util::MurmurHashNative(indices, (const uint8_t*)end - (const uint8_t*)indices, 0)).second;
         if (change == pre_end) {
-          to_push.indices = indices;
-          generate_.push(to_push);
+          if (seen) {
+            context.DeleteIndices(rule_.Variables(), indices);
+          } else {
+            to_push.indices = indices;
+            generate_.push(to_push);
+          }
           break;
         }
+        if (seen) continue;
         to_push.indices = context.NewIndices(rule_.Variables());
         std::copy(indices, end, to_push.indices);
         generate_.push(to_push);
@@ -215,6 +224,15 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     typedef std::priority_queue<GenerateEntry> Generate;
     Generate generate_;
 
+    struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
+      uint64_t operator()(uint64_t value) const {
+        return value;
+      }
+    };
+
+    typedef boost::unordered_set<uint64_t, IdentityHash> SeenIndices;
+    SeenIndices seen_indices_;
+
     // Priority queue of hypotheses that have been generated but not proven to score highest.  
     struct DedupeValue;
     struct HoldingEntry {
@@ -224,7 +242,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         return final->Total() < other.final->Total();
       }
     };
-    typedef boost::heap::binomial_heap<HoldingEntry> Holding;
+    typedef boost::heap::fibonacci_heap<HoldingEntry> Holding;
     Holding holding_;
 
     // Deduplication hash table from hypothesis state (hashed to 64-bit as the
@@ -232,11 +250,6 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     struct DedupeValue {
       Final *best;
       typename Holding::handle_type hold;
-    };
-    struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
-      uint64_t operator()(uint64_t value) const {
-        return value;
-      }
     };
     typedef boost::unordered_map<uint64_t, DedupeValue, IdentityHash> Dedupe;
     Dedupe dedupe_;
