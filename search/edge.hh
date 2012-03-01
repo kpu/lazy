@@ -143,9 +143,8 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         HoldingEntry holding_entry;
         holding_entry.final = adding;
         holding_entry.dedupe = &dedupe_value;
-        dedupe_value.best = adding;
+        dedupe_value.best = NULL;
         dedupe_value.hold = holding_.push(holding_entry);
-        dedupe_value.in_holding = true;
         return;
       }
       // It's a duplicate.
@@ -233,7 +232,6 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     struct DedupeValue {
       Final *best;
       typename Holding::handle_type hold;
-      bool in_holding;
     };
     struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
       uint64_t operator()(uint64_t value) const {
