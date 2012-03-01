@@ -32,6 +32,8 @@ class Final {
 
     const ChildArray &Children() const { return children_; }
 
+    search::Index ChildCount() const { return from_.Variables(); }
+
     const Rule &From() const { return from_; }
 
   private:
