@@ -12,7 +12,7 @@ namespace alone {
 
 class Context : public search::Context<Final> {
   public:
-    explicit Context(const char *file, StringPiece weights) : lm_(file), vocab_(lm_.BaseVocabulary()), weights_(weights) {}
+    explicit Context(const lm::ngram::RestProbingModel &lm, Weights weights) : lm_(lm), vocab_(lm.BaseVocabulary()), weights_(weights) {}
 
     const lm::ngram::RestProbingModel &LanguageModel() const { return lm_; }
 
@@ -23,7 +23,7 @@ class Context : public search::Context<Final> {
     const Weights &GetWeights() const { return weights_; }
 
   private:
-    lm::ngram::RestProbingModel lm_;
+    const lm::ngram::RestProbingModel &lm_;
 
     Vocab vocab_;
 
