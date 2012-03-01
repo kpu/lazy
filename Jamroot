@@ -1,5 +1,14 @@
 project : default-build <threading>multi <warnings>on <variant>release ;
 
+cxxflags = [ os.environ "CXXFLAGS" ] ;
+cflags = [ os.environ "CFLAGS" ] ;
+ldflags = [ os.environ "LDFLAGS" ] ;
+project : requirements
+  <cxxflags>$(cxxflags)
+  <cflags>$(cflags)
+  <linkflags>$(ldflags)
+  ;
+
 path-constant TOP : . ;
 
 build-project search ;
