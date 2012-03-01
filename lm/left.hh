@@ -73,8 +73,8 @@ struct Left {
       *i = 0;
   }
 
-  unsigned char length;
   uint64_t pointers[kMaxOrder - 1];
+  unsigned char length;
 };
 
 inline size_t hash_value(const Left &left) {

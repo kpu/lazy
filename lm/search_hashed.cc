@@ -197,7 +197,7 @@ namespace detail {
  
 template <class Value> uint8_t *HashedSearch<Value>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
   std::size_t allocated = Unigram::Size(counts[0]);
-  unigram_ = Unigram(start, allocated);
+  unigram_ = Unigram(start, counts[0], allocated);
   start += allocated;
   for (unsigned int n = 2; n < counts.size(); ++n) {
     allocated = Middle::Size(counts[n - 1], config.probing_multiplier);

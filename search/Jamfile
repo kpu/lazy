@@ -1,6 +1,5 @@
-alias search : : : : <include>.. ;
+alias search : ../util//util : : : <include>.. ;
 
 import testing ;
-lib boost_unit_test_framework : : : : <link>shared:<define>BOOST_TEST_DYN_LINK ;
 
-unit-test edge_test : edge_test.cc search boost_unit_test_framework ;
+unit-test edge_test : edge_test.cc search ..//boost_unit_test_framework ;

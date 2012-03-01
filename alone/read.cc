@@ -5,6 +5,7 @@
 #include "alone/weights.hh"
 #include "util/file_piece.hh"
 
+#include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <cstdlib>
@@ -13,7 +14,7 @@ namespace alone {
 
 namespace {
 
-Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to) {
+Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool final) {
   Graph::Edge *ret = to.NewEdge();
   Rule &rule = ret->InitRule();
   StringPiece got;
@@ -30,29 +31,60 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to) {
       rule.AppendTerminal(context.MutableVocab().FindOrAdd(got));
     }
   }
-  rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()));
+  if (final) rule.AppendTerminal(context.GetVocab().EndSentence());
+  rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
   ret->FinishedAdding(context);
   return *ret;
 }
 
 } // namespace
 
-void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
-  // Eat sentence
-  from.ReadLine();
+// TODO: refactor
+void JustVocab(util::FilePiece &from, std::ostream &out) {
+  boost::unordered_set<std::string> seen;
   unsigned long int vertices = from.ReadULong();
-  unsigned long int edges = from.ReadULong();
+  from.ReadULong(); // edges
+  UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
   UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after counts");
-  to.SetCounts(vertices, edges);
+  std::string temp;
   for (unsigned long int i = 0; i < vertices; ++i) {
-    Graph::Vertex *vertex = to.NewVertex();
     unsigned long int edge_count = from.ReadULong();
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      vertex->Add(ReadEdge(context, from, to));
+      StringPiece got;
+      while ("|||" != (got = from.ReadDelimited())) {
+        if ('[' == *got.data() && ']' == got.data()[got.size() - 1]) continue;
+        temp.assign(got.data(), got.size());
+        if (seen.insert(temp).second) out << temp << ' ';
+      }
+      from.ReadLine(); // weights
+    }
+  }
+  // Eat sentence
+  from.ReadLine();
+}
+
+void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
+  unsigned long int vertices = from.ReadULong();
+  unsigned long int edges = from.ReadULong();
+  UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
+  UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after counts");
+  to.SetCounts(vertices, edges);
+  Graph::Vertex *vertex;
+  for (unsigned long int i = 0; ; ++i) {
+    vertex = to.NewVertex();
+    unsigned long int edge_count = from.ReadULong();
+    bool root = (i == vertices - 1);
+    UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
+    for (unsigned long int e = 0; e < edge_count; ++e) {
+      vertex->Add(ReadEdge(context, from, to, root));
     }
     vertex->FinishedAdding();
+    if (root) break;
   }
+  to.SetRoot(vertex);
+  // Eat sentence
+  from.ReadLine();
 }
 
 } // namespace alone

@@ -34,7 +34,7 @@ template <class Final> class Source {
     }
 
     void SetBound(Score to) {
-      assert(to <= bound_);
+      assert(to <= bound_ + 0.001);
       bound_ = to;
     }
 

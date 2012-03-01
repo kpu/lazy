@@ -11,6 +11,36 @@
 
 namespace alone {
 
+template <class T> class FixedAllocator {
+  public:
+    FixedAllocator() : current_(NULL), end_(NULL) {}
+
+    void Init(std::size_t count) {
+      assert(!current_);
+      array_.reset(new T[count]);
+      current_ = array_.get();
+      end_ = current_ + count;
+    }
+
+    T &operator[](std::size_t idx) {
+      return array_.get()[idx];
+    }
+
+    T *New() {
+      T *ret = current_++;
+      UTIL_THROW_IF(ret >= end_, util::Exception, "Allocating past end");
+      return ret;
+    }
+
+    std::size_t Size() const {
+      return end_ - array_.get();
+    }
+
+  private:
+    boost::scoped_array<T> array_;
+    T *current_, *end_;
+};
+
 class Graph {
   public:
     typedef search::Edge<Rule> Edge;
@@ -19,36 +49,32 @@ class Graph {
     Graph() {}
 
     void SetCounts(std::size_t vertices, std::size_t edges) {
-      vertices_.reset(new Vertex[vertices]);
-      edges_.reset(new Edge[edges]);
+      vertices_.Init(vertices);
+      edges_.Init(edges);
     }
 
     Vertex *NewVertex() {
-      return current_vertex_++;
+      return vertices_.New();
     }
 
-    std::size_t VertexSize() const { return current_vertex_ - vertices_.get(); }
+    std::size_t VertexSize() const { return vertices_.Size(); }
 
     Vertex &GetVertex(search::Index index) {
       return vertices_[index];
     }
 
-
-    Edge *NewEdge() {
-      return current_edge_++;
+    Edge *NewEdge() {      
+      return edges_.New();
     }
 
-    void SetRoot(Vertex *root) {
-      root_ = root;
-    }
+    void SetRoot(Vertex *root) { root_ = root; }
+
+    Vertex &Root() { return *root_; }
 
   private:
-    boost::scoped_array<Vertex> vertices_;
-    boost::scoped_array<Edge> edges_;
-
-    Vertex *current_vertex_;
-    Edge *current_edge_;
-
+    FixedAllocator<Vertex> vertices_;
+    FixedAllocator<Edge> edges_;
+    
     Vertex *root_;
 };
 

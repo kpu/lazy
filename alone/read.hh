@@ -3,6 +3,8 @@
 
 #include "util/exception.hh"
 
+#include <iosfwd>
+
 namespace util { class FilePiece; }
 
 namespace alone {
@@ -15,6 +17,8 @@ class FormatException : public util::Exception {
     FormatException() {}
     ~FormatException() throw() {}
 };
+
+void JustVocab(util::FilePiece &from, std::ostream &to);
 
 void ReadCDec(Context &context, util::FilePiece &from, Graph &to);
 

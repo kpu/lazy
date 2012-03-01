@@ -147,13 +147,23 @@ template <class Value> class HashedSearch {
       public:
         Unigram() {}
 
-        Unigram(void *start, std::size_t /*allocated*/) : unigram_(static_cast<typename Value::Weights*>(start)) {}
+        Unigram(void *start, uint64_t count, std::size_t /*allocated*/) : 
+          unigram_(static_cast<typename Value::Weights*>(start))
+#ifdef DEBUG
+         ,  count_(count)
+#endif
+      {}
 
         static std::size_t Size(uint64_t count) {
           return (count + 1) * sizeof(ProbBackoff); // +1 for hallucinate <unk>
         }
 
-        const typename Value::Weights &Lookup(WordIndex index) const { return unigram_[index]; }
+        const typename Value::Weights &Lookup(WordIndex index) const {
+#ifdef DEBUG
+          assert(index < count_);
+#endif
+          return unigram_[index];
+        }
 
         typename Value::Weights &Unknown() { return unigram_[0]; }
 
@@ -164,6 +174,9 @@ template <class Value> class HashedSearch {
 
       private:
         typename Value::Weights *unigram_;
+#ifdef DEBUG
+        uint64_t count_;
+#endif
     };
 
     Unigram unigram_;

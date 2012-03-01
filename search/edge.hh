@@ -4,10 +4,11 @@
 #include "search/source.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
+#include "util/murmur_hash.hh"
 
+#include <boost/heap/fibonacci_heap.hpp>
 #include <boost/unordered_map.hpp>
-
-#include <ext/pb_ds/priority_queue.hpp>
+#include <boost/unordered_set.hpp>
 
 #include <cmath>
 #include <queue>
@@ -134,7 +135,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
         have_values.push_back(&(**t)[*indices]);
       }
-      Final *adding = context.ApplyRule(rule_, have_values);
+      Final *adding = context.ApplyRule(context, rule_, have_values);
 
       std::pair<uint64_t, DedupeValue> to_dedupe(adding->RecombineHash(), DedupeValue());
       std::pair<typename Dedupe::iterator, bool> ret(dedupe_.insert(to_dedupe));
@@ -144,7 +145,6 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         HoldingEntry holding_entry;
         holding_entry.final = adding;
         holding_entry.dedupe = &dedupe_value;
-        // Flag that it's still in the holding tank.  
         dedupe_value.best = NULL;
         dedupe_value.hold = holding_.push(holding_entry);
         return;
@@ -158,12 +158,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         return;
       }
       // Recombine with entry in the holding tank.  
-      Final *competitor = dedupe_value.hold->final;
+      Final *competitor = (*dedupe_value.hold).final;
       if (adding->Total() > competitor->Total()) {
         HoldingEntry modified;
         modified.final = adding;
         modified.dedupe = &dedupe_value;
-        holding_.modify(dedupe_value.hold, modified);
+        holding_.increase(dedupe_value.hold, modified);
         adding->Recombine(context, competitor);
         return;
       }
@@ -194,11 +194,18 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         } else {
           to_push.score += (*vertex)->Bound();
         }
+        // TODO: avoid rehash if possible
+        bool seen = seen_indices_.insert(util::MurmurHashNative(indices, (const uint8_t*)end - (const uint8_t*)indices, 0)).second;
         if (change == pre_end) {
-          to_push.indices = indices;
-          generate_.push(to_push);
+          if (seen) {
+            context.DeleteIndices(rule_.Variables(), indices);
+          } else {
+            to_push.indices = indices;
+            generate_.push(to_push);
+          }
           break;
         }
+        if (seen) continue;
         to_push.indices = context.NewIndices(rule_.Variables());
         std::copy(indices, end, to_push.indices);
         generate_.push(to_push);
@@ -217,6 +224,15 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     typedef std::priority_queue<GenerateEntry> Generate;
     Generate generate_;
 
+    struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
+      uint64_t operator()(uint64_t value) const {
+        return value;
+      }
+    };
+
+    typedef boost::unordered_set<uint64_t, IdentityHash> SeenIndices;
+    SeenIndices seen_indices_;
+
     // Priority queue of hypotheses that have been generated but not proven to score highest.  
     struct DedupeValue;
     struct HoldingEntry {
@@ -226,19 +242,14 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         return final->Total() < other.final->Total();
       }
     };
-    typedef __gnu_pbds::priority_queue<HoldingEntry> Holding;
+    typedef boost::heap::fibonacci_heap<HoldingEntry> Holding;
     Holding holding_;
 
     // Deduplication hash table from hypothesis state (hashed to 64-bit as the
     // key) to either the final hypothesis array or the holding tank.  
     struct DedupeValue {
       Final *best;
-      typename Holding::point_iterator hold;
-    };
-    struct IdentityHash : public std::unary_function<uint64_t, uint64_t> {
-      uint64_t operator()(uint64_t value) const {
-        return value;
-      }
+      typename Holding::handle_type hold;
     };
     typedef boost::unordered_map<uint64_t, DedupeValue, IdentityHash> Dedupe;
     Dedupe dedupe_;

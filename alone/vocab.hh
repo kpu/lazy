@@ -25,25 +25,31 @@ class Word {
 
   protected:
     friend class Vocab;
-    explicit Word(const std::pair<std::string, lm::WordIndex> &entry) {
+    explicit Word(const std::pair<const std::string, lm::WordIndex> &entry) {
       entry_ = &entry;
     }
 
   private:
-    const std::pair<std::string, lm::WordIndex> *entry_;
+    const std::pair<const std::string, lm::WordIndex> *entry_;
 };
 
 class Vocab {
   public:
-    Vocab(const lm::base::Vocabulary &backing) : backing_(backing) {}
+    explicit Vocab(const lm::base::Vocabulary &backing);
 
     Word FindOrAdd(const StringPiece &str);
+
+    Word EndSentence() const {
+      return end_sentence_;
+    }
 
   private:
     typedef boost::unordered_map<std::string, lm::WordIndex> Map;
     Map map_;
 
     const lm::base::Vocabulary &backing_;
+
+    Word end_sentence_;
 };
 
 } // namespace alone
