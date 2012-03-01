@@ -55,7 +55,7 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
       while ("|||" != (got = from.ReadDelimited())) {
         if ('[' == *got.data() && ']' == got.data()[got.size() - 1]) continue;
         temp.assign(got.data(), got.size());
-        if (seen.insert(temp).second) out << temp << '\n';
+        if (seen.insert(temp).second) out << temp << ' ';
       }
       from.ReadLine(); // weights
     }

@@ -44,19 +44,25 @@ template <class Map, class Op> void Parse(StringPiece text, Map &map, Op &op) {
 Weights::Weights(StringPiece text) {
   Insert op;
   Parse<Map, Insert>(text, map_, op);
-  Map::iterator i(map_.find("LanguageModel"));
-  if (i == map_.end()) {
-    lm_weight_ = 0.0;
-  } else {
-    lm_weight_ = i->second;
-    map_.erase(i);
-  }
+  lm_weight_ = Steal("LanguageModel");
+  oov_weight_ = Steal("OOV");
 }
 
 search::Score Weights::DotNoLM(StringPiece text) const {
   DotProduct dot;
   Parse<const Map, DotProduct>(text, map_, dot);
   return dot.total;
+}
+
+float Weights::Steal(const std::string &str) {
+  Map::iterator i(map_.find(str));
+  if (i == map_.end()) {
+    return 0.0;
+  } else {
+    float ret = i->second;
+    map_.erase(i);
+    return ret;
+  }
 }
 
 } // namespace alone

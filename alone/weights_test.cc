@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(parse) {
   CHECK_WEIGHT(9.45117, "phrase-TGS");
   CHECK_WEIGHT(2.33833, "lexical-SGT");
   BOOST_CHECK(parsed.end() == parsed.find("lm"));
-  BOOST_CHECK_CLOSE(3.0, w.LMWeight(), 0.001);
+  BOOST_CHECK_CLOSE(3.0, w.LM(), 0.001);
   CHECK_WEIGHT(-28.3317, "lexical-TGS");
   CHECK_WEIGHT(5.0, "glue?");
 }
