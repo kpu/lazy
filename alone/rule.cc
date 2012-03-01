@@ -51,7 +51,9 @@ search::Score Rule::Apply(const Context &context, const std::vector<const Final 
   }
   float lm_score = scorer.Finish();
   lm_score += PositiveBackoffs(state);
-  return ret + context.GetWeights().LM() * lm_score;
+  ret += context.GetWeights().LM() * lm_score;
+  assert(bound_ + 0.001 >= ret);
+  return ret;
 }
 
 } // namespace alone
