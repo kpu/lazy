@@ -14,7 +14,10 @@ void Decode(const char *lm, const char *graph_name, StringPiece weights) {
     ReadCDec(context, graph_file, graph);
   }
   Graph::Vertex &root = graph.Root();
-  root.More(context, -search::kScoreInf);
+  while (root.Size() == 0 && root.Bound() != -search::kScoreInf) {
+    std::cerr << root.Bound() << '\n';
+    root.More(context, root.Bound());
+  }
   if (root.Size() == 0) {
     std::cout << "Empty" << std::endl;
   } else {
