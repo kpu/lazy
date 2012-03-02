@@ -78,10 +78,10 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       GenerateOrLower(context, beat);
       
       P::SetBound(generate_.empty() ? -kScoreInf : generate_.top().score);
-      if (dedupe_.size() > 1000) {
+/*      if (dedupe_.size() > 1000) {
         std::cerr << "Giving up on edge " << rule_ << " with " << P::Bound() << '\n';
         P::SetBound(-kScoreInf);
-      }
+      }*/
       // Move hypotheses from holding tank to final.   
       while (!holding_.empty()) {
         const HoldingEntry &entry = holding_.top();
@@ -211,9 +211,14 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
           to_push.score += (*vertex)->Bound();
         }
         // TODO: avoid rehash if possible
-        bool seen = !seen_indices_.insert(util::MurmurHashNative(to_push.indices.c_array(), index_size, 0)).second;
-        if (seen) continue;
-        generate_.push(to_push);
+        std::pair<typename SeenIndices::iterator, bool> seen(seen_indices_.insert(util::MurmurHashNative(to_push.indices.c_array(), index_size, 0)));
+        if (seen.second) {
+          // Insertion successful.  Add it.  
+          generate_.push(to_push);
+        } else {
+          assert(kMaxArity == 2);
+          seen_indices_.erase(seen.first);
+        }
       }
     }
 

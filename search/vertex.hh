@@ -111,7 +111,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
       } else {
         to_beat = std::max(beat, edges_.top().score);
       }
-      edge.More(context, to_beat - 0.1);
+      edge.More(context, to_beat);
       PushLower(top);
       return false;
     }
