@@ -69,7 +69,10 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
 void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
   unsigned long int vertices = from.ReadULong();
   unsigned long int edges = from.ReadULong();
-  UTIL_THROW_IF(vertices == 0, FormatException, "Vertex count is zero");
+  UTIL_THROW_IF(vertices < 2, FormatException, "Vertex count is " << vertices);
+  UTIL_THROW_IF(edges == 0, FormatException, "Edge count is " << edges);
+  --vertices;
+  --edges;
   UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after counts");
   to.SetCounts(vertices, edges);
   Graph::Vertex *vertex;
@@ -85,7 +88,11 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
     if (root) break;
   }
   to.SetRoot(vertex);
-  // Eat sentence
+  StringPiece str = from.ReadLine();
+  UTIL_THROW_IF("1" != str, FormatException, "Expected one edge to root");
+  // The edge
+  from.ReadLine();
+  // The translation
   from.ReadLine();
 }
 
