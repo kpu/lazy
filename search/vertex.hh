@@ -93,6 +93,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
         }
         // Hypothesis matches the cached score.  Use it.  
         if (dedupe_.insert(got.RecombineHash()).second) {
+          if (!P::Size()) context.VertexHasHypothesis();
           AddFinal(got);
         }
         ++top.index;
@@ -110,7 +111,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
       } else {
         to_beat = std::max(beat, edges_.top().score);
       }
-      edge.More(context, to_beat);
+      edge.More(context, to_beat - 0.1);
       PushLower(top);
       return false;
     }

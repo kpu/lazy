@@ -61,7 +61,7 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         for (Index i = 0; i < rule_.Variables(); ++i) {
           entry.score += to_[i]->ScoreOrBound(0);
         }
-        SetBound(entry.score);
+        P::SetBound(entry.score);
         assert(entry.score != kScoreInf);
         if (entry.score != kScoreInf) {
           memset(entry.indices.c_array(), 0, sizeof(Index) * rule_.Variables());
@@ -77,7 +77,11 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
       GenerateOrLower(context, beat);
       
-      SetBound(generate_.empty() ? -kScoreInf : generate_.top().score);
+      P::SetBound(generate_.empty() ? -kScoreInf : generate_.top().score);
+      if (dedupe_.size() > 1000) {
+        std::cerr << "Giving up on edge " << rule_ << " with " << P::Bound() << '\n';
+        P::SetBound(-kScoreInf);
+      }
       // Move hypotheses from holding tank to final.   
       while (!holding_.empty()) {
         const HoldingEntry &entry = holding_.top();
@@ -92,8 +96,6 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     template <class Cont> void GenerateOrLower(Cont &context, const Score beat) {
       while (!generate_.empty()) {
         GenerateEntry top(generate_.top());
-        assert(top.score != -kScoreInf);
-        assert(top.score != kScoreInf);
         if (top.score < beat) return;
         generate_.pop();
 
@@ -123,11 +125,17 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
           PushNeighbors(context, accumulated, top.indices.data());
           return;
         }
+        float real_beat;
+        if (generate_.empty()) {
+          real_beat = beat;
+        } else {
+          real_beat = std::max(beat, generate_.top().score);
+        }
         // Pressure bounds on children.  TODO: better algorithm for this.  
         Index start = pressure->Size();
         top.score = accumulated - pressure->Bound();
-        // This might actually impact siblings, so recomputing is not unreasonable.  
-        pressure->More(context, pressure->Bound());
+        real_beat = pressure->Bound() - (accumulated - real_beat);
+        pressure->More(context, real_beat);
         if (pressure->Size() > start) {
           top.score += (*pressure)[start].Total();
           generate_.push(top);

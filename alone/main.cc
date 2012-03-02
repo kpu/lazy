@@ -21,13 +21,12 @@ void Decode(const char *lm_file, StringPiece weight_str) {
       ReadCDec(context, graph_file, graph);
     // TODO: mid-section EOF is still bad
     } catch (const util::EndOfFileException &e) { break; }
+    context.SetVertexCount(graph.VertexSize());
     Graph::Vertex &root = graph.Root();
     float beat = root.Bound();
-    while (root.Bound() > -32.0) {
-      if (root.Bound() < beat) {
-        std::cerr << root.Bound() << '\n';
-        beat = beat - 0.01;
-      }
+    while (!root.Size() && (root.Bound() != -search::kScoreInf)) {
+      std::cerr << root.Bound() << '\n';
+      beat = root.Bound() - .01;
       root.More(context, beat);
     }
     if (root.Size() == 0) {
