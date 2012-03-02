@@ -7,6 +7,7 @@
 
 #include <boost/array.hpp>
 
+#include <iosfwd>
 #include <vector>
 
 namespace lm { namespace ngram {
@@ -53,6 +54,8 @@ class Rule {
 
     bool bos_;
 };
+
+std::ostream &operator<<(std::ostream &o, const Rule &rule);
 
 } // namespace alone
 

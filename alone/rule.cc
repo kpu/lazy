@@ -3,6 +3,8 @@
 #include "alone/context.hh"
 #include "alone/final.hh"
 
+#include <ostream>
+
 namespace alone {
 
 float PositiveBackoffs(const lm::ngram::ChartState &state) {
@@ -54,6 +56,18 @@ search::Score Rule::Apply(const Context &context, const Final::ChildArray &child
   ret += context.GetWeights().LM() * lm_score;
   assert(bound_ + 0.001 >= ret);
   return ret;
+}
+
+std::ostream &operator<<(std::ostream &o, const Rule &rule) {
+  const Rule::ItemsRet &items = rule.Items();
+  for (Rule::ItemsRet::const_iterator i = items.begin(); i != items.end(); ++i) {
+    if (i->Terminal()) {
+      o << i->String() << ' ';
+    } else {
+      o << "[] ";
+    }
+  }
+  return o;
 }
 
 } // namespace alone
