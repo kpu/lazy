@@ -66,8 +66,11 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
   from.ReadLine();
 }
 
-void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
-  unsigned long int vertices = from.ReadULong();
+bool ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
+  unsigned long int vertices;
+  try {
+    vertices = from.ReadULong();
+  } catch (const util::EndOfFileException &e) { return false; }
   unsigned long int edges = from.ReadULong();
   UTIL_THROW_IF(vertices < 2, FormatException, "Vertex count is " << vertices);
   UTIL_THROW_IF(edges == 0, FormatException, "Edge count is " << edges);
@@ -94,6 +97,7 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
   from.ReadLine();
   // The translation
   from.ReadLine();
+  return true;
 }
 
 } // namespace alone
