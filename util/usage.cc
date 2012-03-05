@@ -3,6 +3,7 @@
 #include <fstream>
 #include <ostream>
 
+#include <string.h>
 #include <ctype.h>
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <sys/resource.h>
