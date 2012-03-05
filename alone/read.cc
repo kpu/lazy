@@ -32,7 +32,6 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool f
       rule.AppendTerminal(context.MutableVocab().FindOrAdd(got));
     }
   }
-  if (final) rule.AppendTerminal(context.GetVocab().EndSentence());
   rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
   UTIL_THROW_IF(rule.Variables() > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << rule.Variables());
   ret->FinishedAdding(context);
