@@ -23,6 +23,10 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool b
   const lm::WordIndex oov = context.LanguageModel().GetVocabulary().NotFound();
   for (std::vector<Word>::const_iterator word = items_.begin(); ; ++word) {
     lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
+    // TODO: optimize
+    if (bos && (word == items_.begin())) {
+      scorer.BeginSentence();
+    }
     for (; ; ++word) {
       if (word == items_.end()) {
         bound_ = additive_ + context.GetWeights().LM() * lm_score;

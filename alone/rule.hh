@@ -36,6 +36,8 @@ class Rule {
 
     search::Score Bound() const { return bound_; }
 
+    search::Score Additive() const { return additive_; }
+
     search::Index Variables() const { return variables_; }
 
     search::Score Apply(const Context &context, const boost::array<const Final*, search::kMaxArity> &children, lm::ngram::ChartState &state) const;
