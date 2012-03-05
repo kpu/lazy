@@ -17,10 +17,7 @@ void Decode(const char *lm_file, StringPiece weight_str) {
   while (true) {
     Context context(lm, weights);
     Graph graph;
-    try {
-      ReadCDec(context, graph_file, graph);
-    // TODO: mid-section EOF is still bad
-    } catch (const util::EndOfFileException &e) { break; }
+    if (!ReadCDec(context, graph_file, graph)) break;
     context.SetVertexCount(graph.VertexSize());
     Graph::Vertex &root = graph.Root();
     float beat = root.Bound();

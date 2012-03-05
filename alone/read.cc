@@ -32,7 +32,6 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool f
       rule.AppendTerminal(context.MutableVocab().FindOrAdd(got));
     }
   }
-  if (final) rule.AppendTerminal(context.GetVocab().EndSentence());
   rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
   UTIL_THROW_IF(rule.Variables() > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << rule.Variables());
   ret->FinishedAdding(context);
@@ -66,8 +65,11 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
   from.ReadLine();
 }
 
-void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
-  unsigned long int vertices = from.ReadULong();
+bool ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
+  unsigned long int vertices;
+  try {
+    vertices = from.ReadULong();
+  } catch (const util::EndOfFileException &e) { return false; }
   unsigned long int edges = from.ReadULong();
   UTIL_THROW_IF(vertices < 2, FormatException, "Vertex count is " << vertices);
   UTIL_THROW_IF(edges == 0, FormatException, "Edge count is " << edges);
@@ -94,6 +96,7 @@ void ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
   from.ReadLine();
   // The translation
   from.ReadLine();
+  return true;
 }
 
 } // namespace alone

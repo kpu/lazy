@@ -32,7 +32,7 @@ class Rule {
       ++variables_;
     }
 
-    void FinishedAdding(const Context &context, search::Score additive, bool bos);
+    void FinishedAdding(const Context &context, search::Score additive, bool add_sentence_bounds);
 
     search::Score Bound() const { return bound_; }
 

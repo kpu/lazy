@@ -5,6 +5,8 @@
 
 #include <ostream>
 
+#include <math.h>
+
 namespace alone {
 
 float PositiveBackoffs(const lm::ngram::ChartState &state) {
@@ -15,9 +17,15 @@ float PositiveBackoffs(const lm::ngram::ChartState &state) {
   return ret;
 }
 
-void Rule::FinishedAdding(const Context &context, search::Score additive, bool bos) {
+void Rule::FinishedAdding(const Context &context, search::Score additive, bool add_sentence_bounds) {
+  const float word_penalty = -1.0 / M_LN10 * context.GetWeights().WordPenalty();
   additive_ = additive;
-  bos_ = bos;
+  bos_ = add_sentence_bounds;
+  if (add_sentence_bounds) {
+    AppendTerminal(context.GetVocab().EndSentence());
+    // Don't count </s> as a word for purposes of word penalty.   
+    additive_ -= word_penalty;
+  }
   search::Score lm_score = 0.0;
   lm::ngram::ChartState state;
   const lm::WordIndex oov = context.LanguageModel().GetVocabulary().NotFound();
@@ -35,6 +43,7 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool b
       if (!word->Terminal()) break;
       if (word->Index() == oov) additive_ += context.GetWeights().OOV();
       scorer.Terminal(word->Index());
+      additive_ += word_penalty;
     }
     lm_score += scorer.Finish();
     lm_score += PositiveBackoffs(state);
