@@ -22,8 +22,10 @@ class PoolOut : public util::Exception {
 
 template <class Final> class Context {
   public:
-    template <class Child, class R> Final *ApplyRule(Child &child_class, const R &rule, std::vector<const Final *> &values) {
-      Final *ret = final_pool_.construct(child_class, rule, values);
+    Context() : vertices_with_(0) {}
+
+    template <class Child, class R> Final *ApplyRule(Child &child_class, const R &rule, const typename Final::ChildArray &children) {
+      Final *ret = final_pool_.construct(child_class, rule, children);
       UTIL_THROW_IF(!ret, PoolOut, " for finals");
       return ret;
     }
@@ -32,35 +34,19 @@ template <class Final> class Context {
       final_pool_.destroy(final);
     }
 
-    std::vector<const Final*> &ClearedTemp() {
-      have_values_.clear();
-      return have_values_;
+    void SetVertexCount(size_t count)  {
+      total_vertices_ = count;
     }
 
-    void EnsureIndexPool(Index arity) {
-      while (index_pools_.size() <= arity) {
-        index_pools_.push_back(new boost::pool<>(index_pools_.size() * sizeof(Index)));
-      }
-    }
-
-    Index *NewIndices(Index arity) {
-      assert(index_pools_.size() > arity);
-      Index *ret = static_cast<Index*>(index_pools_[arity].malloc());
-      UTIL_THROW_IF(!ret, PoolOut, " for indexes of arity " << arity);
-      return ret;
-    }
-
-    void DeleteIndices(Index arity, Index *ptr) {
-      index_pools_[arity].free(ptr);
+    void VertexHasHypothesis() {
+      std::cerr << (++vertices_with_) << '/' << total_vertices_ << " vertices have a hypothesis\n";
     }
 
   private:
     boost::object_pool<Final> final_pool_;
 
-    boost::ptr_vector<boost::pool<> > index_pools_;
-
-    // Temporary used internally by edges.  
-    std::vector<const Final*> have_values_;
+    size_t total_vertices_;
+    size_t vertices_with_;
 };
 
 } // namespace search

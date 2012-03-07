@@ -25,9 +25,11 @@ class Weights {
 
     search::Score DotNoLM(StringPiece text) const;
 
-    search::Score LM() const { return lm_weight_; }
+    search::Score LM() const { return lm_; }
 
-    search::Score OOV() const { return oov_weight_; }
+    search::Score OOV() const { return oov_; }
+
+    search::Score WordPenalty() const { return word_penalty_; }
 
     // Mostly for testing.  
     const boost::unordered_map<std::string, search::Score> &GetMap() const { return map_; }
@@ -39,7 +41,7 @@ class Weights {
 
     Map map_;
 
-    search::Score lm_weight_, oov_weight_;
+    search::Score lm_, oov_, word_penalty_;
 };
 
 } // namespace alone

@@ -1,11 +1,13 @@
 #ifndef SEARCH_EDGE__
 #define SEARCH_EDGE__
 
+#include "search/arity.hh"
 #include "search/source.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
 #include "util/murmur_hash.hh"
 
+#include <boost/array.hpp>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
@@ -15,6 +17,7 @@
 #include <vector>
 
 #include <stdint.h>
+#include <string.h>
 
 namespace search {
 
@@ -26,23 +29,29 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
 
   private:
     typedef Source<Final> P;
+    typedef boost::array<search::Index, kMaxArity> Indices;
 
   public:
-    Edge() {}
+    Edge() {
+      end_to_ = to_;
+    }
 
     Rule &InitRule() { return rule_; }
 
     void Add(Child &vertex) {
       assert(vertex.Bound() != kScoreInf);
-      to_.push_back(&vertex);
+      assert(end_to_ - to_ < kMaxArity);
+      *(end_to_++) = &vertex;
     }
 
     template <class Cont> void FinishedAdding(Cont &context) {
       assert(to_.size() == rule_.Variables());
-      context.EnsureIndexPool(rule_.Variables());
-      if (to_.empty()) {
+      if (to_ == end_to_) {
         // Special case for purely lexical rules.  
-        std::vector<const Final*> empty;
+        boost::array<const Final*, kMaxArity> empty;
+        for (unsigned int i = 0; i < kMaxArity; ++i) {
+          empty[i] = NULL;
+        }
         AddFinal(*context.ApplyRule(context, rule_, empty));
         P::SetBound(-kScoreInf);
       } else {
@@ -52,11 +61,10 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         for (Index i = 0; i < rule_.Variables(); ++i) {
           entry.score += to_[i]->ScoreOrBound(0);
         }
-        SetBound(entry.score);
+        P::SetBound(entry.score);
         assert(entry.score != kScoreInf);
         if (entry.score != kScoreInf) {
-          entry.indices = context.NewIndices(rule_.Variables());
-          memset(entry.indices, 0, sizeof(Index) * rule_.Variables());
+          memset(entry.indices.c_array(), 0, sizeof(Index) * rule_.Variables());
           generate_.push(entry);
         }
       }
@@ -69,7 +77,11 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       }
       GenerateOrLower(context, beat);
       
-      SetBound(generate_.empty() ? -kScoreInf : generate_.top().score);
+      P::SetBound(generate_.empty() ? -kScoreInf : generate_.top().score);
+/*      if (dedupe_.size() > 1000) {
+        std::cerr << "Giving up on edge " << rule_ << " with " << P::Bound() << '\n';
+        P::SetBound(-kScoreInf);
+      }*/
       // Move hypotheses from holding tank to final.   
       while (!holding_.empty()) {
         const HoldingEntry &entry = holding_.top();
@@ -84,16 +96,14 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     template <class Cont> void GenerateOrLower(Cont &context, const Score beat) {
       while (!generate_.empty()) {
         GenerateEntry top(generate_.top());
-        assert(top.score != -kScoreInf);
-        assert(top.score != kScoreInf);
         if (top.score < beat) return;
         generate_.pop();
 
         // Recalculate score.  
         Score accumulated = rule_.Bound();
-        Index *indices = top.indices;
+        const Index *indices = top.indices.data();
         Child *pressure = NULL;
-        for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
+        for (Child **t = to_; t != end_to_; ++t, ++indices) {
           Child &vertex = **t;
           if (vertex.Size() > *indices) {
             accumulated += vertex[*indices].Total();
@@ -111,15 +121,21 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         }
         if (!pressure) {
           // Every variable has a value.  
-          NewHypothesis(context, top.indices);
-          PushNeighbors(context, accumulated, top.indices);
+          NewHypothesis(context, top.indices.data());
+          PushNeighbors(context, accumulated, top.indices.data());
           return;
+        }
+        float real_beat;
+        if (generate_.empty()) {
+          real_beat = beat;
+        } else {
+          real_beat = std::max(beat, generate_.top().score);
         }
         // Pressure bounds on children.  TODO: better algorithm for this.  
         Index start = pressure->Size();
         top.score = accumulated - pressure->Bound();
-        // This might actually impact siblings, so recomputing is not unreasonable.  
-        pressure->More(context, pressure->Bound());
+        real_beat = pressure->Bound() - (accumulated - real_beat);
+        pressure->More(context, real_beat);
         if (pressure->Size() > start) {
           top.score += (*pressure)[start].Total();
           generate_.push(top);
@@ -131,11 +147,12 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
     }
 
     template <class Cont> void NewHypothesis(Cont &context, const Index *indices) {
-      std::vector<const Final*> &have_values = context.ClearedTemp();
-      for (typename std::vector<Child*>::iterator t = to_.begin(); t != to_.end(); ++t, ++indices) {
-        have_values.push_back(&(**t)[*indices]);
+      boost::array<const Final*, kMaxArity> children;
+      const Final **child = children.c_array();
+      for (Child **t = to_; t != end_to_; ++t, ++indices, ++child) {
+        *child = (&(**t)[*indices]);
       }
-      Final *adding = context.ApplyRule(context, rule_, have_values);
+      Final *adding = context.ApplyRule(context, rule_, children);
 
       std::pair<uint64_t, DedupeValue> to_dedupe(adding->RecombineHash(), DedupeValue());
       std::pair<typename Dedupe::iterator, bool> ret(dedupe_.insert(to_dedupe));
@@ -152,9 +169,10 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
       // It's a duplicate.
       if (dedupe_value.best) {
         // Recombine with visible hypothesis.  
-        Final *competitor = dedupe_value.best;
-        assert(competitor->Total() >= adding->Total());
-        competitor->Recombine(context, adding);
+//        Final *competitor = dedupe_value.best;
+//        assert(competitor->Total() >= adding->Total());
+        context.DeleteFinal(adding);
+//        competitor->Recombine(context, adding);
         return;
       }
       // Recombine with entry in the holding tank.  
@@ -164,57 +182,49 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
         modified.final = adding;
         modified.dedupe = &dedupe_value;
         holding_.increase(dedupe_value.hold, modified);
-        adding->Recombine(context, competitor);
+        context.DeleteFinal(competitor);
+//        adding->Recombine(context, competitor);
         return;
       }
-      competitor->Recombine(context, adding);
+      context.DeleteFinal(adding);
+  //    competitor->Recombine(context, adding);
     }
 
-    // Takes ownership of indices.  
-    template <class Cont> void PushNeighbors(Cont &context, Score accumulated, Index *indices) {
-      if (to_.empty()) return;
-      Index *const end = indices + to_.size();
-      const Index *const pre_end = end - 1;
-      typename std::vector<Child*>::const_iterator vertex = to_.begin();
+    template <class Cont> void PushNeighbors(Cont &context, Score accumulated, const Index *indices) {
+      if (to_ == end_to_) return;
+      Child **vertex = to_;
       GenerateEntry to_push;
+      std::copy(indices, indices + rule_.Variables(), to_push.indices.c_array());
+      Index *end = to_push.indices.c_array() + rule_.Variables();
+      std::size_t index_size = rule_.Variables() * sizeof(Index);
       // Loop is exited by change == pre_end where we either free or use indices.
       // *change is incremented each time then decremented at the end of each loop.  
-      for (Index *change = indices; ; --*change, ++change, ++vertex) {
+      for (Index *change = to_push.indices.c_array(); change != end; --*change, ++change, ++vertex) {
         to_push.score = accumulated - (**vertex)[*change].Total();
         ++*change;
         if ((*vertex)->Size() > *change) {
           to_push.score += (**vertex)[*change].Total();
         } else if ((*vertex)->Bound() == -kScoreInf) {
           // Don't bother because there's nothing more from this vertex.  
-          if (change == pre_end) {
-            context.DeleteIndices(rule_.Variables(), indices);
-            break;
-          }
           continue;
         } else {
           to_push.score += (*vertex)->Bound();
         }
         // TODO: avoid rehash if possible
-        bool seen = seen_indices_.insert(util::MurmurHashNative(indices, (const uint8_t*)end - (const uint8_t*)indices, 0)).second;
-        if (change == pre_end) {
-          if (seen) {
-            context.DeleteIndices(rule_.Variables(), indices);
-          } else {
-            to_push.indices = indices;
-            generate_.push(to_push);
-          }
-          break;
+        std::pair<typename SeenIndices::iterator, bool> seen(seen_indices_.insert(util::MurmurHashNative(to_push.indices.c_array(), index_size, 0)));
+        if (seen.second) {
+          // Insertion successful.  Add it.  
+          generate_.push(to_push);
+        } else {
+          assert(kMaxArity == 2);
+          seen_indices_.erase(seen.first);
         }
-        if (seen) continue;
-        to_push.indices = context.NewIndices(rule_.Variables());
-        std::copy(indices, end, to_push.indices);
-        generate_.push(to_push);
       }
     }
 
     // Priority queue of potential new hypotheses.  
     struct GenerateEntry {
-      Index *indices;
+      Indices indices;
       Score score;
 
       bool operator<(const GenerateEntry &other) const {
@@ -256,7 +266,9 @@ template <class Rule> class Edge : public Source<typename Rule::Final> {
 
     // Rule and pointers to rule arguments.  
     Rule rule_;
-    std::vector<Child*> to_;
+
+    Child *to_[kMaxArity];
+    Child **end_to_;
 };
 
 } // namespace search

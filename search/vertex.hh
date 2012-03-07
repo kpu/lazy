@@ -93,6 +93,7 @@ template <class Child> class Vertex : public Source<typename Child::Final> {
         }
         // Hypothesis matches the cached score.  Use it.  
         if (dedupe_.insert(got.RecombineHash()).second) {
+          if (!P::Size()) context.VertexHasHypothesis();
           AddFinal(got);
         }
         ++top.index;

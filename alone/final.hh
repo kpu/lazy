@@ -1,9 +1,12 @@
 #ifndef ALONE_FINAL__
 #define ALONE_FINAL__
 
+#include "alone/rule.hh"
 #include "lm/left.hh"
+#include "search/arity.hh"
 #include "search/types.hh"
 
+#include <boost/array.hpp>
 #include <vector>
 
 namespace alone {
@@ -13,7 +16,11 @@ class Rule;
 
 class Final {
   public:
-    Final(const Context &context, const Rule &from, std::vector<const Final *> &children);
+    typedef boost::array<const Final*, search::kMaxArity> ChildArray;
+
+    Final(const Context &context, const Rule &from, const ChildArray &children) : from_(from), children_(children) {
+      total_ = from.Apply(context, children_, lm_state_);
+    }
 
     search::Score Total() const { return total_; }
 
@@ -23,7 +30,9 @@ class Final {
 
     const lm::ngram::ChartState &State() const { return lm_state_; }
 
-    const std::vector<const Final *> &Children() const { return children_; }
+    const ChildArray &Children() const { return children_; }
+
+    search::Index ChildCount() const { return from_.Variables(); }
 
     const Rule &From() const { return from_; }
 
@@ -31,7 +40,8 @@ class Final {
     search::Score total_;
     lm::ngram::ChartState lm_state_;
     const Rule &from_;
-    std::vector<const Final *> children_;
+
+    ChildArray children_;
 };
 
 } // namespace alone

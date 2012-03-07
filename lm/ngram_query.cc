@@ -15,6 +15,9 @@ int main(int argc, char *argv[]) {
         case PROBING:
           Query<lm::ngram::ProbingModel>(argv[1], sentence_context, std::cin, std::cout);
           break;
+        case REST_PROBING:
+          Query<lm::ngram::RestProbingModel>(argv[1], sentence_context, std::cin, std::cout);
+          break;
         case TRIE:
           Query<TrieModel>(argv[1], sentence_context, std::cin, std::cout);
           break;

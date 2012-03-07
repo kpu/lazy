@@ -1,13 +1,23 @@
 #ifndef ALONE_RULE__
 #define ALONE_RULE__
 
-#include "alone/final.hh"
 #include "alone/vocab.hh"
+#include "search/arity.hh"
 #include "search/types.hh"
 
+#include <boost/array.hpp>
+
+#include <iosfwd>
 #include <vector>
 
+namespace lm { namespace ngram {
+  class ChartState;
+} } // namespace lm
+
 namespace alone {
+
+class Final;
+class Context;
 
 class Rule {
   public:
@@ -22,13 +32,15 @@ class Rule {
       ++variables_;
     }
 
-    void FinishedAdding(const Context &context, search::Score additive, bool bos);
+    void FinishedAdding(const Context &context, search::Score additive, bool add_sentence_bounds);
 
     search::Score Bound() const { return bound_; }
 
+    search::Score Additive() const { return additive_; }
+
     search::Index Variables() const { return variables_; }
 
-    search::Score Apply(const Context &context, const std::vector<const Final *> &children, lm::ngram::ChartState &state) const;
+    search::Score Apply(const Context &context, const boost::array<const Final*, search::kMaxArity> &children, lm::ngram::ChartState &state) const;
 
     // For printing.  
     typedef const std::vector<Word> ItemsRet;
@@ -44,6 +56,8 @@ class Rule {
 
     bool bos_;
 };
+
+std::ostream &operator<<(std::ostream &o, const Rule &rule);
 
 } // namespace alone
 

@@ -44,8 +44,9 @@ template <class Map, class Op> void Parse(StringPiece text, Map &map, Op &op) {
 Weights::Weights(StringPiece text) {
   Insert op;
   Parse<Map, Insert>(text, map_, op);
-  lm_weight_ = Steal("LanguageModel");
-  oov_weight_ = Steal("OOV");
+  lm_ = Steal("LanguageModel");
+  oov_ = Steal("OOV");
+  word_penalty_ = Steal("WordPenalty");
 }
 
 search::Score Weights::DotNoLM(StringPiece text) const {

@@ -20,7 +20,7 @@ class FormatException : public util::Exception {
 
 void JustVocab(util::FilePiece &from, std::ostream &to);
 
-void ReadCDec(Context &context, util::FilePiece &from, Graph &to);
+bool ReadCDec(Context &context, util::FilePiece &from, Graph &to);
 
 } // namespace alone
 
