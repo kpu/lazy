@@ -53,19 +53,20 @@ struct Left {
   bool operator==(const Left &other) const {
     return 
       (length == other.length) && 
-      pointers[length - 1] == other.pointers[length - 1];
+      pointers[length - 1] == other.pointers[length - 1] &&
+      full == other.full;
   }
 
   int Compare(const Left &other) const {
-    if (length != other.length) return length < other.length ? -1 : 1;
+    if (length < other.length) return -1;
+    if (length > other.length) return 1;
     if (pointers[length - 1] > other.pointers[length - 1]) return 1;
     if (pointers[length - 1] < other.pointers[length - 1]) return -1;
-    return 0;
+    return (int)full - (int)other.full;
   }
 
   bool operator<(const Left &other) const {
-    if (length != other.length) return length < other.length;
-    return pointers[length - 1] < other.pointers[length - 1];
+    return Compare(other) == -1;
   }
 
   void ZeroRemaining() {
@@ -75,23 +76,25 @@ struct Left {
 
   uint64_t pointers[kMaxOrder - 1];
   unsigned char length;
+  bool full;
 };
 
-inline size_t hash_value(const Left &left) {
-  return util::MurmurHashNative(&left.length, 1, left.pointers[left.length - 1]);
+inline uint64_t hash_value(const Left &left) {
+  unsigned char add[2];
+  add[0] = left.length;
+  add[1] = left.full;
+  return util::MurmurHashNative(add, 2, left.pointers[left.length - 1]);
 }
 
 struct ChartState {
   bool operator==(const ChartState &other) {
-    return (left == other.left) && (right == other.right) && (full == other.full);
+    return (right == other.right) && (left == other.left);
   }
 
   int Compare(const ChartState &other) const {
     int lres = left.Compare(other.left);
     if (lres) return lres;
-    int rres = right.Compare(other.right);
-    if (rres) return rres;
-    return (int)full - (int)other.full;
+    return right.Compare(other.right);
   }
 
   bool operator<(const ChartState &other) const {
@@ -104,15 +107,11 @@ struct ChartState {
   }
 
   Left left;
-  bool full;
   State right;
 };
 
-inline size_t hash_value(const ChartState &state) {
-  size_t hashes[2];
-  hashes[0] = hash_value(state.left);
-  hashes[1] = hash_value(state.right);
-  return util::MurmurHashNative(hashes, sizeof(size_t) * 2, state.full);
+inline uint64_t hash_value(const ChartState &state) {
+  return hash_value(state.right, hash_value(state.left));
 }
 
 template <class M> class RuleScore {
@@ -147,14 +146,14 @@ template <class M> class RuleScore {
     void BeginNonTerminal(const ChartState &in, float prob) {
       prob_ = prob;
       out_ = in;
-      left_done_ = in.full;
+      left_done_ = in.left.full;
     }
 
     void NonTerminal(const ChartState &in, float prob) {
       prob_ += prob;
       
       if (!in.left.length) {
-        if (in.full) {
+        if (in.left.full) {
           for (const float *i = out_.right.backoff; i < out_.right.backoff + out_.right.length; ++i) prob_ += *i;
           left_done_ = true;
           out_.right = in.right;
@@ -170,7 +169,7 @@ template <class M> class RuleScore {
           left_done_ = true;
         } else {
           out_.left = in.left;
-          left_done_ = in.full;
+          left_done_ = in.left.full;
         }
         return;
       }
@@ -188,7 +187,7 @@ template <class M> class RuleScore {
         std::swap(back, back2);
       }
 
-      if (in.full) {
+      if (in.left.full) {
         for (const float *i = back; i != back + next_use; ++i) prob_ += *i;
         left_done_ = true;
         out_.right = in.right;
@@ -215,7 +214,7 @@ template <class M> class RuleScore {
 
     float Finish() {
       // A N-1-gram might extend left and right but we should still set full to true because it's an N-1-gram.  
-      out_.full = left_done_ || (out_.left.length == model_.Order() - 1);
+      out_.left.full = left_done_ || (out_.left.length == model_.Order() - 1);
       return prob_;
     }
 
