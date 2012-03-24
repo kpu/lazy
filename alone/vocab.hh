@@ -4,6 +4,7 @@
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
 
+#include <boost/functional/hash/hash.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <string>
@@ -30,8 +31,14 @@ class Word {
     }
 
   private:
+    friend size_t hash_value(const Word &word);
     const std::pair<const std::string, lm::WordIndex> *entry_;
 };
+
+// Pointers are unique.  
+size_t hash_value(const Word &word) {
+  return boost::hash_value(word.entry_);
+}
 
 class Vocab {
   public:

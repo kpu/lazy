@@ -50,6 +50,21 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool a
   }
 }
 
+// TODO: clean this up, maybe just keep every state between NTs.  
+void Rule::MiddleState(const Context &context, lm::ngram::ChartState &state) {
+  std::vector<Word>::const_iterator i = items_.begin();
+  if (arity_) {
+    for (; i->Terminal(); ++i) {}
+    // Skip the non-terminal
+    ++i;
+  }
+  lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
+  for (; i != items_.end() && i->Terminal(); ++i) {
+    scorer.Terminal(i->Index());
+  }
+  scorer.Finish();
+}
+
 search::Score Rule::Apply(const Context &context, const Final::ChildArray &children, lm::ngram::ChartState &state) const {
   lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
   if (bos_) scorer.BeginSentence();
