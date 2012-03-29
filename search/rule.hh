@@ -1,7 +1,7 @@
-#ifndef ALONE_RULE__
-#define ALONE_RULE__
+#ifndef SEARCH_RULE__
+#define SEARCH_RULE__
 
-#include "alone/vocab.hh"
+#include "search/vocab.hh"
 #include "search/arity.hh"
 #include "search/types.hh"
 
@@ -14,7 +14,7 @@ namespace lm { namespace ngram {
   class ChartState;
 } } // namespace lm
 
-namespace alone {
+namespace search {
 
 class Final;
 class Context;
@@ -59,6 +59,6 @@ class Rule {
 
 std::ostream &operator<<(std::ostream &o, const Rule &rule);
 
-} // namespace alone
+} // namespace search
 
-#endif // ALONE_RULE__
+#endif // SEARCH_RULE__

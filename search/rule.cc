@@ -1,7 +1,7 @@
-#include "alone/rule.hh"
+#include "search/rule.hh"
 
-#include "alone/context.hh"
-#include "alone/final.hh"
+#include "search/context.hh"
+#include "search/final.hh"
 
 #include <ostream>
 

@@ -1,9 +1,9 @@
-#ifndef ALONE_FINAL__
-#define ALONE_FINAL__
+#ifndef SEARCH_FINAL__
+#define SEARCH_FINAL__
 
-#include "alone/rule.hh"
 #include "lm/left.hh"
 #include "search/arity.hh"
+#include "search/rule.hh"
 #include "search/types.hh"
 
 #include <boost/array.hpp>
@@ -46,4 +46,4 @@ class Final {
 
 } // namespace alone
 
-#endif // ALONE_FINAL__
+#endif // SEARCH_FINAL__

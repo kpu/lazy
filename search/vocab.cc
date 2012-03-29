@@ -1,9 +1,9 @@
-#include "alone/vocab.hh"
+#include "search/vocab.hh"
 
 #include "lm/virtual_interface.hh"
 #include "util/string_piece.hh"
 
-namespace alone {
+namespace search {
 
 Vocab::Vocab(const lm::base::Vocabulary &backing) : backing_(backing) {
   end_sentence_ = FindOrAdd("</s>");
@@ -18,4 +18,4 @@ Word Vocab::FindOrAdd(const StringPiece &str) {
   return Word(*map_.insert(to_ins).first);
 }
 
-} // namespace alone
+} // namespace search

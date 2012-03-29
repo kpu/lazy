@@ -1,5 +1,5 @@
-#ifndef ALONE_VOCAB__
-#define ALONE_VOCAB__
+#ifndef SEARCH_VOCAB__
+#define SEARCH_VOCAB__
 
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
@@ -11,7 +11,7 @@
 
 namespace lm { namespace base { class Vocabulary; } }
 
-namespace alone {
+namespace search {
 
 class Word {
   public:
@@ -59,5 +59,5 @@ class Vocab {
     Word end_sentence_;
 };
 
-} // namespace alone
-#endif // ALONE_VCOAB__
+} // namespace search
+#endif // SEARCH_VCOAB__
