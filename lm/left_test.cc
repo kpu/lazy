@@ -24,7 +24,7 @@ template <class M> void Short(const M &m) {
     Term("loin");
     BOOST_CHECK_CLOSE(-1.206319 - 0.3561665, score.Finish(), 0.001);
   }
-  BOOST_CHECK(base.full);
+  BOOST_CHECK(base.left.full);
   BOOST_CHECK_EQUAL(2, base.left.length);
   BOOST_CHECK_EQUAL(1, base.right.length);
   VCheck("loin", base.right.words[0]);
@@ -40,7 +40,7 @@ template <class M> void Short(const M &m) {
   BOOST_CHECK_EQUAL(3, more_left.left.length);
   BOOST_CHECK_EQUAL(1, more_left.right.length);
   VCheck("loin", more_left.right.words[0]);
-  BOOST_CHECK(more_left.full);
+  BOOST_CHECK(more_left.left.full);
 
   ChartState shorter;
   {
@@ -52,7 +52,7 @@ template <class M> void Short(const M &m) {
   BOOST_CHECK_EQUAL(1, shorter.left.length);
   BOOST_CHECK_EQUAL(1, shorter.right.length);
   VCheck("loin", shorter.right.words[0]);
-  BOOST_CHECK(shorter.full);
+  BOOST_CHECK(shorter.left.full);
 }
 
 template <class M> void Charge(const M &m) {
@@ -66,7 +66,7 @@ template <class M> void Charge(const M &m) {
   BOOST_CHECK_EQUAL(1, base.left.length);
   BOOST_CHECK_EQUAL(1, base.right.length);
   VCheck("more", base.right.words[0]);
-  BOOST_CHECK(base.full);
+  BOOST_CHECK(base.left.full);
 
   ChartState extend;
   {
@@ -78,7 +78,7 @@ template <class M> void Charge(const M &m) {
   BOOST_CHECK_EQUAL(2, extend.left.length);
   BOOST_CHECK_EQUAL(1, extend.right.length);
   VCheck("more", extend.right.words[0]);
-  BOOST_CHECK(extend.full);
+  BOOST_CHECK(extend.left.full);
 
   ChartState tobos;
   {
@@ -106,7 +106,7 @@ template <class M> float RightToLeft(const M &m, const std::vector<WordIndex> &w
   ChartState state;
   state.left.length = 0;
   state.right.length = 0;
-  state.full = false;
+  state.left.full = false;
   for (std::vector<WordIndex>::const_reverse_iterator i = words.rbegin(); i != words.rend(); ++i) {
     ChartState copy(state);
     RuleScore<M> score(m, state);
@@ -244,7 +244,7 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
   }
   BOOST_CHECK_EQUAL(1, consider.left.length);
   BOOST_CHECK_EQUAL(1, consider.right.length);
-  BOOST_CHECK(!consider.full);
+  BOOST_CHECK(!consider.left.full);
 
   ChartState higher;
   float higher_score;
@@ -256,7 +256,7 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
   BOOST_CHECK_CLOSE(-1.509559, higher_score, 0.001);
   BOOST_CHECK_EQUAL(1, higher.left.length);
   BOOST_CHECK_EQUAL(1, higher.right.length);
-  BOOST_CHECK(!higher.full);
+  BOOST_CHECK(!higher.left.full);
   VCheck("higher", higher.right.words[0]);
   BOOST_CHECK_CLOSE(-0.30103, higher.right.backoff[0], 0.001);
 
@@ -268,7 +268,7 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
     BOOST_CHECK_CLOSE(-1.509559 - 1.687872 - 0.30103, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(2, consider_higher.left.length);
-  BOOST_CHECK(!consider_higher.full);
+  BOOST_CHECK(!consider_higher.left.full);
 
   ChartState full;
   {
@@ -343,7 +343,7 @@ template <class M> void FullGrow(const M &m) {
     CHECK_SCORE("looking . </s>", l2_scores[1] = score.Finish());
   }
   BOOST_CHECK_EQUAL(l2[1].left.length, 1);
-  BOOST_CHECK(l2[1].full);
+  BOOST_CHECK(l2[1].left.full);
 
   ChartState top;
   {

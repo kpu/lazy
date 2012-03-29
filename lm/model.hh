@@ -62,8 +62,8 @@ class State {
     unsigned char length;
 };
 
-inline size_t hash_value(const State &state) {
-  return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length);
+inline uint64_t hash_value(const State &state, uint64_t seed = 0) {
+  return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length, seed);
 }
 
 namespace detail {

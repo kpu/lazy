@@ -1,16 +1,17 @@
-#ifndef ALONE_VOCAB__
-#define ALONE_VOCAB__
+#ifndef SEARCH_VOCAB__
+#define SEARCH_VOCAB__
 
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
 
+#include <boost/functional/hash/hash.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <string>
 
 namespace lm { namespace base { class Vocabulary; } }
 
-namespace alone {
+namespace search {
 
 class Word {
   public:
@@ -30,8 +31,14 @@ class Word {
     }
 
   private:
+    friend size_t hash_value(const Word &word);
     const std::pair<const std::string, lm::WordIndex> *entry_;
 };
+
+// Pointers are unique.  
+size_t hash_value(const Word &word) {
+  return boost::hash_value(word.entry_);
+}
 
 class Vocab {
   public:
@@ -52,5 +59,5 @@ class Vocab {
     Word end_sentence_;
 };
 
-} // namespace alone
-#endif // ALONE_VCOAB__
+} // namespace search
+#endif // SEARCH_VCOAB__

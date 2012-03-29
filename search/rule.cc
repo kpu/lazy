@@ -1,7 +1,7 @@
-#include "alone/rule.hh"
+#include "search/rule.hh"
 
-#include "alone/context.hh"
-#include "alone/final.hh"
+#include "search/context.hh"
+#include "search/final.hh"
 
 #include <ostream>
 
@@ -48,6 +48,21 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool a
     lm_score += scorer.Finish();
     lm_score += PositiveBackoffs(state);
   }
+}
+
+// TODO: clean this up, maybe just keep every state between NTs.  
+void Rule::MiddleState(const Context &context, lm::ngram::ChartState &state) {
+  std::vector<Word>::const_iterator i = items_.begin();
+  if (arity_) {
+    for (; i->Terminal(); ++i) {}
+    // Skip the non-terminal
+    ++i;
+  }
+  lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
+  for (; i != items_.end() && i->Terminal(); ++i) {
+    scorer.Terminal(i->Index());
+  }
+  scorer.Finish();
 }
 
 search::Score Rule::Apply(const Context &context, const Final::ChildArray &children, lm::ngram::ChartState &state) const {
