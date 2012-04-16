@@ -5,7 +5,6 @@
 
 namespace search {
 
-typedef unsigned char RuleIndex;
 typedef float Score;
 const Score kScoreInf = INFINITY;
 

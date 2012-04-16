@@ -7,17 +7,17 @@
 
 #include <math.h>
 
-namespace alone {
+namespace search {
 
-float PositiveBackoffs(const lm::ngram::ChartState &state) {
+/*float PositiveBackoffs(const lm::ngram::ChartState &state) {
   float ret = 0.0;
   for (unsigned char i = 0; i < state.right.length; ++i) {
     if (state.right.backoff[i] > 0.0) ret+= state.right.backoff[i];
   }
   return ret;
-}
+}*/
 
-void Rule::FinishedAdding(const Context &context, search::Score additive, bool add_sentence_bounds) {
+void Rule::FinishedAdding(const Context &context, Score additive, bool add_sentence_bounds) {
   const float word_penalty = -1.0 / M_LN10 * context.GetWeights().WordPenalty();
   additive_ = additive;
   bos_ = add_sentence_bounds;
@@ -26,11 +26,12 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool a
     // Don't count </s> as a word for purposes of word penalty.   
     additive_ -= word_penalty;
   }
-  search::Score lm_score = 0.0;
-  lm::ngram::ChartState state;
+  Score lm_score = 0.0;
+  lexical_.clear();
   const lm::WordIndex oov = context.LanguageModel().GetVocabulary().NotFound();
   for (std::vector<Word>::const_iterator word = items_.begin(); ; ++word) {
-    lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
+    lexical_.resize(lexical_.size() + 1);
+    lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), lexical_.back());
     // TODO: optimize
     if (bos_ && (word == items_.begin())) {
       scorer.BeginSentence();
@@ -38,6 +39,7 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool a
     for (; ; ++word) {
       if (word == items_.end()) {
         bound_ = additive_ + context.GetWeights().LM() * lm_score;
+        assert(lexical_.size() == arity_ + 1);
         return;
       }
       if (!word->Terminal()) break;
@@ -46,44 +48,8 @@ void Rule::FinishedAdding(const Context &context, search::Score additive, bool a
       additive_ += word_penalty;
     }
     lm_score += scorer.Finish();
-    lm_score += PositiveBackoffs(state);
+//    lm_score += PositiveBackoffs(state);
   }
-}
-
-// TODO: clean this up, maybe just keep every state between NTs.  
-void Rule::MiddleState(const Context &context, lm::ngram::ChartState &state) {
-  std::vector<Word>::const_iterator i = items_.begin();
-  if (arity_) {
-    for (; i->Terminal(); ++i) {}
-    // Skip the non-terminal
-    ++i;
-  }
-  lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
-  for (; i != items_.end() && i->Terminal(); ++i) {
-    scorer.Terminal(i->Index());
-  }
-  scorer.Finish();
-}
-
-search::Score Rule::Apply(const Context &context, const Final::ChildArray &children, lm::ngram::ChartState &state) const {
-  lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
-  if (bos_) scorer.BeginSentence();
-  const Final *const *child = children.data();
-  search::Score ret = additive_;
-  for (std::vector<Word>::const_iterator i = items_.begin(); i != items_.end(); ++i) {
-    if (i->Terminal()) {
-      scorer.Terminal(i->Index());
-    } else {
-      scorer.NonTerminal((*child)->State(), -PositiveBackoffs((*child)->State()));
-      ret += (*child)->Total();
-      ++child;
-    }
-  }
-  float lm_score = scorer.Finish();
-  lm_score += PositiveBackoffs(state);
-  ret += context.GetWeights().LM() * lm_score;
-  assert(bound_ + 0.001 >= ret);
-  return ret;
 }
 
 std::ostream &operator<<(std::ostream &o, const Rule &rule) {
@@ -98,4 +64,4 @@ std::ostream &operator<<(std::ostream &o, const Rule &rule) {
   return o;
 }
 
-} // namespace alone
+} // namespace search

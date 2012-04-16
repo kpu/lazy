@@ -40,7 +40,11 @@ class Rule {
 
     search::Index Arity() const { return arity_; }
 
-    void MiddleState(const Context &context, lm::ngram::ChartState &to);
+    bool BeginSentence() const { return bos_; }
+
+    const lm::ngram::ChartState &Lexical(search::Index index) const {
+      return lexical_[index];
+    }
 
     // For printing.  
     typedef const std::vector<Word> ItemsRet;
@@ -53,6 +57,8 @@ class Rule {
 
     // TODO: pool?
     std::vector<Word> items_;
+
+    std::vector<lm::ngram::ChartState> lexical_;
 
     bool bos_;
 };

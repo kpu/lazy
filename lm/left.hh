@@ -218,6 +218,13 @@ template <class M> class RuleScore {
       return prob_;
     }
 
+    void Reset() {
+      prob_ = 0.0;
+      left_done_ = false;
+      out_.left.length = 0;
+      out_.right.length = 0;
+    }
+
   private:
     bool ExtendLeft(const ChartState &in, unsigned char &next_use, unsigned char extend_length, const float *back_in, float *back_out) {
       ProcessRet(model_.ExtendLeft(
