@@ -21,6 +21,11 @@ void EdgeGenerator::Init(Edge &edge) {
   top_ = root.score;
 }
 
+unsigned int EdgeGenerator::PickVictim(const PartialEdge &in) const {
+  // TODO: better decision rule.
+  return in.nt[0].Length() >= in.nt[1].Length();
+}
+
 void EdgeGenerator::Pop(Context &context, VertexGenerator &parent) {
   const PartialEdge &top = generate_.top();
   unsigned int victim;

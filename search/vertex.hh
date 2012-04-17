@@ -2,8 +2,6 @@
 #define SEARCH_VERTEX__
 
 #include "lm/left.hh"
-#include "search/edge.hh"
-#include "search/final.hh"
 #include "search/types.hh"
 
 #include <boost/unordered_set.hpp>
@@ -16,6 +14,7 @@
 namespace search {
 
 class Edge;
+class Final;
 
 class VertexNode {
   public:
@@ -23,31 +22,63 @@ class VertexNode {
       return extend_.empty();
     }
 
-    Score Bound() const {
-      return bound_;
-    }
-
     const lm::ngram::ChartState &State() const { return state_; }
 
     Score Bound() const {
-      return Complete() ? back_->Bound() : extend_.front().Bound();
+      return Complete() ? end_->Bound() : extend_.front().Bound();
+    }
+
+    Index Length() const {
+      return state_.left.length + state_.right.length;
+    }
+
+    const Final *End() const { return end_; }
+
+    const VertexNode &operator[](size_t index) const {
+      return extend_[index];
+    }
+
+    size_t Size() const {
+      return extend_.size();
     }
 
   private:
-    std::vector<VectorNode> extend_;
+    std::vector<VertexNode*> extend_;
     lm::ngram::ChartState state_;
-    Final *back_;
+    const Final *end_;
 };
 
 class PartialVertex {
   public:
-    bool Complete();
+    explicit PartialVertex(const VertexNode &back) : back_(&back), index_(0) {}
 
-    Score Bound();
+    bool Complete() const { return back_->Complete(); }
 
-    Index Length();
+    const lm::ngram::ChartState &State() const { return back_->State(); }
 
-    bool Split(Context &context, PartialVertex &continuation, PartialVertex &alternate);
+    Score Bound() const { return Complete() ? back_->End().Bound() : (*back_)[index_].Bound(); }
+
+    Index Length() const { return back_->Length(); }
+
+    bool Split(Context &context, PartialVertex &continuation, PartialVertex &alternate) {
+      assert(!Complete());
+      continuation.back_ = &(*back_)[index_];
+      continuation.index_ = 0;
+      if (index_ + 1 < back_.Size()) {
+        alternate.back_ = back_;
+        alternate.index_ = index_ + 1;
+        return true;
+      }
+      return false;
+    }
+
+    const Final *End() const {
+      return back_->End();
+    }
+
+  private:
+    const VertexNode *back_;
+    Index index_;
 };
 
 class Vertex {
@@ -72,39 +103,17 @@ class Vertex {
 #endif
     }
 
-    const PartialVertex &RootPartial() const { return root_partial_; }
+    PartialVertex &RootPartial() const { return PartialVertex(root_); }
 
   private:
+    friend class VertexGeneratorstd::vector<Edge*>;
     std::vector<Edge*> edges_;
 
 #ifdef DEBUG
     bool finished_adding_;
 #endif
 
-
-    PartialVertex root_partial_;
-};
-
-class VertexGenerator {
-  public:
-    VertexGenerator(Vertex &gen);
-
-    void NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
-
-  private:
-    std::vector<EdgeGenerator> edges_;
-
-    struct LessByTop : public std::binary_function<const EdgeGenerator *, const EdgeGenerator *, bool> {
-      bool operator()(const EdgeGenerator *first, const EdgeGenerator *second) const {
-        return first->Top() < second->Top();
-      }
-    };
-
-    typedef std::priority_queue<EdgeGenerator*, std::vector<EdgeGenerator*>, LessByTop> Generate;
-    Generate generate_;
-
-    typedef boost::unordered_set<uint64_t> Dedupe;
-    Dedupe dedupe_;
+    VertexNode root_;
 };
 
 } // namespace search

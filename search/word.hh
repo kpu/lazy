@@ -13,6 +13,11 @@ class Word {
     // Construct a non-terminal.
     Word() : entry_(NULL) {}
 
+    // Returns true for two non-terminals even if their labels are different (since we don't care about labels).
+    bool operator==(const Word &other) const {
+      return entry_ == other.entry_;
+    }
+
     bool Terminal() const { return entry_ != NULL; }
 
     const std::string &String() const { return entry_->first; }
@@ -21,13 +26,21 @@ class Word {
 
   protected:
     friend class Vocab;
+    friend size_t hash_value(const Word &word);
+
     explicit Word(const std::pair<const std::string, lm::WordIndex> &entry) {
       entry_ = &entry;
     }
 
+    const std::pair<const std::string, lm::WordIndex> *Entry() const { return entry_; }
+
   private:
     const std::pair<const std::string, lm::WordIndex> *entry_;
 };
+
+size_t hash_value(const Word &word) {
+  return hash_value(word.Entry());
+}
 
 } // namespace search
 #endif // SEARCH_WORD__

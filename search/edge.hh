@@ -4,13 +4,11 @@
 #include "search/arity.hh"
 #include "search/rule.hh"
 #include "search/types.hh"
+#include "search/vertex.hh"
 
 #include <queue>
 
 namespace search {
-
-class Context;
-class VertexGenerator;
 
 class Edge {
   public:
@@ -42,38 +40,6 @@ class Edge {
 struct PartialEdge {
   Score score;
   PartialVertex nt[kMaxArity];
-};
-
-class EdgeGenerator {
-  public:
-    void Init(Edge &edge);
-
-    Score Top() const {
-      return top_;
-    }
-
-    void Pop(Context &context, VertexGenerator &parent);
-
-  private:
-    unsigned int PickVictim(const PartialEdge &in) const {
-      // TODO: better decision rule.
-      return in.nt[0].Length() >= in.nt[1].Length();
-    }
-
-    void RecomputeFinal(Context &context, const PartialEdge &to, lm::ngram::ChartState &state);
-
-    Score Adjustment(Context &context, const PartialEdge &to) const;
-
-    const Rule &GetRule() const {
-      return from_->GetRule();
-    }
-
-    Score top_;
-
-    typedef std::priority_queue<PartialEdge> Generate;
-    Generate generate_;
-
-    Edge *from_;
 };
 
 } // namespace search
