@@ -23,8 +23,8 @@ class Edge {
       *(end_to_++) = &vertex;
     }
 
-    const Vertex &GetVertex(Index index) const {
-      return to_[index];
+    const Vertex &GetVertex(std::size_t index) const {
+      return *to_[index];
     }
 
     const Rule &GetRule() const { return rule_; }
@@ -40,6 +40,10 @@ class Edge {
 struct PartialEdge {
   Score score;
   PartialVertex nt[kMaxArity];
+
+  bool operator<(const PartialEdge &other) const {
+    return score < other.score;
+  }
 };
 
 } // namespace search

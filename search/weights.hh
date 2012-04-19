@@ -1,6 +1,6 @@
 // For now, the individual features are not kept.  
-#ifndef ALONE_WEIGHTS__
-#define ALONE_WEIGHTS__
+#ifndef SEARCH_WEIGHTS__
+#define SEARCH_WEIGHTS__
 
 #include "search/types.hh"
 #include "util/exception.hh"
@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace alone {
+namespace search {
 
 class WeightParseException : public util::Exception {
   public:
@@ -44,6 +44,6 @@ class Weights {
     search::Score lm_, oov_, word_penalty_;
 };
 
-} // namespace alone
+} // namespace search
 
-#endif // ALONE_WEIGHTS__
+#endif // SEARCH_WEIGHTS__

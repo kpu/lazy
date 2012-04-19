@@ -1,9 +1,9 @@
-#include "alone/weights.hh"
+#include "search/weights.hh"
 #include "util/tokenize_piece.hh"
 
 #include <cstdlib>
 
-namespace alone {
+namespace search {
 
 namespace {
 struct Insert {
@@ -66,4 +66,4 @@ float Weights::Steal(const std::string &str) {
   }
 }
 
-} // namespace alone
+} // namespace search

@@ -24,6 +24,18 @@ class VertexGenerator {
     void NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
   private:
+    // Parallel structure to VertexNode.  
+    struct Trie {
+      Trie() : under(NULL) {}
+
+      VertexNode *under;
+      boost::unordered_map<uint64_t, Trie> extend;
+    };
+
+    Trie &FindOrInsert(Trie &node, uint64_t added, const lm::ngram::ChartState &state, unsigned char left, unsigned char right);
+
+    void CompleteTransition(Trie &node, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
+
     Context &context_;
 
     std::vector<EdgeGenerator> edges_;
@@ -37,14 +49,9 @@ class VertexGenerator {
     typedef std::priority_queue<EdgeGenerator*, std::vector<EdgeGenerator*>, LessByTop> Generate;
     Generate generate_;
 
-    struct Trie {
-      VertexNode *under;
-      boost::unordered_map<Word, Trie> extend;
-
-      Trie &Advance(Word word);
-    };
-
     Trie root_;
+
+    int to_pop_;
 };
 
 } // namespace search

@@ -2,6 +2,7 @@
 #define SEARCH_VERTEX__
 
 #include "lm/left.hh"
+#include "search/final.hh"
 #include "search/types.hh"
 
 #include <boost/unordered_set.hpp>
@@ -14,10 +15,25 @@
 namespace search {
 
 class Edge;
-class Final;
 
 class VertexNode {
   public:
+    VertexNode() : end_(NULL) {}
+
+    lm::ngram::ChartState &MutableState() {
+      return state_;
+    }
+
+    void AddExtend(VertexNode *next) {
+      extend_.push_back(next);
+    }
+
+    void SetEnd(Final *end) { end_ = end; }
+    
+    Final &MutableEnd() { return *end_; }
+
+    void SortAndSet();
+
     bool Complete() const {
       return extend_.empty();
     }
@@ -25,17 +41,18 @@ class VertexNode {
     const lm::ngram::ChartState &State() const { return state_; }
 
     Score Bound() const {
-      return Complete() ? end_->Bound() : extend_.front().Bound();
+      return bound_;
     }
 
-    Index Length() const {
+    unsigned char Length() const {
       return state_.left.length + state_.right.length;
     }
 
+    // May be NULL.
     const Final *End() const { return end_; }
 
     const VertexNode &operator[](size_t index) const {
-      return extend_[index];
+      return *extend_[index];
     }
 
     size_t Size() const {
@@ -45,26 +62,29 @@ class VertexNode {
   private:
     std::vector<VertexNode*> extend_;
     lm::ngram::ChartState state_;
-    const Final *end_;
+    Score bound_;
+    Final *end_;
 };
 
 class PartialVertex {
   public:
+    PartialVertex() {}
+
     explicit PartialVertex(const VertexNode &back) : back_(&back), index_(0) {}
 
     bool Complete() const { return back_->Complete(); }
 
     const lm::ngram::ChartState &State() const { return back_->State(); }
 
-    Score Bound() const { return Complete() ? back_->End().Bound() : (*back_)[index_].Bound(); }
+    Score Bound() const { return Complete() ? back_->End()->Bound() : (*back_)[index_].Bound(); }
 
-    Index Length() const { return back_->Length(); }
+    unsigned char Length() const { return back_->Length(); }
 
-    bool Split(Context &context, PartialVertex &continuation, PartialVertex &alternate) {
+    bool Split(Context &context, PartialVertex &continuation, PartialVertex &alternate) const {
       assert(!Complete());
       continuation.back_ = &(*back_)[index_];
       continuation.index_ = 0;
-      if (index_ + 1 < back_.Size()) {
+      if (index_ + 1 < back_->Size()) {
         alternate.back_ = back_;
         alternate.index_ = index_ + 1;
         return true;
@@ -72,14 +92,16 @@ class PartialVertex {
       return false;
     }
 
-    const Final *End() const {
-      return back_->End();
+    const Final &End() const {
+      return *back_->End();
     }
 
   private:
     const VertexNode *back_;
-    Index index_;
+    unsigned int index_;
 };
+
+extern PartialVertex kBlankPartialVertex;
 
 class Vertex {
   public:
@@ -103,10 +125,10 @@ class Vertex {
 #endif
     }
 
-    PartialVertex &RootPartial() const { return PartialVertex(root_); }
+    PartialVertex RootPartial() const { return PartialVertex(root_); }
 
   private:
-    friend class VertexGeneratorstd::vector<Edge*>;
+    friend class VertexGenerator;
     std::vector<Edge*> edges_;
 
 #ifdef DEBUG

@@ -1,7 +1,11 @@
 #ifndef SEARCH_CONTEXT__
 #define SEARCH_CONTEXT__
 
+#include "lm/model.hh"
+#include "search/final.hh"
 #include "search/types.hh"
+#include "search/vertex.hh"
+#include "search/weights.hh"
 #include "util/exception.hh"
 
 #include <boost/pool/object_pool.hpp>
@@ -20,33 +24,43 @@ class PoolOut : public util::Exception {
     ~PoolOut() throw() {}
 };
 
-template <class Final> class Context {
+class Context {
   public:
-    Context() : vertices_with_(0) {}
+    Context(const lm::ngram::RestProbingModel &model, Weights weights) : pop_limit_(1000), model_(model), vocab_(model.BaseVocabulary()), weights_(weights) {}
 
-    template <class Child, class R> Final *ApplyRule(Child &child_class, const R &rule, const typename Final::ChildArray &children) {
-      Final *ret = final_pool_.construct(child_class, rule, children);
-      UTIL_THROW_IF(!ret, PoolOut, " for finals");
+    Final *NewFinal() {
+     Final *ret = final_pool_.construct();
+     if (!ret) throw PoolOut();
+     return ret;
+    }
+
+    VertexNode *NewVertexNode() {
+      VertexNode *ret = vertex_node_pool_.construct();
+      if (!ret) throw PoolOut();
       return ret;
     }
 
-    void DeleteFinal(Final *final) {
-      final_pool_.destroy(final);
-    }
+    unsigned int PopLimit() const { return pop_limit_; }
 
-    void SetVertexCount(size_t count)  {
-      total_vertices_ = count;
-    }
+    const lm::ngram::RestProbingModel &LanguageModel() const { return model_; }
 
-    void VertexHasHypothesis() {
-      std::cerr << (++vertices_with_) << '/' << total_vertices_ << " vertices have a hypothesis\n";
-    }
+    Vocab &MutableVocab() { return vocab_; }
+
+    const Vocab &GetVocab() const { return vocab_; }
+
+    const Weights &GetWeights() const { return weights_; }
 
   private:
     boost::object_pool<Final> final_pool_;
+    boost::object_pool<VertexNode> vertex_node_pool_;
 
-    size_t total_vertices_;
-    size_t vertices_with_;
+    unsigned int pop_limit_;
+
+    const lm::ngram::RestProbingModel &model_;
+
+    Vocab vocab_;
+
+    Weights weights_;
 };
 
 } // namespace search

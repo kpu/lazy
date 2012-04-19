@@ -26,7 +26,7 @@ class EdgeGenerator {
       return top_;
     }
 
-    void Pop(Context &context, VertexGenerator &parent);
+    bool Pop(Context &context, VertexGenerator &parent);
 
   private:
     unsigned int PickVictim(const PartialEdge &in) const;

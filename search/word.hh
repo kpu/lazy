@@ -3,6 +3,8 @@
 
 #include "lm/word_index.hh"
 
+#include <boost/functional/hash.hpp>
+
 #include <string>
 #include <utility>
 
@@ -38,8 +40,8 @@ class Word {
     const std::pair<const std::string, lm::WordIndex> *entry_;
 };
 
-size_t hash_value(const Word &word) {
-  return hash_value(word.Entry());
+inline size_t hash_value(const Word &word) {
+  return boost::hash_value(word.Entry());
 }
 
 } // namespace search

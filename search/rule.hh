@@ -1,9 +1,9 @@
 #ifndef SEARCH_RULE__
 #define SEARCH_RULE__
 
-#include "search/vocab.hh"
 #include "search/arity.hh"
 #include "search/types.hh"
+#include "search/vocab.hh"
 
 #include <boost/array.hpp>
 
@@ -16,13 +16,10 @@ namespace lm { namespace ngram {
 
 namespace search {
 
-class Final;
 class Context;
 
 class Rule {
   public:
-    typedef ::alone::Final Final;
-
     Rule() : arity_(0), bos_(false) {}
 
     void AppendTerminal(Word w) { items_.push_back(w); }
@@ -32,17 +29,17 @@ class Rule {
       ++arity_;
     }
 
-    void FinishedAdding(const Context &context, search::Score additive, bool add_sentence_bounds);
+    void FinishedAdding(const Context &context, Score additive, bool add_sentence_bounds);
 
-    search::Score Bound() const { return bound_; }
+    Score Bound() const { return bound_; }
 
-    search::Score Additive() const { return additive_; }
+    Score Additive() const { return additive_; }
 
-    search::Index Arity() const { return arity_; }
+    unsigned int Arity() const { return arity_; }
 
     bool BeginSentence() const { return bos_; }
 
-    const lm::ngram::ChartState &Lexical(search::Index index) const {
+    const lm::ngram::ChartState &Lexical(unsigned int index) const {
       return lexical_[index];
     }
 
@@ -51,9 +48,9 @@ class Rule {
     ItemsRet &Items() const { return items_; }
 
   private:
-    search::Score bound_, additive_;
+    Score bound_, additive_;
 
-    search::Index arity_;
+    unsigned int arity_;
 
     // TODO: pool?
     std::vector<Word> items_;
