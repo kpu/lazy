@@ -1,9 +1,9 @@
 #include "alone/read.hh"
 
-#include "alone/context.hh"
 #include "alone/graph.hh"
-#include "alone/weights.hh"
 #include "search/arity.hh"
+#include "search/context.hh"
+#include "search/weights.hh"
 #include "util/file_piece.hh"
 
 #include <boost/unordered_set.hpp>
@@ -15,9 +15,9 @@ namespace alone {
 
 namespace {
 
-Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool final) {
+Graph::Edge &ReadEdge(search::Context &context, util::FilePiece &from, Graph &to, bool final) {
   Graph::Edge *ret = to.NewEdge();
-  Rule &rule = ret->InitRule();
+  search::Rule &rule = ret->InitRule();
   StringPiece got;
   while ("|||" != (got = from.ReadDelimited())) {
     if ('[' == *got.data() && ']' == got.data()[got.size() - 1]) {
@@ -26,14 +26,14 @@ Graph::Edge &ReadEdge(Context &context, util::FilePiece &from, Graph &to, bool f
       unsigned long int child = std::strtoul(got.data() + 1, &end_ptr, 10);
       UTIL_THROW_IF(end_ptr != got.data() + got.size() - 1, FormatException, "Bad non-terminal" << got);
       UTIL_THROW_IF(child >= to.VertexSize(), FormatException, "Reference to vertex " << child << " but we only have " << to.VertexSize() << " vertices.  Is the file in bottom-up format?");
-      ret->Add(to.GetVertex(child));
+      ret->Add(to.MutableVertex(child));
       rule.AppendNonTerminal();
     } else {
       rule.AppendTerminal(context.MutableVocab().FindOrAdd(got));
     }
   }
   rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
-  UTIL_THROW_IF(rule.Variables() > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << rule.Variables());
+  UTIL_THROW_IF(rule.Arity() > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << rule.Arity());
   ret->FinishedAdding(context);
   return *ret;
 }
@@ -65,7 +65,7 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
   from.ReadLine();
 }
 
-bool ReadCDec(Context &context, util::FilePiece &from, Graph &to) {
+bool ReadCDec(search::Context &context, util::FilePiece &from, Graph &to) {
   unsigned long int vertices;
   try {
     vertices = from.ReadULong();

@@ -35,7 +35,7 @@ class VertexNode {
     void SortAndSet();
 
     bool Complete() const {
-      return extend_.empty();
+      return end_ != NULL;
     }
 
     const lm::ngram::ChartState &State() const { return state_; }

@@ -1,8 +1,8 @@
 #ifndef ALONE_GRAPH__
 #define ALONE_GRAPH__
 
-#include "alone/rule.hh"
 #include "search/edge.hh"
+#include "search/rule.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
 
@@ -43,8 +43,8 @@ template <class T> class FixedAllocator {
 
 class Graph {
   public:
-    typedef search::Edge<Rule> Edge;
-    typedef search::Vertex<Edge> Vertex;
+    typedef search::Edge Edge;
+    typedef search::Vertex Vertex;
 
     Graph() {}
 
@@ -59,7 +59,7 @@ class Graph {
 
     std::size_t VertexSize() const { return vertices_.Size(); }
 
-    Vertex &GetVertex(search::Index index) {
+    Vertex &MutableVertex(std::size_t index) {
       return vertices_[index];
     }
 

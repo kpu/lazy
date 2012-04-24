@@ -10,6 +10,8 @@
 
 namespace search {
 
+class Context;
+
 class Edge {
   public:
     Edge() {
@@ -22,6 +24,8 @@ class Edge {
       assert(end_to_ - to_ < kMaxArity);
       *(end_to_++) = &vertex;
     }
+
+    void FinishedAdding(const Context &) const {}
 
     const Vertex &GetVertex(std::size_t index) const {
       return *to_[index];

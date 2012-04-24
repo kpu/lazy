@@ -1,12 +1,8 @@
-lib standalone : assemble.cc read.cc rule.cc vocab.cc weights.cc ../lm//lm ../util//util ../search//search : <include>.. : : <include>.. ;
+lib standalone : assemble.cc read.cc ../lm//lm ../util//util ../search//search : <include>.. : : <include>.. ;
 
 exe decode : standalone main.cc ;
 exe just_vocab : standalone just_vocab.cc ;
 exe filter : standalone filter.cc ;
-
-import testing ;
-
-unit-test weights_test : weights_test.cc standalone ..//boost_unit_test_framework ;
 
 install legacy : decode just_vocab filter
   : <location>$(TOP)/alone <install-type>EXE <install-dependencies>on <link>shared:<dll-path>$(TOP)/alone <link>shared:<install-type>LIB ;

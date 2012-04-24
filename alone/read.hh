@@ -7,9 +7,10 @@
 
 namespace util { class FilePiece; }
 
+namespace search { class Context; }
+
 namespace alone {
 
-class Context;
 class Graph;
 
 class FormatException : public util::Exception {
@@ -20,7 +21,7 @@ class FormatException : public util::Exception {
 
 void JustVocab(util::FilePiece &from, std::ostream &to);
 
-bool ReadCDec(Context &context, util::FilePiece &from, Graph &to);
+bool ReadCDec(search::Context &context, util::FilePiece &from, Graph &to);
 
 } // namespace alone
 

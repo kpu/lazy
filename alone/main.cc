@@ -1,7 +1,7 @@
 #include "alone/assemble.hh"
-#include "alone/context.hh"
 #include "alone/graph.hh"
 #include "alone/read.hh"
+#include "search/context.hh"
 #include "util/file_piece.hh"
 #include "util/usage.hh"
 
@@ -15,10 +15,20 @@ void Decode(const char *lm_file, StringPiece weight_str) {
   util::FilePiece graph_file(0, "stdin", &std::cerr);
 
   while (true) {
-    Context context(lm, weights);
+    search::Context context(lm, weights);
     Graph graph;
     if (!ReadCDec(context, graph_file, graph)) break;
-    context.SetVertexCount(graph.VertexSize());
+    for (std::size_t i = 0; i < graph.VertexSize(); ++i) {
+      search::VertexGenerator(context, graph.MutableVertex(i));
+    }
+
+    const search::PartialVertex &top = graph.Root().RootPartial();
+    if (!top.Size()) {
+      std::cout << "Empty" << std::endl;
+    } else {
+
+    }
+
     Graph::Vertex &root = graph.Root();
     float beat = root.Bound();
     while (!root.Size() && (root.Bound() != -search::kScoreInf)) {
