@@ -1,6 +1,7 @@
 #ifndef SEARCH_RULE__
 #define SEARCH_RULE__
 
+#include "lm/left.hh"
 #include "search/arity.hh"
 #include "search/types.hh"
 #include "search/vocab.hh"

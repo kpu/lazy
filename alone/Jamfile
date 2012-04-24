@@ -1,8 +1,6 @@
 lib standalone : assemble.cc read.cc ../lm//lm ../util//util ../search//search : <include>.. : : <include>.. ;
 
 exe decode : standalone main.cc ;
-exe just_vocab : standalone just_vocab.cc ;
-exe filter : standalone filter.cc ;
 
-install legacy : decode just_vocab filter
+install legacy : decode
   : <location>$(TOP)/alone <install-type>EXE <install-dependencies>on <link>shared:<dll-path>$(TOP)/alone <link>shared:<install-type>LIB ;

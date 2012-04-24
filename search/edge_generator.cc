@@ -13,6 +13,7 @@ void EdgeGenerator::Init(Edge &edge) {
   root.score = GetRule().Bound();
   for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
     root.nt[i] = edge.GetVertex(i).RootPartial();
+    if (root.nt[i].Empty()) return;
     root.score += root.nt[i].Bound();
   }
   for (unsigned int i = GetRule().Arity(); i < 2; ++i) {
@@ -53,7 +54,7 @@ bool EdgeGenerator::Pop(Context &context, VertexGenerator &parent) {
   alternate.nt[stay] = top.nt[stay];
   // The alternate's score will change because alternate.nt[victim] changes.  
   alternate.score = top.score - alternate.nt[victim].Bound();
-  if (top.nt[victim].Split(context, continuation.nt[victim], alternate.nt[victim])) {
+  if (top.nt[victim].Split(continuation.nt[victim], alternate.nt[victim])) {
     // We have an alternate.  
     alternate.score += alternate.nt[victim].Bound();
     // TODO: dedupe?  

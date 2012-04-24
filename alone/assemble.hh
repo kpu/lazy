@@ -3,11 +3,13 @@
 
 #include <iosfwd>
 
+namespace search {
+class Final;
+} // namespace search
+
 namespace alone {
 
-class Final;
-
-std::ostream &operator<<(std::ostream &o, const Final &final);
+std::ostream &operator<<(std::ostream &o, const search::Final &final);
 
 } // namespace alone
 

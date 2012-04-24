@@ -34,8 +34,13 @@ class VertexNode {
 
     void SortAndSet();
 
+    // Should only happen to a root node when the entire vertex is empty.   
+    bool Empty() const {
+      return !end_ && extend_.empty();
+    }
+
     bool Complete() const {
-      return end_ != NULL;
+      return end_;
     }
 
     const lm::ngram::ChartState &State() const { return state_; }
@@ -72,6 +77,8 @@ class PartialVertex {
 
     explicit PartialVertex(const VertexNode &back) : back_(&back), index_(0) {}
 
+    bool Empty() const { return back_->Empty(); }
+
     bool Complete() const { return back_->Complete(); }
 
     const lm::ngram::ChartState &State() const { return back_->State(); }
@@ -80,7 +87,7 @@ class PartialVertex {
 
     unsigned char Length() const { return back_->Length(); }
 
-    bool Split(Context &context, PartialVertex &continuation, PartialVertex &alternate) const {
+    bool Split(PartialVertex &continuation, PartialVertex &alternate) const {
       assert(!Complete());
       continuation.back_ = &(*back_)[index_];
       continuation.index_ = 0;
