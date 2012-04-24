@@ -90,9 +90,11 @@ void EdgeGenerator::RecomputeFinal(Context &context, const PartialEdge &to, lm::
   }
   scorer.NonTerminal(to.nt[0].State());
   scorer.NonTerminal(GetRule().Lexical(1));
-  if (GetRule().Arity() == 1) return;
-  scorer.NonTerminal(to.nt[1].State());
-  scorer.NonTerminal(GetRule().Lexical(2));
+  if (GetRule().Arity() == 2) {
+    scorer.NonTerminal(to.nt[1].State());
+    scorer.NonTerminal(GetRule().Lexical(2));
+  }
+  scorer.Finish();
   return;
 }
 
