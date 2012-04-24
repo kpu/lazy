@@ -21,6 +21,7 @@ void Decode(const char *lm_file, StringPiece weight_str) {
     Graph graph;
     if (!ReadCDec(context, graph_file, graph)) break;
     for (std::size_t i = 0; i < graph.VertexSize(); ++i) {
+      std::cerr << "Vertex " << i << " of " << graph.VertexSize() << std::endl; 
       search::VertexGenerator(context, graph.MutableVertex(i));
     }
 

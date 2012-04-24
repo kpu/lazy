@@ -32,38 +32,46 @@ unsigned int EdgeGenerator::PickVictim(const PartialEdge &in) const {
 
 bool EdgeGenerator::Pop(Context &context, VertexGenerator &parent) {
   const PartialEdge &top = generate_.top();
-  unsigned int victim;
-  if (top.nt[0].Complete()) {
-    if (top.nt[1].Complete()) {
-      lm::ngram::ChartState state;
-      RecomputeFinal(context, top, state);
-      parent.NewHypothesis(state, *from_, top);
-      generate_.pop();
-      top_ = generate_.empty() ? -kScoreInf : generate_.top().score;
-      return !generate_.empty();
+  unsigned int victim = 0;
+  unsigned char lowest_length = 255;
+  for (unsigned int i = 0; i != GetRule().Arity(); ++i) {
+    if (!top.nt[i].Complete() && top.nt[i].Length() < lowest_length) {
+      lowest_length = top.nt[i].Length();
+      victim = i;
     }
-    victim = 1;
-  } else if (top.nt[1].Complete()) {
-    victim = 0;
-  } else {
-    victim = PickVictim(top);
   }
+  if (lowest_length == 255) {
+    // All states report complete.  
+    lm::ngram::ChartState state;
+    RecomputeFinal(context, top, state);
+    parent.NewHypothesis(state, *from_, top);
+    generate_.pop();
+    top_ = generate_.empty() ? -kScoreInf : generate_.top().score;
+    return !generate_.empty();
+  }
+
   unsigned int stay = !victim;
   PartialEdge continuation, alternate;
   continuation.nt[stay] = top.nt[stay];
   alternate.nt[stay] = top.nt[stay];
   // The alternate's score will change because alternate.nt[victim] changes.  
-  alternate.score = top.score - alternate.nt[victim].Bound();
-  if (top.nt[victim].Split(continuation.nt[victim], alternate.nt[victim])) {
+  alternate.score = top.score - top.nt[victim].Bound();
+  bool split = top.nt[victim].Split(continuation.nt[victim], alternate.nt[victim]);
+  generate_.pop();
+  // top is now a dangling reference.  
+
+  if (split) {
     // We have an alternate.  
     alternate.score += alternate.nt[victim].Bound();
     // TODO: dedupe?  
     generate_.push(alternate);
   }
-  continuation.score = GetRule().Bound() + continuation.nt[0].Bound() + continuation.nt[1].Bound() + Adjustment(context, continuation);
+  continuation.score = GetRule().Bound() + Adjustment(context, continuation);
+  for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
+    continuation.score += continuation.nt[i].Bound();
+  }
   // TODO: dedupe?  
   generate_.push(continuation);
-  generate_.pop();
   top_ = generate_.top().score;
   return true;
 }

@@ -89,7 +89,7 @@ class PartialVertex {
 
     bool Split(PartialVertex &continuation, PartialVertex &alternate) const {
       assert(!Complete());
-      continuation.back_ = &(*back_)[index_];
+      continuation.back_ = &((*back_)[index_]);
       continuation.index_ = 0;
       if (index_ + 1 < back_->Size()) {
         alternate.back_ = back_;
