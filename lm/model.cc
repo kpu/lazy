@@ -264,7 +264,7 @@ template <class Search, class VocabularyT> float GenericModel<Search, Vocabulary
   float ret;
   typename Search::Node node;
   if (first_length == 1) {
-    if (pointers_begin <= pointers_end) return 0.0;
+    if (pointers_begin >= pointers_end) return 0.0;
     bool independent_left;
     uint64_t extend_left;
     typename Search::UnigramPointer ptr(search_.LookupUnigram(static_cast<WordIndex>(*pointers_begin), node, independent_left, extend_left));
