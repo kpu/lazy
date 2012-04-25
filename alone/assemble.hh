@@ -11,6 +11,8 @@ namespace alone {
 
 std::ostream &operator<<(std::ostream &o, const search::Final &final);
 
+void DetailedFinal(std::ostream &o, const search::Final &final);
+
 } // namespace alone
 
 #endif // ALONE_ASSEMBLE__
