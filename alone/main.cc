@@ -34,7 +34,7 @@ void Decode(const char *lm_file, StringPiece weight_str) {
         top.Split(continuation, ignored);
         top = continuation;
       }
-      std::cout << top.End() << std::endl;
+      std::cout << top.End() << " ||| " << top.End().Bound() << std::endl;
     }
 
     util::PrintUsage(std::cerr);
