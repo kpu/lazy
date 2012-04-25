@@ -163,8 +163,10 @@ template <class M> class RuleScore {
 
       if (!out_.right.length) {
         out_.right = in.right;
-        prob_ += model_.UnRest(in.left.pointers, in.left.pointers + in.left.length, 1);
-        if (left_done_) return;
+        if (left_done_) {
+          prob_ += model_.UnRest(in.left.pointers, in.left.pointers + in.left.length, 1);
+          return;
+        }
         if (out_.left.length) {
           left_done_ = true;
         } else {

@@ -166,22 +166,14 @@ template <class M> void LookupVocab(const M &m, const StringPiece &str, std::vec
   }
 }
 
-template <class M> void FullSentence(const M &m) {
-  std::vector<WordIndex> words;
-  LookupVocab(m, "in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>", words);
-  float expect = LeftToRight(m, words, true);
-  BOOST_CHECK_CLOSE(expect, RightToLeft(m, words, true), 0.001);
-  BOOST_CHECK_CLOSE(expect, TreeMiddle(m, words, true), 0.001);
-}
-
 #define TEXT_TEST(str) \
   LookupVocab(m, str, words); \
-  expect = LeftToRight(m, words); \
-  BOOST_CHECK_CLOSE(expect, RightToLeft(m, words), 0.001); \
-  BOOST_CHECK_CLOSE(expect, TreeMiddle(m, words), 0.001); \
+  expect = LeftToRight(m, words, rest); \
+  BOOST_CHECK_CLOSE(expect, RightToLeft(m, words, rest), 0.001); \
+  BOOST_CHECK_CLOSE(expect, TreeMiddle(m, words, rest), 0.001); \
 
 // Build sentences, or parts thereof, from right to left.  
-template <class M> void GrowBig(const M &m) {
+template <class M> void GrowBig(const M &m, bool rest = false) {
   std::vector<WordIndex> words;
   float expect;
   TEXT_TEST("in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
@@ -197,7 +189,7 @@ template <class M> void GrowBig(const M &m) {
   TEXT_TEST("consider higher");
 }
 
-template <class M> void GrowSmall(const M &m) {
+template <class M> void GrowSmall(const M &m, bool rest = false) {
   std::vector<WordIndex> words;
   float expect;
   TEXT_TEST("in biarritz watching considering looking . </s>");
@@ -372,7 +364,6 @@ template <class M> void Everything() {
   AlsoWouldConsiderHigher(m);
   GrowSmall(m);
   FullGrow(m);
-  FullSentence(m);
 }
 
 BOOST_AUTO_TEST_CASE(ProbingAll) {
@@ -395,7 +386,7 @@ BOOST_AUTO_TEST_CASE(RestProbing) {
   Config config;
   config.messages = NULL;
   RestProbingModel m(FileLocation(), config);
-  FullSentence(m);
+  GrowBig(m, true);
 }
 
 } // namespace
