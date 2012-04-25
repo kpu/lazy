@@ -20,6 +20,7 @@ struct GreaterByBound : public std::binary_function<const VertexNode *, const Ve
 void VertexNode::SortAndSet() {
   if (Complete()) {
     assert(end_);
+    assert(extend_.empty());
     bound_ = end_->Bound();
     return;
   }
