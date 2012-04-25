@@ -103,12 +103,7 @@ Score EdgeGenerator::Adjustment(Context &context, const PartialEdge &to) const {
   if (GetRule().Arity() == 0) return 0.0;
   lm::ngram::ChartState state;
   lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
-  if (GetRule().BeginSentence()) {
-    scorer.BeginSentence();
-    scorer.NonTerminal(GetRule().Lexical(0));
-  } else {
-    scorer.BeginNonTerminal(GetRule().Lexical(0));
-  }
+  scorer.BeginNonTerminal(GetRule().Lexical(0));
   scorer.NonTerminal(to.nt[0].State());
   float total = 0.0;
   if (!to.nt[0].Complete()) {
