@@ -66,7 +66,7 @@ bool EdgeGenerator::Pop(Context &context, VertexGenerator &parent) {
     // TODO: dedupe?  
     generate_.push(alternate);
   }
-  continuation.score = GetRule().Bound() + Adjustment(context, continuation);
+  continuation.score = GetRule().Bound() + Adjustment(context, continuation) * context.GetWeights().LM();
   for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
     continuation.score += continuation.nt[i].Bound();
   }
