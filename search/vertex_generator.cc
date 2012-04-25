@@ -60,7 +60,7 @@ VertexGenerator::Trie &VertexGenerator::FindOrInsert(VertexGenerator::Trie &node
     next.under = context_.NewVertexNode();
     lm::ngram::ChartState &writing = next.under->MutableState();
     writing = state;
-    writing.left.full = (left == state.left.length) && state.left.full;
+    writing.left.full &= (left == state.left.length);
     writing.left.length = left;
     writing.right.length = right;
     node.under->AddExtend(next.under);
@@ -70,6 +70,7 @@ VertexGenerator::Trie &VertexGenerator::FindOrInsert(VertexGenerator::Trie &node
 
 void VertexGenerator::CompleteTransition(VertexGenerator::Trie &starter, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial) {
   VertexNode &node = *FindOrInsert(starter, kCompletionAdd, state, state.left.length, state.right.length).under;
+  assert(node.State().left.full == state.left.full);
   if (!node.End()) {
     Final *final = context_.NewFinal();
     final->Reset(partial.score, from.GetRule(), partial.nt[0].End(), partial.nt[1].End());
