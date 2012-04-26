@@ -67,6 +67,8 @@ class Graph {
       return edges_.New();
     }
 
+    std::size_t EdgeSize() const { return edges_.Size(); }
+
     void SetRoot(Vertex *root) { root_ = root; }
 
     Vertex &Root() { return *root_; }

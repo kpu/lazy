@@ -4,6 +4,7 @@
 #include "search/context.hh"
 #include "search/vertex_generator.hh"
 #include "search/weights.hh"
+#include "util/ersatz_progress.hh"
 #include "util/file_piece.hh"
 #include "util/usage.hh"
 
@@ -18,12 +19,13 @@ void Decode(const char *lm_file, StringPiece weight_str, unsigned int pop_limit)
   lm::ngram::RestProbingModel lm(lm_file);
   util::FilePiece graph_file(0, "stdin", &std::cerr);
 
-  while (true) {
+  for (unsigned int sentence = 0; ; ++sentence) {
     search::Context context(lm, weights, pop_limit);
     Graph graph;
     if (!ReadCDec(context, graph_file, graph)) break;
-    for (std::size_t i = 0; i < graph.VertexSize(); ++i) {
-      std::cerr << "Vertex " << i << " of " << graph.VertexSize() << std::endl; 
+    std::cerr << "Sentence " << sentence << " has " << graph.VertexSize() << " and " << graph.EdgeSize() << " edges.";
+    util::ErsatzProgress progress(graph.VertexSize());
+    for (std::size_t i = 0; i < graph.VertexSize(); ++i, ++progress) {
       search::VertexGenerator(context, graph.MutableVertex(i));
     }
 

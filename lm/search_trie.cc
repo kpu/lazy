@@ -382,7 +382,7 @@ template <class Doing> class BlankManager {
 };
 
 template <class Doing> void RecursiveInsert(const unsigned char total_order, const WordIndex unigram_count, RecordReader *input, std::ostream *progress_out, const char *message, Doing &doing) {
-  util::ErsatzProgress progress(progress_out, message, unigram_count + 1);
+  util::ErsatzProgress progress(unigram_count + 1, progress_out, message);
   WordIndex unigram = 0;
   std::priority_queue<Gram> grams;
   grams.push(Gram(&unigram, 1));
@@ -504,7 +504,7 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
     inputs[i-2].Rewind();
   }
   if (Quant::kTrain) {
-    util::ErsatzProgress progress(config.messages, "Quantizing", std::accumulate(counts.begin() + 1, counts.end(), 0));
+    util::ErsatzProgress progress(std::accumulate(counts.begin() + 1, counts.end(), 0), config.messages, "Quantizing");
     for (unsigned char i = 2; i < counts.size(); ++i) {
       TrainQuantizer(i, counts[i-1], sri.Values(i), inputs[i-2], progress, quant);
     }
