@@ -23,7 +23,7 @@ void Decode(const char *lm_file, StringPiece weight_str, unsigned int pop_limit)
     search::Context context(lm, weights, pop_limit);
     Graph graph;
     if (!ReadCDec(context, graph_file, graph)) break;
-    std::cerr << "Sentence " << sentence << " has " << graph.VertexSize() << " and " << graph.EdgeSize() << " edges.";
+    std::cerr << "Sentence " << sentence << " has " << graph.VertexSize() << " and " << graph.EdgeSize() << " edges.\n";
     util::ErsatzProgress progress(graph.VertexSize());
     for (std::size_t i = 0; i < graph.VertexSize(); ++i, ++progress) {
       search::VertexGenerator(context, graph.MutableVertex(i));
