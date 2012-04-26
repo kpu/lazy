@@ -26,7 +26,7 @@ class PoolOut : public util::Exception {
 
 class Context {
   public:
-    Context(const lm::ngram::RestProbingModel &model, Weights weights) : pop_limit_(1000), model_(model), vocab_(model.BaseVocabulary()), weights_(weights) {}
+    Context(const lm::ngram::RestProbingModel &model, Weights weights, unsigned int pop_limit) : pop_limit_(pop_limit), model_(model), vocab_(model.BaseVocabulary()), weights_(weights) {}
 
     Final *NewFinal() {
      Final *ret = final_pool_.construct();
