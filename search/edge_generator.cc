@@ -7,13 +7,13 @@
 
 namespace search {
 
-void EdgeGenerator::Init(Edge &edge) {
+bool EdgeGenerator::Init(Edge &edge) {
   from_ = &edge;
   PartialEdge root;
   root.score = GetRule().Bound();
   for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
     root.nt[i] = edge.GetVertex(i).RootPartial();
-    if (root.nt[i].Empty()) return;
+    if (root.nt[i].Empty()) return false;
     root.score += root.nt[i].Bound();
   }
   for (unsigned int i = GetRule().Arity(); i < 2; ++i) {
@@ -23,6 +23,7 @@ void EdgeGenerator::Init(Edge &edge) {
   generate_ = Generate();
   generate_.push(root);
   top_ = root.score;
+  return true;
 }
 
 unsigned int EdgeGenerator::PickVictim(const PartialEdge &in) const {
@@ -31,6 +32,7 @@ unsigned int EdgeGenerator::PickVictim(const PartialEdge &in) const {
 }
 
 bool EdgeGenerator::Pop(Context &context, VertexGenerator &parent) {
+  assert(!generate_.empty());
   const PartialEdge &top = generate_.top();
   unsigned int victim = 0;
   unsigned char lowest_length = 255;

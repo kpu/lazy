@@ -20,7 +20,8 @@ class VertexGenerator;
 
 class EdgeGenerator {
   public:
-    void Init(Edge &edge);
+    // True if it has a hypothesis.  
+    bool Init(Edge &edge);
 
     Score Top() const {
       return top_;

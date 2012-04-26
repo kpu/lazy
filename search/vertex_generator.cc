@@ -9,9 +9,10 @@ namespace search {
 
 VertexGenerator::VertexGenerator(Context &context, Vertex &gen) : context_(context), edges_(gen.edges_.size()) {
   for (std::size_t i = 0; i < gen.edges_.size(); ++i) {
-    edges_[i].Init(*gen.edges_[i]);
-    generate_.push(&edges_[i]);
+    if (edges_[i].Init(*gen.edges_[i]))
+      generate_.push(&edges_[i]);
   }
+  gen.root_.InitRoot();
   root_.under = &gen.root_;
   to_pop_ = context.PopLimit();
   while (to_pop_ > 0 && !generate_.empty()) {
@@ -27,7 +28,6 @@ VertexGenerator::VertexGenerator(Context &context, Vertex &gen) : context_(conte
 namespace {
 const uint64_t kCompletionAdd = static_cast<uint64_t>(-1);
 } // namespace
-
 
 void VertexGenerator::NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial) {
   unsigned char left = 0, right = 0;
