@@ -83,7 +83,7 @@ inline uint64_t hash_value(const Left &left) {
   unsigned char add[2];
   add[0] = left.length;
   add[1] = left.full;
-  return util::MurmurHashNative(add, 2, left.pointers[left.length - 1]);
+  return util::MurmurHashNative(add, 2, left.length ? left.pointers[left.length - 1] : 0);
 }
 
 struct ChartState {
