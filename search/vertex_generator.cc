@@ -22,7 +22,7 @@ VertexGenerator::VertexGenerator(Context &context, Vertex &gen) : context_(conte
       generate_.push(top);
     }
   }
-  gen.root_.SortAndSet();
+  gen.root_.SortAndSet(context, NULL);
 }
 
 namespace {

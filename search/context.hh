@@ -30,14 +30,18 @@ class Context {
 
     Final *NewFinal() {
      Final *ret = final_pool_.construct();
-     if (!ret) throw PoolOut();
+     assert(ret);
      return ret;
     }
 
     VertexNode *NewVertexNode() {
       VertexNode *ret = vertex_node_pool_.construct();
-      if (!ret) throw PoolOut();
+      assert(ret);
       return ret;
+    }
+
+    void DeleteVertexNode(VertexNode *node) {
+      vertex_node_pool_.destroy(node);
     }
 
     unsigned int PopLimit() const { return pop_limit_; }

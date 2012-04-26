@@ -41,7 +41,7 @@ class VertexNode {
     
     Final &MutableEnd() { return *end_; }
 
-    void SortAndSet();
+    void SortAndSet(Context &context, VertexNode **parent_pointer);
 
     // Should only happen to a root node when the entire vertex is empty.   
     bool Empty() const {

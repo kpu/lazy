@@ -1,5 +1,7 @@
 #include "search/vertex.hh"
 
+#include "search/context.hh"
+
 #include <algorithm>
 #include <functional>
 
@@ -17,15 +19,21 @@ struct GreaterByBound : public std::binary_function<const VertexNode *, const Ve
 
 } // namespace
 
-void VertexNode::SortAndSet() {
+void VertexNode::SortAndSet(Context &context, VertexNode **parent_ptr) {
   if (Complete()) {
     assert(end_);
     assert(extend_.empty());
     bound_ = end_->Bound();
     return;
   }
-  for (std::vector<VertexNode*>::const_iterator i = extend_.begin(); i != extend_.end(); ++i) {
-    (*i)->SortAndSet();
+  if (extend_.size() == 1 && parent_ptr) {
+    *parent_ptr = extend_[0];
+    extend_[0]->SortAndSet(context, parent_ptr);
+    context.DeleteVertexNode(this);
+    return;
+  }
+  for (std::vector<VertexNode*>::iterator i = extend_.begin(); i != extend_.end(); ++i) {
+    (*i)->SortAndSet(context, &*i);
   }
   std::sort(extend_.begin(), extend_.end(), GreaterByBound());
   bound_ = extend_.front()->Bound();
