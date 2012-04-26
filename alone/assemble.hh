@@ -11,7 +11,7 @@ namespace alone {
 
 std::ostream &operator<<(std::ostream &o, const search::Final &final);
 
-void DetailedFinal(std::ostream &o, const search::Final &final);
+void DetailedFinal(std::ostream &o, const search::Final &final, const char *indent_str = "  ");
 
 } // namespace alone
 
