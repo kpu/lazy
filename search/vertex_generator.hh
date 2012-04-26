@@ -16,6 +16,7 @@ class ChartState;
 namespace search {
 
 class Context;
+class Final;
 
 class VertexGenerator {
   public:
@@ -34,7 +35,7 @@ class VertexGenerator {
 
     Trie &FindOrInsert(Trie &node, uint64_t added, const lm::ngram::ChartState &state, unsigned char left, unsigned char right);
 
-    void CompleteTransition(Trie &node, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
+    Final *CompleteTransition(Trie &node, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
     Context &context_;
 
@@ -50,6 +51,9 @@ class VertexGenerator {
     Generate generate_;
 
     Trie root_;
+
+    typedef boost::unordered_map<uint64_t, Final*> Existing;
+    Existing existing_;
 
     int to_pop_;
 };

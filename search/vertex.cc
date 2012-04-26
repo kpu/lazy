@@ -9,9 +9,9 @@ namespace search {
 
 namespace {
 
-struct LessByBound : public std::binary_function<const VertexNode *, const VertexNode *, bool> {
+struct GreaterByBound : public std::binary_function<const VertexNode *, const VertexNode *, bool> {
   bool operator()(const VertexNode *first, const VertexNode *second) const {
-    return first->Bound() < second->Bound();
+    return first->Bound() > second->Bound();
   }
 };
 
@@ -20,13 +20,14 @@ struct LessByBound : public std::binary_function<const VertexNode *, const Verte
 void VertexNode::SortAndSet() {
   if (Complete()) {
     assert(end_);
+    assert(extend_.empty());
     bound_ = end_->Bound();
     return;
   }
   for (std::vector<VertexNode*>::const_iterator i = extend_.begin(); i != extend_.end(); ++i) {
     (*i)->SortAndSet();
   }
-  std::sort(extend_.begin(), extend_.end(), LessByBound());
+  std::sort(extend_.begin(), extend_.end(), GreaterByBound());
   bound_ = extend_.front()->Bound();
 }
 

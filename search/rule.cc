@@ -29,6 +29,7 @@ void Rule::FinishedAdding(const Context &context, Score additive, bool add_sente
   Score lm_score = 0.0;
   lexical_.clear();
   const lm::WordIndex oov = context.LanguageModel().GetVocabulary().NotFound();
+
   for (std::vector<Word>::const_iterator word = items_.begin(); ; ++word) {
     lexical_.resize(lexical_.size() + 1);
     lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), lexical_.back());
@@ -38,6 +39,7 @@ void Rule::FinishedAdding(const Context &context, Score additive, bool add_sente
     }
     for (; ; ++word) {
       if (word == items_.end()) {
+        lm_score += scorer.Finish();
         bound_ = additive_ + context.GetWeights().LM() * lm_score;
         assert(lexical_.size() == arity_ + 1);
         return;
