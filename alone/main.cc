@@ -17,7 +17,7 @@ namespace alone {
 void Decode(const char *lm_file, StringPiece weight_str, unsigned int pop_limit) {
   search::Weights weights(weight_str);
   lm::ngram::RestProbingModel lm(lm_file);
-  util::FilePiece graph_file(0, "stdin", &std::cerr);
+  util::FilePiece graph_file(0, "stdin");
 
   for (unsigned int sentence = 0; ; ++sentence) {
     search::Context context(lm, weights, pop_limit);
