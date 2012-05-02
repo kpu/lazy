@@ -6,12 +6,13 @@
 #include "search/types.hh"
 #include "search/vertex.hh"
 
+#include <boost/noncopyable.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/scoped_array.hpp>
 
 namespace alone {
 
-template <class T> class FixedAllocator {
+template <class T> class FixedAllocator : boost::noncopyable {
   public:
     FixedAllocator() : current_(NULL), end_(NULL) {}
 
@@ -41,7 +42,7 @@ template <class T> class FixedAllocator {
     T *current_, *end_;
 };
 
-class Graph {
+class Graph : boost::noncopyable {
   public:
     typedef search::Edge Edge;
     typedef search::Vertex Vertex;
