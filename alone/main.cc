@@ -28,7 +28,6 @@ void Decode(const char *lm_file, StringPiece weight_str, unsigned int pop_limit,
 
     controller.Add(context.release(), graph.release());
   }
-  util::PrintUsage(std::cerr);
 }
 
 } // namespace alone
@@ -46,5 +45,7 @@ int main(int argc, char *argv[]) {
   }
   UTIL_THROW_IF(!thread_count, util::Exception, "Boost doesn't know how many threads there are.  Pass it on the command line.");
   alone::Decode(argv[1], argv[2], boost::lexical_cast<unsigned int>(argv[3]), thread_count);
+
+  util::PrintUsage(std::cerr);
   return 0;
 }
