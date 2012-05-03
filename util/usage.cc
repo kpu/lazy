@@ -34,8 +34,10 @@ void PrintUsage(std::ostream &out) {
   std::string line;
   while (getline(status, line)) {
     if (!strncmp(line.c_str(), "VmRSS:\t", 7)) {
-      out << "rss " << (line.c_str() + 7) << '\n';
+      out << "VmRSS:  " << (line.c_str() + 7) << '\n';
       break;
+    } else if (!strncmp(line.c_str(), "VmPeak:\t", 8)) {
+      out << "VmPeak: " << (line.c_str() + 8) << '\n';
     }
   }
 #endif
