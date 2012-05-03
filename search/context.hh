@@ -2,10 +2,10 @@
 #define SEARCH_CONTEXT__
 
 #include "lm/model.hh"
+#include "search/config.hh"
 #include "search/final.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
-#include "search/weights.hh"
 #include "util/exception.hh"
 
 #include <boost/pool/object_pool.hpp>
@@ -15,18 +15,11 @@
 
 namespace search {
 
-class PoolOut : public util::Exception {
-  public:
-    PoolOut() throw() {
-      *this << "Pool returned NULL";
-    }
-
-    ~PoolOut() throw() {}
-};
+class Weights;
 
 class Context {
   public:
-    Context(const lm::ngram::RestProbingModel &model, Weights weights, unsigned int pop_limit) : pop_limit_(pop_limit), model_(model), vocab_(model.BaseVocabulary()), weights_(weights) {}
+    explicit Context(const Config &config) : pop_limit_(config.PopLimit()), model_(config.LanguageModel()), vocab_(model_.BaseVocabulary()), weights_(config.GetWeights()) {}
 
     Final *NewFinal() {
      Final *ret = final_pool_.construct();
@@ -64,7 +57,7 @@ class Context {
 
     Vocab vocab_;
 
-    Weights weights_;
+    const Weights &weights_;
 };
 
 } // namespace search

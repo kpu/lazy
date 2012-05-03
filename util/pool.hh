@@ -7,6 +7,8 @@
 #include <boost/optional.hpp>
 #include <boost/thread.hpp>
 
+#include <iostream>
+
 #include <stdlib.h>
 
 namespace util {

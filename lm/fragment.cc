@@ -13,9 +13,9 @@ int main(int argc, char *argv[]) {
   StringPiece str;
   while (true) {
     float test;
-    try {
+/*    try {
       test = f.ReadFloat();
-    } catch (const util::EndOfFileException &e) { break; }
+    } catch (const util::EndOfFileException &e) { break; }*/
     str = f.ReadLine();
     lm::ngram::ChartState state;
     lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(m, state);
@@ -23,8 +23,9 @@ int main(int argc, char *argv[]) {
       scorer.Terminal(m.GetVocabulary().Index(*i));
     }
     float actual = scorer.Finish();
-    if (fabs(test - actual) > 0.0001) {
+    std::cout << actual << std::endl;
+/*    if (fabs(test - actual) > 0.0001) {
       std::cout << actual << " != " << test << " for" << str << std::endl;
-    }
+    }*/
   }
 }

@@ -1,23 +1,8 @@
+import sanity ;
+sanity.add_boost 104000 ;
+sanity.external_lib z ;
+
 project : default-build <threading>multi <warnings>on <variant>release ;
-
-import os ;
-
-cxxflags = [ os.environ "CXXFLAGS" ] ;
-cflags = [ os.environ "CFLAGS" ] ;
-ldflags = [ os.environ "LDFLAGS" ] ;
-project : requirements
-  <cxxflags>$(cxxflags)
-  <cflags>$(cflags)
-  <linkflags>$(ldflags)
-  ;
-
-path-constant TOP : . ;
 
 build-project search ;
 build-project alone ;
-
-lib z ;
-
-lib inner_boost_unit_test_framework : : <threading>single <name>boost_unit_test_framework ;
-lib inner_boost_unit_test_framework : : <threading>multi <name>boost_unit_test_framework-mt ;
-alias boost_unit_test_framework : inner_boost_unit_test_framework : : : <link>shared:<define>BOOST_TEST_DYN_LINK ;
