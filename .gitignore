@@ -4,3 +4,5 @@ lm/build_binary
 lm/liblm.so
 lm/libutil.so
 lm/query
+previous.sh
+dist
