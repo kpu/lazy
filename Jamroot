@@ -2,7 +2,10 @@ import sanity ;
 sanity.add_boost 104000 ;
 sanity.external_lib z ;
 
+project : requirements [ sanity.reqs ] ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
 build-project search ;
 build-project alone ;
+
+sanity.install-bin-libs alone//decode ;
