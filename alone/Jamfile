@@ -1,3 +1,4 @@
 lib standalone : assemble.cc read.cc threading.cc ../lm//lm ../util//util ../search//search : <include>.. : : <include>.. ;
 
-exe decode : standalone main.cc ..//boost_thread ;
+exe decode : main.cc standalone main.cc ..//boost_thread ;
+exe just_vocab : just_vocab.cc standalone ..//boost_thread ;

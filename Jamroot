@@ -8,4 +8,4 @@ project : default-build <threading>multi <warnings>on <variant>release ;
 build-project search ;
 build-project alone ;
 
-sanity.install-bin-libs alone//decode ;
+sanity.install-bin-libs alone//decode alone//just_vocab ;
