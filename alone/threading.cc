@@ -13,25 +13,30 @@
 
 namespace alone {
 
-void DecodeHandler::operator()(Input message) {
-  boost::scoped_ptr<search::Context> context(message.context);
-  boost::scoped_ptr<Graph> graph(message.graph);
+void Decode(search::Context *context_ptr, Graph *graph_ptr, std::ostream &out) {
+  boost::scoped_ptr<search::Context> context(context_ptr);
+  boost::scoped_ptr<Graph> graph(graph_ptr);
   for (std::size_t i = 0; i < graph->VertexSize(); ++i) {
     search::VertexGenerator(*context, graph->MutableVertex(i));
   }
   search::PartialVertex top = graph->Root().RootPartial();
   if (top.Empty()) {
-    Produce(message.sentence_id, "Empty");
+    out << "EMPTY";
   } else {
     search::PartialVertex continuation, ignored;
     while (!top.Complete()) {
       top.Split(continuation, ignored);
       top = continuation;
     }
-    std::stringstream assemble;
-    assemble << top.End() << " ||| " << top.End().Bound();
-    Produce(message.sentence_id, assemble.str());
+    out << top.End() << " ||| " << top.End().Bound();
   }
+
+}
+
+void DecodeHandler::operator()(Input message) {
+  std::stringstream assemble;
+  Decode(message.context, message.graph, assemble);
+  Produce(message.sentence_id, assemble.str());
 }
 
 void DecodeHandler::Produce(unsigned int sentence_id, const std::string &str) {

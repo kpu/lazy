@@ -14,7 +14,10 @@ class Context;
 } // namespace search
 
 namespace alone {
+
 class Graph;
+
+void Decode(search::Context *context, Graph *graph, std::ostream &out);
 
 struct SentenceID {
   unsigned int sentence_id;
