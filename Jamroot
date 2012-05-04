@@ -2,7 +2,7 @@ import sanity ;
 sanity.boost 104000 ;
 sanity.external-lib z ;
 
-project : requirements [ sanity.reqs ] ;
+project : requirements [ sanity.reqs ] <threading>multi:<define>WITH_THREADS ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
 build-project search ;

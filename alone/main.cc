@@ -14,19 +14,30 @@
 
 namespace alone {
 
+template <class Control> void ReadLoop(util::FilePiece &in, const search::Config &config, Control &control) {
+  for (unsigned int sentence = 0; ; ++sentence) {
+    std::auto_ptr<search::Context> context(new search::Context(config));
+    std::auto_ptr<Graph> graph(new Graph);
+    if (!ReadCDec(*context, in, *graph)) break;
+    control.Add(context.release(), graph.release());
+  }
+}
+
 void Decode(const char *lm_file, StringPiece weight_str, unsigned int pop_limit, unsigned int threads) {
   lm::ngram::RestProbingModel lm(lm_file);
   search::Config config(lm, weight_str, pop_limit);
   util::FilePiece graph_file(0, "stdin");
 
-  Controller controller(threads, std::cout);
-
-  for (unsigned int sentence = 0; ; ++sentence) {
-    std::auto_ptr<search::Context> context(new search::Context(config));
-    std::auto_ptr<Graph> graph(new Graph);
-    if (!ReadCDec(*context, graph_file, *graph)) break;
-
-    controller.Add(context.release(), graph.release());
+  if (threads > 1) {
+#ifdef WITH_THREADS
+    Controller controller(threads, std::cout);
+    ReadLoop(graph_file, config, controller);
+#else
+    UTIL_THROW(util::Exception, "Threading support not compiled in.");
+#endif
+  } else {
+    InThread controller(std::cout);
+    ReadLoop(graph_file, config, controller);
   }
 }
 
@@ -38,7 +49,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+#ifdef WITH_THREADS
   unsigned thread_count = boost::thread::hardware_concurrency();
+#else
+  unsigned thread_count = 1;
+#endif
   if (argc == 5) {
     thread_count = boost::lexical_cast<unsigned>(argv[4]);
     UTIL_THROW_IF(!thread_count, util::Exception, "Thread count 0");

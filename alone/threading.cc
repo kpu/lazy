@@ -28,11 +28,11 @@ void Decode(search::Context *context_ptr, Graph *graph_ptr, std::ostream &out) {
       top.Split(continuation, ignored);
       top = continuation;
     }
-    out << top.End() << " ||| " << top.End().Bound();
+    out << top.End() << " ||| " << top.End().Bound() << '\n';
   }
-
 }
 
+#ifdef WITH_THREADS
 void DecodeHandler::operator()(Input message) {
   std::stringstream assemble;
   Decode(message.context, message.graph, assemble);
@@ -51,7 +51,7 @@ void PrintHandler::operator()(Output message) {
   if (waiting_.size() <= relative) waiting_.resize(relative + 1);
   waiting_[relative] = message.str;
   for (std::string *lead; !waiting_.empty() && (lead = waiting_[0]); waiting_.pop_front(), ++done_) {
-    out_ << *lead << '\n';
+    out_ << *lead;
     delete lead;
   }
 }
@@ -60,5 +60,6 @@ Controller::Controller(size_t decode_workers, std::ostream &to) :
   sentence_id_(0),
   printer_(decode_workers, 1, boost::ref(to), Output::Poison()),
   decoder_(3, decode_workers, boost::ref(printer_.In()), Input::Poison()) {}
+#endif
 
 } // namespace alone

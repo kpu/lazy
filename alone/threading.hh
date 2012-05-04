@@ -1,10 +1,12 @@
 #ifndef ALONE_THREADING__
 #define ALONE_THREADING__
 
+#ifdef WITH_THREADS
 #include "util/pcqueue.hh"
 #include "util/pool.hh"
+#endif
 
-#include <sstream>
+#include <iosfwd>
 #include <queue>
 #include <string>
 
@@ -19,6 +21,7 @@ class Graph;
 
 void Decode(search::Context *context, Graph *graph, std::ostream &out);
 
+#ifdef WITH_THREADS
 struct SentenceID {
   unsigned int sentence_id;
   bool operator==(const SentenceID &other) const {
@@ -96,6 +99,20 @@ class Controller {
     util::Pool<PrintHandler> printer_;
 
     util::Pool<DecodeHandler> decoder_;
+};
+#endif
+
+// Same API as controller.  
+class InThread {
+  public:
+    explicit InThread(std::ostream &to) : to_(to) {}
+
+    void Add(search::Context *context, Graph *graph) {
+      Decode(context, graph, to_);
+    }
+
+  private:
+    std::ostream &to_;
 };
 
 } // namespace alone
