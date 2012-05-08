@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     UTIL_THROW_IF(!thread_count, util::Exception, "Thread count 0");
   }
   UTIL_THROW_IF(!thread_count, util::Exception, "Boost doesn't know how many threads there are.  Pass it on the command line.");
-  alone::Run(argv[1], argv[2], argv[3], boost::lexical_cast<unsigned int>(argv[3]), thread_count);
+  alone::Run(argv[1], argv[2], argv[3], boost::lexical_cast<unsigned int>(argv[4]), thread_count);
 
   util::PrintUsage(std::cerr);
   return 0;
