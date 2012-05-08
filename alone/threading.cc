@@ -2,6 +2,7 @@
 
 #include "alone/assemble.hh"
 #include "alone/graph.hh"
+#include "alone/read.hh"
 
 #include "search/context.hh"
 #include "search/vertex_generator.hh"
@@ -13,15 +14,19 @@
 
 namespace alone {
 
-void Decode(search::Context *context_ptr, Graph *graph_ptr, std::ostream &out) {
-  boost::scoped_ptr<search::Context> context(context_ptr);
-  boost::scoped_ptr<Graph> graph(graph_ptr);
-  for (std::size_t i = 0; i < graph->VertexSize(); ++i) {
-    search::VertexGenerator(*context, graph->MutableVertex(i));
+void Decode(const search::Config &config, util::FilePiece *in_ptr, std::ostream &out) {
+  boost::scoped_ptr<util::FilePiece> in(in_ptr);
+  search::Context context(config);
+  Graph graph;
+
+  ReadCDec(context, *in, graph);
+
+  for (std::size_t i = 0; i < graph.VertexSize(); ++i) {
+    search::VertexGenerator(context, graph.MutableVertex(i));
   }
-  search::PartialVertex top = graph->Root().RootPartial();
+  search::PartialVertex top = graph.Root().RootPartial();
   if (top.Empty()) {
-    out << "EMPTY";
+    out << "NO PATH FOUND";
   } else {
     search::PartialVertex continuation, ignored;
     while (!top.Complete()) {
@@ -35,7 +40,7 @@ void Decode(search::Context *context_ptr, Graph *graph_ptr, std::ostream &out) {
 #ifdef WITH_THREADS
 void DecodeHandler::operator()(Input message) {
   std::stringstream assemble;
-  Decode(message.context, message.graph, assemble);
+  Decode(config_, message.file, assemble);
   Produce(message.sentence_id, assemble.str());
 }
 
@@ -56,10 +61,10 @@ void PrintHandler::operator()(Output message) {
   }
 }
 
-Controller::Controller(size_t decode_workers, std::ostream &to) : 
+Controller::Controller(const search::Config &config, size_t decode_workers, std::ostream &to) : 
   sentence_id_(0),
   printer_(decode_workers, 1, boost::ref(to), Output::Poison()),
-  decoder_(3, decode_workers, boost::ref(printer_.In()), Input::Poison()) {}
+  decoder_(3, decode_workers, boost::in_place(boost::ref(config), boost::ref(printer_.In())), Input::Poison()) {}
 #endif
 
 } // namespace alone

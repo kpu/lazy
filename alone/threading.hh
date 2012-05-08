@@ -10,6 +10,10 @@
 #include <queue>
 #include <string>
 
+namespace util {
+class FilePiece;
+} // namespace util
+
 namespace search {
 class Config;
 class Context;
@@ -19,7 +23,7 @@ namespace alone {
 
 class Graph;
 
-void Decode(search::Context *context, Graph *graph, std::ostream &out);
+void Decode(const search::Config &config, util::FilePiece *in_ptr, std::ostream &out);
 
 #ifdef WITH_THREADS
 struct SentenceID {
@@ -30,13 +34,11 @@ struct SentenceID {
 };
 
 struct Input : public SentenceID {
-  search::Context *context;
-  Graph *graph;
+  util::FilePiece *file;
   static Input Poison() {
     Input ret;
     ret.sentence_id = static_cast<unsigned int>(-1);
-    ret.context = NULL;
-    ret.graph = NULL;
+    ret.file = NULL;
     return ret;
   }
 };
@@ -55,12 +57,14 @@ class DecodeHandler {
   public:
     typedef Input Request;
 
-    explicit DecodeHandler(util::PCQueue<Output> &out) : out_(out) {}
+    explicit DecodeHandler(const search::Config &config, util::PCQueue<Output> &out) : config_(config), out_(out) {}
 
     void operator()(Input message);
 
   private:
     void Produce(unsigned int sentence_id, const std::string &str);
+
+    const search::Config &config_;
     
     util::PCQueue<Output> &out_;
 };
@@ -82,14 +86,13 @@ class PrintHandler {
 class Controller {
   public:
     // This config must remain valid.   
-    explicit Controller(size_t decode_workers, std::ostream &to);
+    explicit Controller(const search::Config &config, size_t decode_workers, std::ostream &to);
 
-    // Takes ownership of graph.  
-    void Add(search::Context *context, Graph *graph) {
+    // Takes ownership of in.    
+    void Add(util::FilePiece *in) {
       Input input;
       input.sentence_id = sentence_id_++;
-      input.context = context;
-      input.graph = graph;
+      input.file = in;
       decoder_.Produce(input);
     }
 
@@ -105,14 +108,17 @@ class Controller {
 // Same API as controller.  
 class InThread {
   public:
-    explicit InThread(std::ostream &to) : to_(to) {}
+    InThread(const search::Config &config, std::ostream &to) : config_(config), to_(to) {}
 
-    void Add(search::Context *context, Graph *graph) {
-      Decode(context, graph, to_);
+    // Takes ownership of in.  
+    void Add(util::FilePiece *in) {
+      Decode(config_, in, to_);
     }
 
   private:
-    std::ostream &to_;
+    const search::Config &config_;
+
+    std::ostream &to_; 
 };
 
 } // namespace alone

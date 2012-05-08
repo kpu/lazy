@@ -94,8 +94,6 @@ bool ReadCDec(search::Context &context, util::FilePiece &from, Graph &to) {
   UTIL_THROW_IF("1" != str, FormatException, "Expected one edge to root");
   // The edge
   from.ReadLine();
-  // The translation
-  from.ReadLine();
   return true;
 }
 

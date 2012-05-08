@@ -1,7 +1,9 @@
 #ifndef SEARCH_CONFIG__
 #define SEARCH_CONFIG__
 
+#include "lm/model.hh"
 #include "search/weights.hh"
+#include "util/string_piece.hh"
 
 namespace search {
 
