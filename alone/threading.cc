@@ -3,7 +3,7 @@
 #include "alone/assemble.hh"
 #include "alone/graph.hh"
 #include "alone/read.hh"
-
+#include "lm/model.hh"
 #include "search/context.hh"
 #include "search/vertex_generator.hh"
 
@@ -13,10 +13,9 @@
 #include <sstream>
 
 namespace alone {
-
-void Decode(const search::Config &config, util::FilePiece *in_ptr, std::ostream &out) {
+template <class Model> void Decode(const search::Config &config, const Model &model, util::FilePiece *in_ptr, std::ostream &out) {
   boost::scoped_ptr<util::FilePiece> in(in_ptr);
-  search::Context context(config);
+  search::Context<Model> context(config, model);
   Graph graph;
 
   ReadCDec(context, *in, graph);
@@ -38,13 +37,13 @@ void Decode(const search::Config &config, util::FilePiece *in_ptr, std::ostream 
 }
 
 #ifdef WITH_THREADS
-void DecodeHandler::operator()(Input message) {
+template <class Model> void DecodeHandler<Model>::operator()(Input message) {
   std::stringstream assemble;
-  Decode(config_, message.file, assemble);
+  Decode(config_, model_, message.file, assemble);
   Produce(message.sentence_id, assemble.str());
 }
 
-void DecodeHandler::Produce(unsigned int sentence_id, const std::string &str) {
+template <class Model> void DecodeHandler<Model>::Produce(unsigned int sentence_id, const std::string &str) {
   Output out;
   out.sentence_id = sentence_id;
   out.str = new std::string(str);
@@ -61,10 +60,14 @@ void PrintHandler::operator()(Output message) {
   }
 }
 
-Controller::Controller(const search::Config &config, size_t decode_workers, std::ostream &to) : 
+template <class Model> Controller<Model>::Controller(const search::Config &config, const Model &model, size_t decode_workers, std::ostream &to) : 
   sentence_id_(0),
   printer_(decode_workers, 1, boost::ref(to), Output::Poison()),
-  decoder_(3, decode_workers, boost::in_place(boost::ref(config), boost::ref(printer_.In())), Input::Poison()) {}
+  decoder_(3, decode_workers, boost::in_place(boost::ref(config), boost::ref(model), boost::ref(printer_.In())), Input::Poison()) {}
+
+template class Controller<lm::ngram::RestProbingModel>;
+template class Controller<lm::ngram::ProbingModel>;
+
 #endif
 
 } // namespace alone

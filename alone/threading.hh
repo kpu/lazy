@@ -16,14 +16,14 @@ class FilePiece;
 
 namespace search {
 class Config;
-class Context;
+template <class Model> class Context;
 } // namespace search
 
 namespace alone {
 
-class Graph;
+template <class Model> void Decode(const search::Config &config, const Model &model, util::FilePiece *in_ptr, std::ostream &out);
 
-void Decode(const search::Config &config, util::FilePiece *in_ptr, std::ostream &out);
+class Graph;
 
 #ifdef WITH_THREADS
 struct SentenceID {
@@ -53,11 +53,11 @@ struct Output : public SentenceID {
   }
 };
 
-class DecodeHandler {
+template <class Model> class DecodeHandler {
   public:
     typedef Input Request;
 
-    explicit DecodeHandler(const search::Config &config, util::PCQueue<Output> &out) : config_(config), out_(out) {}
+    DecodeHandler(const search::Config &config, const Model &model, util::PCQueue<Output> &out) : config_(config), model_(model), out_(out) {}
 
     void operator()(Input message);
 
@@ -65,6 +65,8 @@ class DecodeHandler {
     void Produce(unsigned int sentence_id, const std::string &str);
 
     const search::Config &config_;
+
+    const Model &model_;
     
     util::PCQueue<Output> &out_;
 };
@@ -83,10 +85,10 @@ class PrintHandler {
     unsigned int done_;
 };
 
-class Controller {
+template <class Model> class Controller {
   public:
     // This config must remain valid.   
-    explicit Controller(const search::Config &config, size_t decode_workers, std::ostream &to);
+    explicit Controller(const search::Config &config, const Model &model, size_t decode_workers, std::ostream &to);
 
     // Takes ownership of in.    
     void Add(util::FilePiece *in) {
@@ -101,22 +103,24 @@ class Controller {
 
     util::Pool<PrintHandler> printer_;
 
-    util::Pool<DecodeHandler> decoder_;
+    util::Pool<DecodeHandler<Model> > decoder_;
 };
 #endif
 
 // Same API as controller.  
-class InThread {
+template <class Model> class InThread {
   public:
-    InThread(const search::Config &config, std::ostream &to) : config_(config), to_(to) {}
+    InThread(const search::Config &config, const Model &model, std::ostream &to) : config_(config), model_(model), to_(to) {}
 
     // Takes ownership of in.  
     void Add(util::FilePiece *in) {
-      Decode(config_, in, to_);
+      Decode(config_, model_, in, to_);
     }
 
   private:
     const search::Config &config_;
+
+    const Model &model_;
 
     std::ostream &to_; 
 };

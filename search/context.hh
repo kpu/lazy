@@ -17,9 +17,9 @@ namespace search {
 
 class Weights;
 
-class Context {
+class ContextBase {
   public:
-    explicit Context(const Config &config) : pop_limit_(config.PopLimit()), model_(config.LanguageModel()), vocab_(model_.BaseVocabulary()), weights_(config.GetWeights()) {}
+    ContextBase(const Config &config, const lm::base::Vocabulary &vocab) : pop_limit_(config.PopLimit()), vocab_(vocab), weights_(config.GetWeights()) {}
 
     Final *NewFinal() {
      Final *ret = final_pool_.construct();
@@ -39,8 +39,6 @@ class Context {
 
     unsigned int PopLimit() const { return pop_limit_; }
 
-    const lm::ngram::RestProbingModel &LanguageModel() const { return model_; }
-
     Vocab &MutableVocab() { return vocab_; }
 
     const Vocab &GetVocab() const { return vocab_; }
@@ -53,11 +51,20 @@ class Context {
 
     unsigned int pop_limit_;
 
-    const lm::ngram::RestProbingModel &model_;
-
     Vocab vocab_;
 
     const Weights &weights_;
+
+};
+
+template <class Model> class Context : public ContextBase {
+  public:
+    Context(const Config &config, const Model &model) : ContextBase(config, model.BaseVocabulary()), model_(model) {}
+
+    const Model &LanguageModel() const { return model_; }
+
+  private:
+    const Model &model_;
 };
 
 } // namespace search

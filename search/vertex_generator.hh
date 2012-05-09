@@ -15,12 +15,13 @@ class ChartState;
 
 namespace search {
 
-class Context;
+template <class Model> class Context;
+class ContextBase;
 class Final;
 
 class VertexGenerator {
   public:
-    VertexGenerator(Context &context, Vertex &gen);
+    template <class Model> VertexGenerator(Context<Model> &context, Vertex &gen);
 
     void NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
@@ -37,7 +38,7 @@ class VertexGenerator {
 
     Final *CompleteTransition(Trie &node, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
-    Context &context_;
+    ContextBase &context_;
 
     std::vector<EdgeGenerator> edges_;
 

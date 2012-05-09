@@ -11,13 +11,9 @@
 #include <iosfwd>
 #include <vector>
 
-namespace lm { namespace ngram {
-  class ChartState;
-} } // namespace lm
-
 namespace search {
 
-class Context;
+template <class Model> class Context;
 
 class Rule {
   public:
@@ -30,7 +26,7 @@ class Rule {
       ++arity_;
     }
 
-    void FinishedAdding(const Context &context, Score additive, bool add_sentence_bounds);
+    template <class Model> void FinishedAdding(const Context<Model> &context, Score additive, bool add_sentence_bounds);
 
     Score Bound() const { return bound_; }
 

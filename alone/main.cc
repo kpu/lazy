@@ -27,20 +27,35 @@ template <class Control> void ReadLoop(const std::string &graph_prefix, Control 
   }
 }
 
-void Run(const char *graph_prefix, const char *lm_file, StringPiece weight_str, unsigned int pop_limit, unsigned int threads) {
-  lm::ngram::RestProbingModel lm(lm_file);
-  search::Config config(lm, weight_str, pop_limit);
+template <class Model> void RunWithModelType(const char *graph_prefix, const char *model_file, StringPiece weight_str, unsigned int pop_limit, unsigned int threads) {
+  Model model(model_file);
+  search::Config config(weight_str, pop_limit);
 
   if (threads > 1) {
 #ifdef WITH_THREADS
-    Controller controller(config, threads, std::cout);
+    Controller<Model> controller(config, model, threads, std::cout);
     ReadLoop(graph_prefix, controller);
 #else
     UTIL_THROW(util::Exception, "Threading support not compiled in.");
 #endif
   } else {
-    InThread controller(config, std::cout);
+    InThread<Model> controller(config, model, std::cout);
     ReadLoop(graph_prefix, controller);
+  }
+}
+
+void Run(const char *graph_prefix, const char *lm_name, StringPiece weight_str, unsigned int pop_limit, unsigned int threads) {
+  lm::ngram::ModelType model_type;
+  if (!lm::ngram::RecognizeBinary(lm_name, model_type)) model_type = lm::ngram::PROBING;
+  switch (model_type) {
+    case lm::ngram::PROBING:
+      RunWithModelType<lm::ngram::ProbingModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      break;
+    case lm::ngram::REST_PROBING:
+      RunWithModelType<lm::ngram::RestProbingModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      break;
+    default:
+      UTIL_THROW(util::Exception, "Sorry this lm type isn't supported yet.");
   }
 }
 

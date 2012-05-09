@@ -17,7 +17,7 @@ namespace search {
   return ret;
 }*/
 
-void Rule::FinishedAdding(const Context &context, Score additive, bool add_sentence_bounds) {
+template <class Model> void Rule::FinishedAdding(const Context<Model> &context, Score additive, bool add_sentence_bounds) {
   const float word_penalty = -1.0 / M_LN10 * context.GetWeights().WordPenalty();
   additive_ = additive;
   bos_ = add_sentence_bounds;
@@ -32,7 +32,7 @@ void Rule::FinishedAdding(const Context &context, Score additive, bool add_sente
 
   for (std::vector<Word>::const_iterator word = items_.begin(); ; ++word) {
     lexical_.resize(lexical_.size() + 1);
-    lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), lexical_.back());
+    lm::ngram::RuleScore<Model> scorer(context.LanguageModel(), lexical_.back());
     // TODO: optimize
     if (bos_ && (word == items_.begin())) {
       scorer.BeginSentence();
@@ -53,6 +53,9 @@ void Rule::FinishedAdding(const Context &context, Score additive, bool add_sente
 //    lm_score += PositiveBackoffs(state);
   }
 }
+
+template void Rule::FinishedAdding(const Context<lm::ngram::RestProbingModel> &context, Score additive, bool add_sentence_bounds);
+template void Rule::FinishedAdding(const Context<lm::ngram::ProbingModel> &context, Score additive, bool add_sentence_bounds);
 
 std::ostream &operator<<(std::ostream &o, const Rule &rule) {
   const Rule::ItemsRet &items = rule.Items();

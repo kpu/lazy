@@ -15,7 +15,7 @@ namespace alone {
 
 namespace {
 
-Graph::Edge &ReadEdge(search::Context &context, util::FilePiece &from, Graph &to, bool final) {
+template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &to, bool final) {
   Graph::Edge *ret = to.NewEdge();
   search::Rule &rule = ret->InitRule();
   StringPiece got;
@@ -34,7 +34,6 @@ Graph::Edge &ReadEdge(search::Context &context, util::FilePiece &from, Graph &to
   }
   rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
   UTIL_THROW_IF(rule.Arity() > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << rule.Arity());
-  ret->FinishedAdding(context);
   return *ret;
 }
 
@@ -65,7 +64,7 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
   from.ReadLine();
 }
 
-bool ReadCDec(search::Context &context, util::FilePiece &from, Graph &to) {
+template <class Model> bool ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to) {
   unsigned long int vertices;
   try {
     vertices = from.ReadULong();
@@ -96,5 +95,8 @@ bool ReadCDec(search::Context &context, util::FilePiece &from, Graph &to) {
   from.ReadLine();
   return true;
 }
+
+template bool ReadCDec(search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &to);
+template bool ReadCDec(search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &to);
 
 } // namespace alone

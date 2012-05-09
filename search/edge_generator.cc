@@ -31,7 +31,7 @@ unsigned int EdgeGenerator::PickVictim(const PartialEdge &in) const {
   return in.nt[0].Length() >= in.nt[1].Length();
 }
 
-bool EdgeGenerator::Pop(Context &context, VertexGenerator &parent) {
+template <class Model> bool EdgeGenerator::Pop(Context<Model> &context, VertexGenerator &parent) {
   assert(!generate_.empty());
   const PartialEdge &top = generate_.top();
   unsigned int victim = 0;
@@ -78,12 +78,12 @@ bool EdgeGenerator::Pop(Context &context, VertexGenerator &parent) {
   return true;
 }
 
-void EdgeGenerator::RecomputeFinal(Context &context, const PartialEdge &to, lm::ngram::ChartState &state) {
+template <class Model> void EdgeGenerator::RecomputeFinal(Context<Model> &context, const PartialEdge &to, lm::ngram::ChartState &state) {
   if (GetRule().Arity() == 0) {
     state = GetRule().Lexical(0);
     return;
   }
-  lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
+  lm::ngram::RuleScore<Model> scorer(context.LanguageModel(), state);
   if (GetRule().BeginSentence()) {
     scorer.BeginSentence();
     scorer.NonTerminal(GetRule().Lexical(0));
@@ -101,10 +101,10 @@ void EdgeGenerator::RecomputeFinal(Context &context, const PartialEdge &to, lm::
 }
 
 // TODO: this can be done WAY more efficiently.
-Score EdgeGenerator::Adjustment(Context &context, const PartialEdge &to) const {
+template <class Model> Score EdgeGenerator::Adjustment(Context<Model> &context, const PartialEdge &to) const {
   if (GetRule().Arity() == 0) return 0.0;
   lm::ngram::ChartState state;
-  lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(context.LanguageModel(), state);
+  lm::ngram::RuleScore<Model> scorer(context.LanguageModel(), state);
   scorer.BeginNonTerminal(GetRule().Lexical(0));
   scorer.NonTerminal(to.nt[0].State());
   float total = 0.0;
@@ -125,5 +125,12 @@ Score EdgeGenerator::Adjustment(Context &context, const PartialEdge &to) const {
   scorer.NonTerminal(GetRule().Lexical(2));
   return total + scorer.Finish();
 }
+
+template bool EdgeGenerator::Pop(Context<lm::ngram::RestProbingModel> &context, VertexGenerator &parent);
+template bool EdgeGenerator::Pop(Context<lm::ngram::ProbingModel> &context, VertexGenerator &parent);
+template void EdgeGenerator::RecomputeFinal(Context<lm::ngram::RestProbingModel> &context, const PartialEdge &to, lm::ngram::ChartState &state);
+template void EdgeGenerator::RecomputeFinal(Context<lm::ngram::ProbingModel> &context, const PartialEdge &to, lm::ngram::ChartState &state);
+template Score EdgeGenerator::Adjustment(Context<lm::ngram::RestProbingModel> &context, const PartialEdge &to) const;
+template Score EdgeGenerator::Adjustment(Context<lm::ngram::ProbingModel> &context, const PartialEdge &to) const;
 
 } // namespace search
