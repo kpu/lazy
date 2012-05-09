@@ -14,11 +14,12 @@
 
 namespace alone {
 template <class Model> void Decode(const search::Config &config, const Model &model, util::FilePiece *in_ptr, std::ostream &out) {
-  boost::scoped_ptr<util::FilePiece> in(in_ptr);
   search::Context<Model> context(config, model);
   Graph graph;
-
-  ReadCDec(context, *in, graph);
+  {
+    boost::scoped_ptr<util::FilePiece> in(in_ptr);
+    ReadCDec(context, *in, graph);
+  }
 
   for (std::size_t i = 0; i < graph.VertexSize(); ++i) {
     search::VertexGenerator(context, graph.MutableVertex(i));
