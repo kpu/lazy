@@ -33,7 +33,7 @@ void Decode(const search::Config &config, util::FilePiece *in_ptr, std::ostream 
       top.Split(continuation, ignored);
       top = continuation;
     }
-    out << top.End() << " ||| " << top.End().Bound() << '\n';
+    out << top.End() << " ||| " << top.End().Bound() << std::endl;
   }
 }
 
