@@ -175,18 +175,25 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
 } // namespace detail
 
-typedef detail::GenericModel<detail::HashedSearch<BackoffValue>, ProbingVocabulary> ProbingModel;
-typedef detail::GenericModel<detail::HashedSearch<RestValue>, ProbingVocabulary> RestProbingModel;
+// Instead of typedef, inherit.  This allows the Model etc to be forward declared.  
+// Oh the joys of C and C++. 
+#define LM_COMMA() ,
+#define LM_NAME_MODEL(name, from)\
+class name : public from {\
+  public:\
+    name(const char *file, const Config &config = Config()) : from(file, config) {}\
+};
+
+LM_NAME_MODEL(ProbingModel, detail::GenericModel<detail::HashedSearch<BackoffValue> LM_COMMA() ProbingVocabulary>);
+LM_NAME_MODEL(RestProbingModel, detail::GenericModel<detail::HashedSearch<RestValue> LM_COMMA() ProbingVocabulary>);
+LM_NAME_MODEL(TrieModel, detail::GenericModel<trie::TrieSearch<DontQuantize LM_COMMA() trie::DontBhiksha> LM_COMMA() SortedVocabulary>);
+LM_NAME_MODEL(ArrayTrieModel, detail::GenericModel<trie::TrieSearch<DontQuantize LM_COMMA() trie::ArrayBhiksha> LM_COMMA() SortedVocabulary>);
+LM_NAME_MODEL(QuantTrieModel, detail::GenericModel<trie::TrieSearch<SeparatelyQuantize LM_COMMA() trie::DontBhiksha> LM_COMMA() SortedVocabulary>);
+LM_NAME_MODEL(QuantArrayTrieModel, detail::GenericModel<trie::TrieSearch<SeparatelyQuantize LM_COMMA() trie::ArrayBhiksha> LM_COMMA() SortedVocabulary>);
+
 // Default implementation.  No real reason for it to be the default.  
 typedef ::lm::ngram::ProbingVocabulary Vocabulary;
 typedef ProbingModel Model;
-
-// Smaller implementation.
-typedef detail::GenericModel<trie::TrieSearch<DontQuantize, trie::DontBhiksha>, SortedVocabulary> TrieModel;
-typedef detail::GenericModel<trie::TrieSearch<DontQuantize, trie::ArrayBhiksha>, SortedVocabulary> ArrayTrieModel;
-
-typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiksha>, SortedVocabulary> QuantTrieModel;
-typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::ArrayBhiksha>, SortedVocabulary> QuantArrayTrieModel;
 
 } // namespace ngram
 } // namespace lm

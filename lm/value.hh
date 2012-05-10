@@ -2,7 +2,11 @@
 #define LM_VALUE__
 
 #include "lm/model_type.hh"
+#include "lm/value_build.hh"
 #include "lm/weights.hh"
+#include "util/bit_packing.hh"
+
+#include <inttypes.h>
 
 namespace lm {
 namespace ngram {
@@ -12,9 +16,9 @@ template <class Weights> class GenericProbingProxy {
   public:
     explicit GenericProbingProxy(const Weights &to) : to_(&to) {}
 
-    GenericProbingProxy() : to_(NULL) {}
+    GenericProbingProxy() : to_(0) {}
 
-    bool Found() const { return to_ != NULL; }
+    bool Found() const { return to_ != 0; }
 
     float Prob() const {
       util::FloatEnc enc;
@@ -40,9 +44,9 @@ template <class Weights> class GenericTrieUnigramProxy {
   public:
     explicit GenericTrieUnigramProxy(const Weights &to) : to_(&to) {}
 
-    GenericTrieUnigramProxy() : to_(NULL) {}
+    GenericTrieUnigramProxy() : to_(0) {}
 
-    bool Found() const { return to_ != NULL; }
+    bool Found() const { return to_ != 0; }
     float Prob() const { return to_->prob; }
     float Backoff() const { return to_->backoff; }
     float Rest() const { return Prob(); }
@@ -83,22 +87,12 @@ struct BackoffValue {
     uint64_t Next() const { return next; }
   };
 
-  static void SetRest(const Prob &/*prob*/) {}
-  static void SetRest(const Weights &/*weights*/) {}
-  static bool MarkExtends(Weights &weights, const Weights &/*from*/) {
-    util::UnsetSign(weights.prob);
-    return false;
-  }
-
-  static bool MarkExtends(Weights &weights, const Prob &/*from*/) {
-    util::UnsetSign(weights.prob);
-    return false;
-  }
-
-  // Probing doesn't need to go back to unigram.
-  const static bool kMarkEvenLower = false;
-
   const static bool kDifferentRest = false;
+
+  template <class Model, class C> void Callback(const Config &, unsigned int, typename Model::Vocabulary &, C &callback) {
+    NoRestBuild build;
+    callback(build);
+  }
 };
 
 struct RestValue {
@@ -137,30 +131,24 @@ struct RestValue {
   };
 #pragma pack(pop)
 
-  static void SetRest(const Prob &/*prob*/) {}
-  static void SetRest(Weights &weights) {
-    weights.rest = weights.prob;
-    util::SetSign(weights.rest);
-  }
-
-  static bool MarkExtends(Weights &weights, const Weights &from) {
-    util::UnsetSign(weights.prob);
-    if (weights.rest >= from.rest) return false;
-    weights.rest = from.rest;
-    return true;
-  }
-
-  static bool MarkExtends(Weights &weights, const Prob &from) {
-    util::UnsetSign(weights.prob);
-    if (weights.rest >= from.prob) return false;
-    weights.rest = from.prob;
-    return true;
-  }
- 
-  // Probing does need to go back to unigram.  
-  const static bool kMarkEvenLower = true;
-
   const static bool kDifferentRest = true;
+
+  template <class Model, class C> void Callback(const Config &config, unsigned int order, typename Model::Vocabulary &vocab, C &callback) {
+    switch (config.rest_function) {
+      case Config::REST_MAX:
+        {
+          MaxRestBuild build;
+          callback(build);
+        }
+        break;
+      case Config::REST_LOWER:
+        {
+          LowerRestBuild<Model> build(config, order, vocab);
+          callback(build);
+        }
+        break;
+    }
+  }
 };
 
 } // namespace ngram

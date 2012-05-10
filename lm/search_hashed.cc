@@ -3,6 +3,7 @@
 #include "lm/binary_format.hh"
 #include "lm/blank.hh"
 #include "lm/lm_exception.hh"
+#include "lm/model.hh"
 #include "lm/read_arpa.hh"
 #include "lm/value.hh"
 #include "lm/vocab.hh"
@@ -14,6 +15,8 @@
 
 namespace lm {
 namespace ngram {
+
+class ProbingModel;
 
 namespace {
 
@@ -75,15 +78,17 @@ template <class Value> void FindLower(
 }
 
 // Between usually has  single entry, the value to adjust.  But sometimes SRI stupidly pruned entries so it has unitialized blank values to be set here.  
-template <class Added, class Value> void AdjustLower(
+template <class Added, class Build> void AdjustLower(
     const Added &added,
-    std::vector<typename Value::Weights *> &between, 
+    const Build &build,
+    std::vector<typename Build::Value::Weights *> &between, 
     const unsigned int n,
     const std::vector<WordIndex> &vocab_ids,
-    typename Value::Weights *unigrams,
-    std::vector<util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> > &middle) {
+    typename Build::Value::Weights *unigrams,
+    std::vector<util::ProbingHashTable<typename Build::Value::ProbingEntry, util::IdentityHash> > &middle) {
+  typedef typename Build::Value Value;
   if (between.size() == 1) {
-    Value::MarkExtends(*between.front(), added);
+    build.MarkExtends(*between.front(), added);
     return;
   }
   typedef util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> Middle;
@@ -91,15 +96,16 @@ template <class Added, class Value> void AdjustLower(
   // Order of the n-gram on which probabilities are based.  
   unsigned char basis = n - between.size();
   assert(basis != 0);
-  typename Value::Weights **change = &between.back();
+  typename Build::Value::Weights **change = &between.back();
   // Skip the basis.
   --change;
   if (basis == 1) {
+    // Hallucinate a bigram based on a unigram's backoff and a unigram probability.  
     float &backoff = unigrams[vocab_ids[1]].backoff;
     SetExtension(backoff);
     prob += backoff;
     (*change)->prob = prob;
-    Value::SetRest(**change);
+    build.SetRest(&*vocab_ids.begin(), 2, **change);
     basis = 2;
     --change;
   }
@@ -115,50 +121,53 @@ template <class Added, class Value> void AdjustLower(
       prob += backoff;
     }
     (*change)->prob = prob;
-    Value::SetRest(**change);
+    build.SetRest(&*vocab_ids.begin(), basis + 1, **change);
     backoff_hash = detail::CombineWordHash(backoff_hash, vocab_ids[basis+1]);
   }
 
   typename std::vector<typename Value::Weights *>::const_iterator i(between.begin());
-  Value::MarkExtends(**i, added);
+  build.MarkExtends(**i, added);
   const typename Value::Weights *longer = *i;
   // Everything has probability but is not marked as extending.  
   for (++i; i != between.end(); ++i) {
-    Value::MarkExtends(**i, *longer);
+    build.MarkExtends(**i, *longer);
     longer = *i;
   }
 }
 
 // Continue marking lower entries even they know that they extend left.  This is used for upper/lower bounds.  
-template <class Value> void MarkLower(
+template <class Build> void MarkLower(
     const std::vector<uint64_t> &keys,
-    typename Value::Weights &unigram,
-    std::vector<util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> > &middle,
+    const Build &build,
+    typename Build::Value::Weights &unigram,
+    std::vector<util::ProbingHashTable<typename Build::Value::ProbingEntry, util::IdentityHash> > &middle,
     int start_order,
-    const typename Value::Weights &longer) {
+    const typename Build::Value::Weights &longer) {
   if (start_order == 0) return;
-  typename util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash>::MutableIterator iter;
+  typename util::ProbingHashTable<typename Build::Value::ProbingEntry, util::IdentityHash>::MutableIterator iter;
   // Hopefully the compiler will realize that if MarkExtends always returns false, it can simplify this code.  
   for (int even_lower = start_order - 2 /* index in middle */; ; --even_lower) {
     if (even_lower == -1) {
-      Value::MarkExtends(unigram, longer);
+      build.MarkExtends(unigram, longer);
       return;
     }
     middle[even_lower].UnsafeMutableFind(keys[even_lower], iter);
-    if (!Value::MarkExtends(iter->value, longer)) return;
+    if (!build.MarkExtends(iter->value, longer)) return;
   }
 }
 
-template <class Value, class Activate, class Store> void ReadNGrams(
+template <class Build, class Activate, class Store> void ReadNGrams(
     util::FilePiece &f,
     const unsigned int n,
     const size_t count,
     const ProbingVocabulary &vocab,
-    typename Value::Weights *unigrams,
-    std::vector<util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> > &middle,
+    const Build &build,
+    typename Build::Value::Weights *unigrams,
+    std::vector<util::ProbingHashTable<typename Build::Value::ProbingEntry, util::IdentityHash> > &middle,
     Activate activate,
     Store &store,
     PositiveProbWarn &warn) {
+  typedef typename Build::Value Value;
   typedef util::ProbingHashTable<typename Value::ProbingEntry, util::IdentityHash> Middle;
   assert(n >= 2);
   ReadNGramHeader(f, n);
@@ -171,7 +180,7 @@ template <class Value, class Activate, class Store> void ReadNGrams(
   std::vector<typename Value::Weights *> between;
   for (size_t i = 0; i < count; ++i) {
     ReadNGram(f, n, vocab, &*vocab_ids.begin(), entry.value, warn);
-    Value::SetRest(entry.value);
+    build.SetRest(&*vocab_ids.begin(), n, entry.value);
 
     keys[0] = detail::CombineWordHash(static_cast<uint64_t>(vocab_ids.front()), vocab_ids[1]);
     for (unsigned int h = 1; h < n - 1; ++h) {
@@ -184,8 +193,8 @@ template <class Value, class Activate, class Store> void ReadNGrams(
     store.Insert(entry);
     between.clear();
     FindLower<Value>(keys, unigrams[vocab_ids.front()], middle, between);
-    AdjustLower<typename Store::Entry::Value, Value>(entry.value, between, n, vocab_ids, unigrams, middle);
-    if (Value::kMarkEvenLower) MarkLower<Value>(keys, unigrams[vocab_ids.front()], middle, n - between.size() - 1, *between.back());
+    AdjustLower<typename Store::Entry::Value, Build>(entry.value, build, between, n, vocab_ids, unigrams, middle);
+    if (Build::kMarkEvenLower) MarkLower<Build>(keys, build, unigrams[vocab_ids.front()], middle, n - between.size() - 1, *between.back());
     activate(&*vocab_ids.begin(), n);
   }
 
@@ -210,32 +219,58 @@ template <class Value> uint8_t *HashedSearch<Value>::SetupMemory(uint8_t *start,
   return start;
 }
 
-template <class Value> template <class Voc> void HashedSearch<Value>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
+template <class Value> void HashedSearch<Value>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, Backing &backing) {
   // TODO: fix sorted.
   SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), Size(counts, config), backing), counts, config);
 
   PositiveProbWarn warn(config.positive_log_probability);
-
   Read1Grams(f, counts[0], vocab, unigram_.Raw(), warn);
-  for (uint64_t i = 0; i < counts[0]; ++i) {
-    Value::SetRest(unigram_.Raw()[i]);
-  }
   CheckSpecials(config, vocab);
+  DispatchBuild(f, counts, config, vocab, warn);
+}
+
+template <> void HashedSearch<BackoffValue>::DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn) {
+  NoRestBuild build;
+  ApplyBuild(f, counts, config, vocab, warn, build);
+}
+
+template <> void HashedSearch<RestValue>::DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const      ProbingVocabulary &vocab, PositiveProbWarn &warn) {
+  switch (config.rest_function) {
+    case Config::REST_MAX:
+      {
+        MaxRestBuild build;
+        ApplyBuild(f, counts, config, vocab, warn, build);
+      }
+      break;
+    case Config::REST_LOWER:
+      {
+        LowerRestBuild<ProbingModel> build(config, counts.size(), vocab);
+        ApplyBuild(f, counts, config, vocab, warn, build);
+      }
+      break;
+  }
+}
+
+template <class Value> template <class Build> void HashedSearch<Value>::ApplyBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn, const Build &build) {
+  for (WordIndex i = 0; i < counts[0]; ++i) {
+    build.SetRest(&i, (unsigned int)1, unigram_.Raw()[i]);
+  }
 
   try {
     if (counts.size() > 2) {
-      ReadNGrams<Value, ActivateUnigram<typename Value::Weights>, Middle>(f, 2, counts[1], vocab, unigram_.Raw(), middle_, ActivateUnigram<typename Value::Weights>(unigram_.Raw()), middle_[0], warn);
+      ReadNGrams<Build, ActivateUnigram<typename Value::Weights>, Middle>(
+          f, 2, counts[1], vocab, build, unigram_.Raw(), middle_, ActivateUnigram<typename Value::Weights>(unigram_.Raw()), middle_[0], warn);
     }
     for (unsigned int n = 3; n < counts.size(); ++n) {
-      ReadNGrams<Value, ActivateLowerMiddle<Middle>, Middle>(
-          f, n, counts[n-1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
+      ReadNGrams<Build, ActivateLowerMiddle<Middle>, Middle>(
+          f, n, counts[n-1], vocab, build, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
     }
     if (counts.size() > 2) {
-      ReadNGrams<Value, ActivateLowerMiddle<Middle>, Longest>(
-          f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest_, warn);
+      ReadNGrams<Build, ActivateLowerMiddle<Middle>, Longest>(
+          f, counts.size(), counts[counts.size() - 1], vocab, build, unigram_.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest_, warn);
     } else {
-      ReadNGrams<Value, ActivateUnigram<typename Value::Weights>, Longest>(
-          f, counts.size(), counts[counts.size() - 1], vocab, unigram_.Raw(), middle_, ActivateUnigram<typename Value::Weights>(unigram_.Raw()), longest_, warn);
+      ReadNGrams<Build, ActivateUnigram<typename Value::Weights>, Longest>(
+          f, counts.size(), counts[counts.size() - 1], vocab, build, unigram_.Raw(), middle_, ActivateUnigram<typename Value::Weights>(unigram_.Raw()), longest_, warn);
     }
   } catch (util::ProbingSizeException &e) {
     UTIL_THROW(util::ProbingSizeException, "Avoid pruning n-grams like \"bar baz quux\" when \"foo bar baz quux\" is still in the model.  KenLM will work when this pruning happens, but the probing model assumes these events are rare enough that using blank space in the probing hash table will cover all of them.  Increase probing_multiplier (-p to build_binary) to add more blank spaces.\n");
@@ -253,9 +288,6 @@ template <class Value> void HashedSearch<Value>::LoadedBinary() {
 
 template class HashedSearch<BackoffValue>;
 template class HashedSearch<RestValue>;
-
-template void HashedSearch<BackoffValue>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
-template void HashedSearch<RestValue>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
 
 } // namespace detail
 } // namespace ngram

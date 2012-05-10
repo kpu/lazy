@@ -51,7 +51,7 @@ template <class Voc, class Weights> void Read1Gram(util::FilePiece &f, Voc &voca
     if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
     Weights &value = unigrams[vocab.Insert(f.ReadDelimited(kARPASpaces))];
     value.prob = prob;
-    ReadBackoff(f, value.backoff);
+    ReadBackoff(f, value);
   } catch(util::Exception &e) {
     e << " in the 1-gram at byte " << f.Offset();
     throw;

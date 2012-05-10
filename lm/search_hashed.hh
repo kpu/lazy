@@ -19,6 +19,7 @@ namespace util { class FilePiece; }
 namespace lm {
 namespace ngram {
 struct Backing;
+class ProbingVocabulary;
 namespace detail {
 
 inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
@@ -83,7 +84,7 @@ template <class Value> class HashedSearch {
 
     uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config);
 
-    template <class Voc> void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing);
+    void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, Backing &backing);
 
     void LoadedBinary();
 
@@ -143,6 +144,11 @@ template <class Value> class HashedSearch {
     }
 
   private:
+    // Interpret config's rest cost build policy and pass the right template argument to ApplyBuild.  
+    void DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn);
+
+    template <class Build> void ApplyBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn, const Build &build);
+
     class Unigram {
       public:
         Unigram() {}
