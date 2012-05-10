@@ -66,6 +66,17 @@ uint8_t ParseBitCount(const char *from) {
   return val;
 }
 
+void ParseFileList(const char *from, std::vector<std::string> &to) {
+  to.clear();
+  while (true) {
+    const char *i;
+    for (i = from; *i && *i != ' '; ++i) {}
+    to.push_back(std::string(from, i - from));
+    if (!*i) break;
+    from = i + 1;
+  }
+}
+
 void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::vector<uint64_t> counts;
   util::FilePiece f(file);
@@ -123,7 +134,7 @@ int main(int argc, char *argv[]) {
     bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false, rest = false;
     lm::ngram::Config config;
     int opt;
-    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:m:w:sir")) != -1) {
+    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:m:w:sir:")) != -1) {
       switch(opt) {
         case 'q':
           config.prob_bits = ParseBitCount(optarg);
@@ -168,6 +179,8 @@ int main(int argc, char *argv[]) {
           break;
         case 'r':
           rest = true;
+          ParseFileList(optarg, config.rest_lower_files);
+          config.rest_function = Config::REST_LOWER;
           break;
         default:
           Usage(argv[0]);
