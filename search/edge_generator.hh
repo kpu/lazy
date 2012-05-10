@@ -14,7 +14,7 @@ class ChartState;
 
 namespace search {
 
-class Context;
+template <class Model> class Context;
 
 class VertexGenerator;
 
@@ -27,14 +27,14 @@ class EdgeGenerator {
       return top_;
     }
 
-    bool Pop(Context &context, VertexGenerator &parent);
+    template <class Model> bool Pop(Context<Model> &context, VertexGenerator &parent);
 
   private:
     unsigned int PickVictim(const PartialEdge &in) const;
 
-    void RecomputeFinal(Context &context, const PartialEdge &to, lm::ngram::ChartState &state);
+    template <class Model> void RecomputeFinal(Context<Model> &context, const PartialEdge &to, lm::ngram::ChartState &state);
 
-    Score Adjustment(Context &context, const PartialEdge &to) const;
+    template <class Model> Score Adjustment(Context<Model> &context, const PartialEdge &to) const;
 
     const Rule &GetRule() const {
       return from_->GetRule();

@@ -7,7 +7,7 @@
 
 namespace search {
 
-VertexGenerator::VertexGenerator(Context &context, Vertex &gen) : context_(context), edges_(gen.edges_.size()) {
+template <class Model> VertexGenerator::VertexGenerator(Context<Model> &context, Vertex &gen) : context_(context), edges_(gen.edges_.size()) {
   for (std::size_t i = 0; i < gen.edges_.size(); ++i) {
     if (edges_[i].Init(*gen.edges_[i]))
       generate_.push(&edges_[i]);
@@ -24,6 +24,9 @@ VertexGenerator::VertexGenerator(Context &context, Vertex &gen) : context_(conte
   }
   gen.root_.SortAndSet(context, NULL);
 }
+
+template VertexGenerator::VertexGenerator(Context<lm::ngram::ProbingModel> &context, Vertex &gen);
+template VertexGenerator::VertexGenerator(Context<lm::ngram::RestProbingModel> &context, Vertex &gen);
 
 namespace {
 const uint64_t kCompleteAdd = static_cast<uint64_t>(-1);

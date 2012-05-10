@@ -19,7 +19,7 @@ struct GreaterByBound : public std::binary_function<const VertexNode *, const Ve
 
 } // namespace
 
-void VertexNode::SortAndSet(Context &context, VertexNode **parent_ptr) {
+void VertexNode::SortAndSet(ContextBase &context, VertexNode **parent_ptr) {
   if (Complete()) {
     assert(end_);
     assert(extend_.empty());

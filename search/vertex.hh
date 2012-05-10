@@ -14,6 +14,8 @@
 
 namespace search {
 
+class ContextBase;
+
 class Edge;
 
 class VertexNode {
@@ -41,7 +43,7 @@ class VertexNode {
     
     Final &MutableEnd() { return *end_; }
 
-    void SortAndSet(Context &context, VertexNode **parent_pointer);
+    void SortAndSet(ContextBase &context, VertexNode **parent_pointer);
 
     // Should only happen to a root node when the entire vertex is empty.   
     bool Empty() const {
