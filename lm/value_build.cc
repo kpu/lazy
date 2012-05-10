@@ -18,7 +18,7 @@ template <class Model> LowerRestBuild<Model>::LowerRestBuild(const Config &confi
   ReadARPACounts(uni, number);
   UTIL_THROW_IF(number.size() != 1, FormatLoadException, "Expected the unigram model to have order 1, not " << number.size());
   ReadNGramHeader(uni, 1);
-  unigrams_.resize(number.size() + 1);
+  unigrams_.resize(number[0]);
   unigrams_[0] = config.unknown_missing_logprob;
   PositiveProbWarn warn;
   for (uint64_t i = 0; i < number[0]; ++i) {
