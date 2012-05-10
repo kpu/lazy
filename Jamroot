@@ -9,4 +9,4 @@ project : default-build <threading>multi <warnings>on <variant>release ;
 build-project search ;
 build-project alone ;
 
-install-bin-libs alone//decode alone//just_vocab ;
+install-bin-libs alone//decode alone//just_vocab lm//build_binary ;
