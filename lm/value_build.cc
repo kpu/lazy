@@ -13,19 +13,21 @@ template <class Model> LowerRestBuild<Model>::LowerRestBuild(const Config &confi
 
   // Unigram models aren't supported, so this is a custom loader.  
   // TODO: optimize the unigram loading?  
-  util::FilePiece uni(config.rest_lower_files[0].c_str());
-  std::vector<uint64_t> number;
-  ReadARPACounts(uni, number);
-  UTIL_THROW_IF(number.size() != 1, FormatLoadException, "Expected the unigram model to have order 1, not " << number.size());
-  ReadNGramHeader(uni, 1);
-  unigrams_.resize(number[0]);
-  unigrams_[0] = config.unknown_missing_logprob;
-  PositiveProbWarn warn;
-  for (uint64_t i = 0; i < number[0]; ++i) {
-    WordIndex w;
-    Prob entry;
-    ReadNGram(uni, 1, vocab, &w, entry, warn);
-    unigrams_[w] = entry.prob;
+  {
+    util::FilePiece uni(config.rest_lower_files[0].c_str());
+    std::vector<uint64_t> number;
+    ReadARPACounts(uni, number);
+    UTIL_THROW_IF(number.size() != 1, FormatLoadException, "Expected the unigram model to have order 1, not " << number.size());
+    ReadNGramHeader(uni, 1);
+    unigrams_.resize(number[0]);
+    unigrams_[0] = config.unknown_missing_logprob;
+    PositiveProbWarn warn;
+    for (uint64_t i = 0; i < number[0]; ++i) {
+      WordIndex w;
+      Prob entry;
+      ReadNGram(uni, 1, vocab, &w, entry, warn);
+      unigrams_[w] = entry.prob;
+    }
   }
 
   try {
