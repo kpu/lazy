@@ -51,6 +51,72 @@ inline uint64_t hash_value(const State &state, uint64_t seed = 0) {
   return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length, seed);
 }
 
+struct Left {
+  bool operator==(const Left &other) const {
+    return 
+      (length == other.length) && 
+      pointers[length - 1] == other.pointers[length - 1] &&
+      full == other.full;
+  }
+
+  int Compare(const Left &other) const {
+    if (length < other.length) return -1;
+    if (length > other.length) return 1;
+    if (pointers[length - 1] > other.pointers[length - 1]) return 1;
+    if (pointers[length - 1] < other.pointers[length - 1]) return -1;
+    return (int)full - (int)other.full;
+  }
+
+  bool operator<(const Left &other) const {
+    return Compare(other) == -1;
+  }
+
+  void ZeroRemaining() {
+    for (uint64_t * i = pointers + length; i < pointers + kMaxOrder - 1; ++i)
+      *i = 0;
+  }
+
+  uint64_t pointers[kMaxOrder - 1];
+  unsigned char length;
+  bool full;
+};
+
+inline uint64_t hash_value(const Left &left) {
+  unsigned char add[2];
+  add[0] = left.length;
+  add[1] = left.full;
+  return util::MurmurHashNative(add, 2, left.length ? left.pointers[left.length - 1] : 0);
+}
+
+struct ChartState {
+  bool operator==(const ChartState &other) {
+    return (right == other.right) && (left == other.left);
+  }
+
+  int Compare(const ChartState &other) const {
+    int lres = left.Compare(other.left);
+    if (lres) return lres;
+    return right.Compare(other.right);
+  }
+
+  bool operator<(const ChartState &other) const {
+    return Compare(other) == -1;
+  }
+
+  void ZeroRemaining() {
+    left.ZeroRemaining();
+    right.ZeroRemaining();
+  }
+
+  Left left;
+  State right;
+};
+
+inline uint64_t hash_value(const ChartState &state) {
+  return hash_value(state.right, hash_value(state.left));
+}
+
+
 } // namespace ngram
 } // namespace lm
 
