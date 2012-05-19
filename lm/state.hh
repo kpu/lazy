@@ -51,6 +51,8 @@ inline uint64_t hash_value(const State &state, uint64_t seed = 0) {
   return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length, seed);
 }
 
+typedef State Right;
+
 struct Left {
   bool operator==(const Left &other) const {
     return 
