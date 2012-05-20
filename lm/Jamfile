@@ -4,6 +4,7 @@ import testing ;
 
 run left_test.cc lm ..//boost_unit_test_framework : : test.arpa ;
 run model_test.cc lm ..//boost_unit_test_framework : : test.arpa test_nounk.arpa ;
+run partial_test.cc lm ..//boost_unit_test_framework : : test.arpa ;
 
 exe query : ngram_query.cc lm ;
 exe build_binary : build_binary.cc lm ;
