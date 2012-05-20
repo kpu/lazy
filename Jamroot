@@ -1,6 +1,6 @@
 path-constant TOP : . ;
 include $(TOP)/sanity.jam ;
-boost 104000 ;
+boost 104200 ;
 external-lib z ;
 
 project : requirements $(requirements) <threading>multi:<define>WITH_THREADS ;
