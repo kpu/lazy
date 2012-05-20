@@ -5,6 +5,7 @@
 #include "search/rule.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
+#include "util/exception.hh"
 
 #include <boost/noncopyable.hpp>
 #include <boost/pool/object_pool.hpp>

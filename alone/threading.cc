@@ -9,6 +9,7 @@
 
 #include <boost/ref.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 #include <sstream>
 
