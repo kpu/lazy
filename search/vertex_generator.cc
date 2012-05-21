@@ -51,7 +51,7 @@ void VertexGenerator::NewHypothesis(const lm::ngram::ChartState &state, const Ed
       for (; right < state.right.length; ++right) {
         node = &FindOrInsert(*node, state.right.words[right], state, left, right + 1);
       }
-      node = &FindOrInsert(*node, kCompleteAdd, state, state.left.length, state.right.length);
+      node = &FindOrInsert(*node, kCompleteAdd - state.left.full, state, state.left.length, state.right.length);
       break;
     }
     node = &FindOrInsert(*node, state.left.pointers[left], state, left + 1, right);
