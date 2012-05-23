@@ -30,8 +30,6 @@ class EdgeGenerator {
     template <class Model> bool Pop(Context<Model> &context, VertexGenerator &parent);
 
   private:
-    unsigned int PickVictim(const PartialEdge &in) const;
-
     template <class Model> void RecomputeFinal(Context<Model> &context, const PartialEdge &to, lm::ngram::ChartState &state);
 
     template <class Model> Score Adjustment(Context<Model> &context, const PartialEdge &to) const;

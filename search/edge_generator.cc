@@ -19,16 +19,14 @@ bool EdgeGenerator::Init(Edge &edge) {
   for (unsigned int i = GetRule().Arity(); i < 2; ++i) {
     root.nt[i] = kBlankPartialVertex;
   }
+  for (unsigned int i = 0; i < GetRule().Arity() + 1; ++i) {
+    root.between[i] = GetRule().Lexical(i);
+  }
   // wtf no clear method?
   generate_ = Generate();
   generate_.push(root);
   top_ = root.score;
   return true;
-}
-
-unsigned int EdgeGenerator::PickVictim(const PartialEdge &in) const {
-  // TODO: better decision rule.
-  return in.nt[0].Length() >= in.nt[1].Length();
 }
 
 template <class Model> bool EdgeGenerator::Pop(Context<Model> &context, VertexGenerator &parent) {

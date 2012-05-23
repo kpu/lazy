@@ -1,6 +1,7 @@
 #ifndef SEARCH_EDGE__
 #define SEARCH_EDGE__
 
+#include "lm/state.hh"
 #include "search/arity.hh"
 #include "search/rule.hh"
 #include "search/types.hh"
@@ -39,6 +40,9 @@ class Edge {
 
 struct PartialEdge {
   Score score;
+  // Terminals
+  lm::ngram::ChartState between[kMaxArity + 1];
+  // Non-terminals
   PartialVertex nt[kMaxArity];
 
   bool operator<(const PartialEdge &other) const {
