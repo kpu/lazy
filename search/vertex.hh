@@ -27,13 +27,13 @@ class VertexNode {
       state_.left.full = false;
       state_.left.length = 0;
       state_.right.length = 0;
+      right_full_ = false;
       bound_ = -kScoreInf;
       end_ = NULL;
     }
 
-    lm::ngram::ChartState &MutableState() {
-      return state_;
-    }
+    lm::ngram::ChartState &MutableState() { return state_; }
+    bool &MutableRightFull() { return right_full_; }
 
     void AddExtend(VertexNode *next) {
       extend_.push_back(next);
@@ -55,6 +55,7 @@ class VertexNode {
     }
 
     const lm::ngram::ChartState &State() const { return state_; }
+    bool RightFull() const { return right_full_; }
 
     Score Bound() const {
       return bound_;
@@ -77,7 +78,10 @@ class VertexNode {
 
   private:
     std::vector<VertexNode*> extend_;
+
     lm::ngram::ChartState state_;
+    bool right_full_;
+
     Score bound_;
     Final *end_;
 };

@@ -76,6 +76,7 @@ VertexGenerator::Trie &VertexGenerator::FindOrInsert(VertexGenerator::Trie &node
   if (!next.under) {
     next.under = context_.NewVertexNode();
     lm::ngram::ChartState &writing = next.under->MutableState();
+    next.under->MutableRightFull() = (right == state.right.length && state.left.full);
     writing = state;
     writing.left.full &= (left == state.left.length);
     writing.left.length = left;
