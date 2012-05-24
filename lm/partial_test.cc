@@ -190,6 +190,7 @@ void FullDivide(const RestProbingModel &model, StringPiece str) {
 BOOST_AUTO_TEST_CASE(Strings) {
   FullDivide(m, "also would consider");
   FullDivide(m, "looking on a little more loin . </s>");
+  FullDivide(m, "in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
