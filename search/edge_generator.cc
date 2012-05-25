@@ -56,7 +56,10 @@ template <class Model> float FastScore(const Context<Model> &context, unsigned c
     ret += lm::ngram::RevealBefore(context.LanguageModel(), update_reveal.right, previous_reveal.right.length, update_nt.RightFull(), after->left, after->right);
   }
   if (update_nt.Complete()) {
-    ret += lm::ngram::Subsume(context.LanguageModel(), before->left, before->right, after->left, after->right, update_reveal.left.length + update_reveal.right.length);
+    if (!update_reveal.left.full) {
+      assert(update_reveal.left.length == update_reveal.right.length);
+      ret += lm::ngram::Subsume(context.LanguageModel(), before->left, before->right, after->left, after->right, update_reveal.left.length);
+    }
     if (victim == 0) {
       update.between[0].right = after->right;
     } else {
