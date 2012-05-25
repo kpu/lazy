@@ -97,6 +97,7 @@ class PartialVertex {
     bool Complete() const { return back_->Complete(); }
 
     const lm::ngram::ChartState &State() const { return back_->State(); }
+    bool RightFull() const { return back_->RightFull(); }
 
     Score Bound() const { return Complete() ? back_->End()->Bound() : (*back_)[index_].Bound(); }
 
