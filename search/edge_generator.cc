@@ -35,7 +35,7 @@ namespace {
 template <class Model> float FastScore(const Context<Model> &context, unsigned char victim, unsigned char arity, const PartialEdge &previous, PartialEdge &update) {
   memcpy(update.between, previous.between, sizeof(lm::ngram::ChartState) * (arity + 1));
 
-  float ret = previous.score;
+  float ret = 0.0;
   lm::ngram::ChartState *before, *after;
   if (victim == 0) {
     before = &update.between[0];
@@ -63,7 +63,7 @@ template <class Model> float FastScore(const Context<Model> &context, unsigned c
       update.between[2].left = before->left;
     }
   }
-  return ret;
+  return previous.score + ret * context.GetWeights().LM();
 }
 
 } // namespace
