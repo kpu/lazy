@@ -40,10 +40,6 @@ template <class Model> ExtendReturn ExtendLoop(
   if (pointers_write) {
     // Using full context, writing to new left state.   
     for (; i < length; ++i) {
-      if (value.next_use != add_length) {
-        value.make_full = true;
-        break;
-      }
       FullScoreReturn ret(model.ExtendLeft(
           add_rbegin, add_rbegin + value.next_use,
           backoff_in,
@@ -59,6 +55,11 @@ template <class Model> ExtendReturn ExtendLoop(
       }
       value.adjust += ret.rest;
       *pointers_write++ = ret.extend_left;
+      if (value.next_use != add_length) {
+        value.make_full = true;
+        ++i;
+        break;
+      }
     }
   }
   // Using some of the new context.  
@@ -90,14 +91,19 @@ template <class Model> float RevealBefore(const Model &model, const Right &revea
       left.pointers, left.pointers + left.length,
       pointers_write,
       left.full ? backoff_buffer : (right.backoff + right.length)));
-  left.length = reveal_full ? 0 : pointers_write - left.pointers;
+  if (reveal_full) {
+    left.length = 0;
+  } else {
+    left.length = pointers_write - left.pointers;
+    value.make_full |= (left.length == model.Order() - 1);
+  }
   if (left.full) {
     for (unsigned char i = 0; i < value.next_use; ++i) value.adjust += backoff_buffer[i];
   } else {
     // If left wasn't full when it came in, put words into right state.  
     std::copy(reveal.words + seen, reveal.words + seen + value.next_use, right.words + right.length);
     right.length += value.next_use;
-    left.full = value.make_full;
+    left.full = value.make_full || (right.length == model.Order() - 1);
   }
   return value.adjust;
 }
@@ -116,15 +122,19 @@ template <class Model> float RevealAfter(const Model &model, Left &left, Right &
     right.length = 0;
   } else {
     right.length = value.next_use;
+    value.make_full |= (right.length == model.Order() - 1);
   }
   if (!left.full) {
     left.length = pointers_write - left.pointers;
-    left.full = value.make_full;
+    left.full = value.make_full || (left.length == model.Order() - 1);
   }
   return value.adjust;
 }
 
-template <class Model> float Subsume(const Model &model, Left &first_left, const Right &first_right, const Left &second_left, Right &second_right, unsigned char between_length) {
+template <class Model> float Subsume(const Model &model, Left &first_left, const Right &first_right, const Left &second_left, Right &second_right, const unsigned int between_length) {
+  assert(first_right.length < kMaxOrder);
+  assert(second_left.length < kMaxOrder);
+  assert(between_length < kMaxOrder - 1);
   uint64_t *pointers_write = first_left.full ? NULL : (first_left.pointers + first_left.length);
   float backoff_buffer[kMaxOrder - 1];
   ExtendReturn value(ExtendLoop(
@@ -138,11 +148,14 @@ template <class Model> float Subsume(const Model &model, Left &first_left, const
   } else {
     std::copy(first_right.words, first_right.words + value.next_use, second_right.words + second_right.length);
     second_right.length += value.next_use;
+    value.make_full |= (second_right.length == model.Order() - 1);
   }
   if (!first_left.full) {
     first_left.length = pointers_write - first_left.pointers;
-    first_left.full = second_left.full || value.make_full;
+    first_left.full = value.make_full || second_left.full || (first_left.length == model.Order() - 1);
   }
+  assert(first_left.length < kMaxOrder);
+  assert(second_right.length < kMaxOrder);
   return value.adjust;
 }
 
