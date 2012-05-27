@@ -19,6 +19,7 @@
 #include <windows.h>
 #include <io.h>
 #else
+#include <unistd.h>
 #include <sys/mman.h>
 #endif
 
