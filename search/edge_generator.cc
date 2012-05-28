@@ -35,7 +35,7 @@ namespace {
 template <class Model> float FastScore(const Context<Model> &context, unsigned char victim, unsigned char arity, const PartialEdge &previous, PartialEdge &update) {
   memcpy(update.between, previous.between, sizeof(lm::ngram::ChartState) * (arity + 1));
 
-  float ret = previous.score;
+  float ret = 0.0;
   lm::ngram::ChartState *before, *after;
   if (victim == 0) {
     before = &update.between[0];
@@ -56,14 +56,17 @@ template <class Model> float FastScore(const Context<Model> &context, unsigned c
     ret += lm::ngram::RevealBefore(context.LanguageModel(), update_reveal.right, previous_reveal.right.length, update_nt.RightFull(), after->left, after->right);
   }
   if (update_nt.Complete()) {
-    ret += lm::ngram::Subsume(context.LanguageModel(), before->left, before->right, after->left, after->right, update_reveal.left.length + update_reveal.right.length);
+    if (!update_reveal.left.full) {
+      assert(update_reveal.left.length == update_reveal.right.length);
+      ret += lm::ngram::Subsume(context.LanguageModel(), before->left, before->right, after->left, after->right, update_reveal.left.length);
+    }
     if (victim == 0) {
       update.between[0].right = after->right;
     } else {
       update.between[2].left = before->left;
     }
   }
-  return ret;
+  return previous.score + ret * context.GetWeights().LM();
 }
 
 } // namespace
