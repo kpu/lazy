@@ -34,7 +34,7 @@ class VertexGenerator {
       boost::unordered_map<uint64_t, Trie> extend;
     };
 
-    Trie &FindOrInsert(Trie &node, uint64_t added, const lm::ngram::ChartState &state, unsigned char left, unsigned char right);
+    Trie &FindOrInsert(Trie &node, uint64_t added, const lm::ngram::ChartState &state, unsigned char left, bool left_full, unsigned char right, bool right_full);
 
     Final *CompleteTransition(Trie &node, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 

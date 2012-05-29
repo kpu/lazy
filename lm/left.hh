@@ -100,10 +100,6 @@ template <class M> class RuleScore {
         out_.right = in.right;
         if (left_done_) {
           prob_ += model_.UnRest(in.left.pointers, in.left.pointers + in.left.length, 1);
-          return;
-        }
-        if (out_.left.length) {
-          left_done_ = true;
         } else {
           out_.left = in.left;
           left_done_ = in.left.full;
@@ -127,12 +123,6 @@ template <class M> class RuleScore {
       if (in.left.full) {
         for (const float *i = back; i != back + next_use; ++i) prob_ += *i;
         left_done_ = true;
-        out_.right = in.right;
-        return;
-      }
-
-      // Right state was minimized, so it's already independent of the new words to the left.  
-      if (in.right.length < in.left.length) {
         out_.right = in.right;
         return;
       }
