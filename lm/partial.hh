@@ -93,6 +93,7 @@ template <class Model> float RevealBefore(const Model &model, const Right &revea
       left.full ? backoff_buffer : (right.backoff + right.length)));
   if (reveal_full) {
     left.length = 0;
+    value.make_full = true;
   } else {
     left.length = pointers_write - left.pointers;
     value.make_full |= (left.length == model.Order() - 1);
