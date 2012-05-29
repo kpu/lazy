@@ -127,12 +127,6 @@ template <class M> class RuleScore {
         return;
       }
 
-      // Right state was minimized, so it's already independent of the new words to the left.  
-      if (in.right.length < in.left.length) {
-        out_.right = in.right;
-        return;
-      }
-
       // Shift exisiting words down.  
       for (WordIndex *i = out_.right.words + next_use - 1; i >= out_.right.words; --i) {
         *(i + in.right.length) = *i;
