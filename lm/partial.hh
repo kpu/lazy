@@ -120,6 +120,7 @@ template <class Model> float RevealAfter(const Model &model, Left &left, Right &
   if (reveal.full) {
     for (unsigned char i = 0; i < value.next_use; ++i) value.adjust += right.backoff[i];
     right.length = 0;
+    value.make_full = true;
   } else {
     right.length = value.next_use;
     value.make_full |= (right.length == model.Order() - 1);
