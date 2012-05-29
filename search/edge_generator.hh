@@ -4,6 +4,8 @@
 #include "search/edge.hh"
 
 #include <boost/unordered_map.hpp>
+
+#include <functional>
 #include <queue>
 
 namespace lm {
@@ -18,10 +20,16 @@ template <class Model> class Context;
 
 class VertexGenerator;
 
+struct PartialEdgePointerLess : std::binary_function<const PartialEdge *, const PartialEdge *, bool> {
+  bool operator()(const PartialEdge *first, const PartialEdge *second) const {
+    return *first < *second;
+  }
+};
+
 class EdgeGenerator {
   public:
     // True if it has a hypothesis.  
-    bool Init(Edge &edge);
+    bool Init(Edge &edge, VertexGenerator &parent);
 
     Score Top() const {
       return top_;
@@ -36,7 +44,7 @@ class EdgeGenerator {
 
     Score top_;
 
-    typedef std::priority_queue<PartialEdge> Generate;
+    typedef std::priority_queue<PartialEdge*, std::vector<PartialEdge*>, PartialEdgePointerLess> Generate;
     Generate generate_;
 
     Edge *from_;

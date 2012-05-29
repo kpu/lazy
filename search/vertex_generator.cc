@@ -7,9 +7,9 @@
 
 namespace search {
 
-template <class Model> VertexGenerator::VertexGenerator(Context<Model> &context, Vertex &gen) : context_(context), edges_(gen.edges_.size()) {
+template <class Model> VertexGenerator::VertexGenerator(Context<Model> &context, Vertex &gen) : context_(context), edges_(gen.edges_.size()), partial_edge_pool_(sizeof(PartialEdge), context.PopLimit() * 2) {
   for (std::size_t i = 0; i < gen.edges_.size(); ++i) {
-    if (edges_[i].Init(*gen.edges_[i]))
+    if (edges_[i].Init(*gen.edges_[i], *this))
       generate_.push(&edges_[i]);
   }
   gen.root_.InitRoot();

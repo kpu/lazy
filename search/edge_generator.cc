@@ -10,13 +10,15 @@
 
 namespace search {
 
-bool EdgeGenerator::Init(Edge &edge) {
+bool EdgeGenerator::Init(Edge &edge, VertexGenerator &parent) {
   from_ = &edge;
-  PartialEdge root;
+  for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
+    if (edge.GetVertex(i).RootPartial().Empty()) return false;
+  }
+  PartialEdge &root = *parent.MallocPartialEdge();
   root.score = GetRule().Bound();
   for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
     root.nt[i] = edge.GetVertex(i).RootPartial();
-    if (root.nt[i].Empty()) return false;
     root.score += root.nt[i].Bound();
   }
   for (unsigned int i = GetRule().Arity(); i < 2; ++i) {
@@ -27,7 +29,7 @@ bool EdgeGenerator::Init(Edge &edge) {
   }
   // wtf no clear method?
   generate_ = Generate();
-  generate_.push(root);
+  generate_.push(&root);
   top_ = root.score;
   return true;
 }
@@ -78,7 +80,8 @@ template <class Model> float FastScore(const Context<Model> &context, unsigned c
 
 template <class Model> bool EdgeGenerator::Pop(Context<Model> &context, VertexGenerator &parent) {
   assert(!generate_.empty());
-  const PartialEdge &top = generate_.top();
+  PartialEdge &top = *generate_.top();
+  generate_.pop();
   unsigned int victim = 0;
   unsigned char lowest_length = 255;
   for (unsigned int i = 0; i != GetRule().Arity(); ++i) {
@@ -93,39 +96,32 @@ template <class Model> bool EdgeGenerator::Pop(Context<Model> &context, VertexGe
     state.left = top.between[0].left;
     state.right = top.between[GetRule().Arity()].right;
     parent.NewHypothesis(state, *from_, top);
-    generate_.pop();
-    top_ = generate_.empty() ? -kScoreInf : generate_.top().score;
+    top_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
     return !generate_.empty();
   }
 
   unsigned int stay = !victim;
-  PartialEdge continuation, alternate;
+  PartialEdge &continuation = *parent.MallocPartialEdge();
+  float old_bound = top.nt[victim].Bound();
   // The alternate's score will change because alternate.nt[victim] changes.  
-  bool split = top.nt[victim].Split(continuation.nt[victim], alternate.nt[victim]);
+  bool split = top.nt[victim].Split(continuation.nt[victim]);
+  // top is now the alternate.  
 
   continuation.nt[stay] = top.nt[stay];
   continuation.score = FastScore(context, victim, GetRule().Arity(), top, continuation);
+  // TODO: dedupe?  
+  generate_.push(&continuation);
 
   if (split) {
     // We have an alternate.  
-    alternate.score = top.score - top.nt[victim].Bound() + alternate.nt[victim].Bound();
-    memcpy(alternate.between, top.between, sizeof(lm::ngram::ChartState) * (GetRule().Arity() + 1));
-    alternate.nt[stay] = top.nt[stay];
-
-    generate_.pop();
-    // top is now a dangling reference.  
- 
+    top.score += top.nt[victim].Bound() - old_bound;
     // TODO: dedupe?  
-    generate_.push(alternate);
+    generate_.push(&top);
   } else {
-    generate_.pop();
-    // top is now a dangling reference.  
+    parent.FreePartialEdge(&top);
   }
 
-  // TODO: dedupe?  
-  generate_.push(continuation);
-
-  top_ = generate_.top().score;
+  top_ = generate_.top()->score;
   return true;
 }
 

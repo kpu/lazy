@@ -29,9 +29,9 @@ template <class Model> void Decode(const search::Config &config, const Model &mo
   if (top.Empty()) {
     out << "NO PATH FOUND";
   } else {
-    search::PartialVertex continuation, ignored;
+    search::PartialVertex continuation;
     while (!top.Complete()) {
-      top.Split(continuation, ignored);
+      top.Split(continuation);
       top = continuation;
     }
     out << top.End() << " ||| " << top.End().Bound() << std::endl;

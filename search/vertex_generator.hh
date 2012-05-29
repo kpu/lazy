@@ -1,8 +1,10 @@
 #ifndef SEARCH_VERTEX_GENERATOR__
 #define SEARCH_VERTEX_GENERATOR__
 
+#include "search/edge.hh"
 #include "search/edge_generator.hh"
 
+#include <boost/pool/pool.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <queue>
@@ -22,6 +24,9 @@ class Final;
 class VertexGenerator {
   public:
     template <class Model> VertexGenerator(Context<Model> &context, Vertex &gen);
+
+    PartialEdge *MallocPartialEdge() { return static_cast<PartialEdge*>(partial_edge_pool_.malloc()); }
+    void FreePartialEdge(PartialEdge *value) { partial_edge_pool_.free(value); }
 
     void NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
@@ -57,6 +62,8 @@ class VertexGenerator {
     Existing existing_;
 
     int to_pop_;
+
+    boost::pool<> partial_edge_pool_;
 };
 
 } // namespace search
