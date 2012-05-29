@@ -92,10 +92,8 @@ template <class Model> bool EdgeGenerator::Pop(Context<Model> &context, VertexGe
   }
   if (lowest_length == 255) {
     // All states report complete.  
-    lm::ngram::ChartState state;
-    state.left = top.between[0].left;
-    state.right = top.between[GetRule().Arity()].right;
-    parent.NewHypothesis(state, *from_, top);
+    top.between[0].right = top.between[GetRule().Arity()].right;
+    parent.NewHypothesis(top.between[0], *from_, top);
     top_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
     return !generate_.empty();
   }
