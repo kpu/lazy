@@ -3,7 +3,7 @@ include $(TOP)/sanity.jam ;
 boost 104200 ;
 external-lib z ;
 
-project : requirements $(requirements) <threading>multi:<define>WITH_THREADS ;
+project : requirements $(requirements) <threading>multi:<define>WITH_THREADS <library>boost_system ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
 build-project search ;
