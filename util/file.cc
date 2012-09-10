@@ -44,6 +44,16 @@ int OpenReadOrThrow(const char *name) {
   return ret;
 }
 
+int CreateOrThrow(const char *name) {
+  int ret;
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW_IF(-1 == (ret = _open(name, _O_CREAT | _O_TRUNC | _O_RDWR, _S_IREAD | _S_IWRITE)), ErrnoException, "while creating " << name);
+#else
+  UTIL_THROW_IF(-1 == (ret = open(name, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)), ErrnoException, "while creating " << name);
+#endif
+  return ret;
+}
+
 uint64_t SizeFile(int fd) {
 #if defined(_WIN32) || defined(_WIN64)
   __int64 ret = _filelengthi64(fd);
@@ -109,8 +119,13 @@ void FSyncOrThrow(int fd) {
 }
 
 namespace {
-void InternalSeek(int fd, off_t off, int whence) {
+void InternalSeek(int fd, int64_t off, int whence) {
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW_IF((__int64)-1 == _lseeki64(fd, off, whence), ErrnoException, "Windows seek failed");
+
+#else
   UTIL_THROW_IF((off_t)-1 == lseek(fd, off, whence), ErrnoException, "Seek failed");
+#endif
 }
 } // namespace
 

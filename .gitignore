@@ -1,8 +1,10 @@
 bin
+lib
 *.swp
 lm/build_binary
-lm/liblm.so
-lm/libutil.so
+lm/libkenlm.so
+lm/libkenutil.so
 lm/query
+lm/kenlm_max_order
 previous.sh
 dist
