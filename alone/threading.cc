@@ -16,9 +16,9 @@
 
 namespace alone {
 template <class Model> void Decode(const search::Config &config, const Model &model, util::FilePiece *in_ptr, std::ostream &out) {
-  Vocab vocab(model.GetVocabulary());
-  search::Context<Model> context(config, vocab.EndSentence(), model);
+  search::Context<Model> context(config, model);
   Graph graph;
+  Vocab vocab(model.GetVocabulary());
   {
     boost::scoped_ptr<util::FilePiece> in(in_ptr);
     ReadCDec(context, *in, graph, vocab);

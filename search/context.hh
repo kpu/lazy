@@ -20,7 +20,7 @@ class Weights;
 
 class ContextBase {
   public:
-    ContextBase(const Config &config, Word end_sentence) : pop_limit_(config.PopLimit()), end_sentence_(end_sentence), weights_(config.GetWeights()) {}
+    explicit ContextBase(const Config &config) : pop_limit_(config.PopLimit()), weights_(config.GetWeights()) {}
 
     Final *NewFinal() {
      Final *ret = final_pool_.construct();
@@ -40,8 +40,6 @@ class ContextBase {
 
     unsigned int PopLimit() const { return pop_limit_; }
 
-    Word EndSentence() const { return end_sentence_; }
-
     const Weights &GetWeights() const { return weights_; }
 
   private:
@@ -50,15 +48,12 @@ class ContextBase {
 
     unsigned int pop_limit_;
 
-    Word end_sentence_;
-
     const Weights &weights_;
-
 };
 
 template <class Model> class Context : public ContextBase {
   public:
-    Context(const Config &config, Word end_sentence, const Model &model) : ContextBase(config, end_sentence), model_(model) {}
+    Context(const Config &config, const Model &model) : ContextBase(config), model_(model) {}
 
     const Model &LanguageModel() const { return model_; }
 

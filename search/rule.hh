@@ -26,7 +26,7 @@ class Rule {
       ++arity_;
     }
 
-    template <class Model> void FinishedAdding(const Context<Model> &context, Score additive, bool add_sentence_bounds);
+    template <class Model> void FinishedAdding(const Context<Model> &context, Score additive, bool prepend_bos);
 
     Score Bound() const { return bound_; }
 

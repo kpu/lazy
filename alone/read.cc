@@ -20,6 +20,7 @@ template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, ut
   Graph::Edge *ret = to.NewEdge();
   search::Rule &rule = ret->InitRule();
   StringPiece got;
+  unsigned long int terminals = 0;
   while ("|||" != (got = from.ReadDelimited())) {
     if ('[' == *got.data() && ']' == got.data()[got.size() - 1]) {
       // non-terminal
@@ -31,9 +32,16 @@ template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, ut
       rule.AppendNonTerminal();
     } else {
       rule.AppendTerminal(vocab.FindOrAdd(got));
+      ++terminals;
     }
   }
-  rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
+  if (final) {
+    // This is not counted for the word penalty.  
+    rule.AppendTerminal(vocab.EndSentence());
+  }
+  // Hard-coded word penalty.  
+  float additive = context.GetWeights().DotNoLM(from.ReadLine()) - context.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10;
+  rule.FinishedAdding(context, additive, final);
   UTIL_THROW_IF(rule.Arity() > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << rule.Arity());
   return *ret;
 }
