@@ -6,6 +6,7 @@
 #include "search/final.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
+#include "search/word.hh"
 #include "util/exception.hh"
 
 #include <boost/pool/object_pool.hpp>
@@ -19,7 +20,7 @@ class Weights;
 
 class ContextBase {
   public:
-    ContextBase(const Config &config, const lm::base::Vocabulary &vocab) : pop_limit_(config.PopLimit()), vocab_(vocab), weights_(config.GetWeights()) {}
+    ContextBase(const Config &config, Word end_sentence) : pop_limit_(config.PopLimit()), end_sentence_(end_sentence), weights_(config.GetWeights()) {}
 
     Final *NewFinal() {
      Final *ret = final_pool_.construct();
@@ -39,9 +40,7 @@ class ContextBase {
 
     unsigned int PopLimit() const { return pop_limit_; }
 
-    Vocab &MutableVocab() { return vocab_; }
-
-    const Vocab &GetVocab() const { return vocab_; }
+    Word EndSentence() const { return end_sentence_; }
 
     const Weights &GetWeights() const { return weights_; }
 
@@ -51,7 +50,7 @@ class ContextBase {
 
     unsigned int pop_limit_;
 
-    Vocab vocab_;
+    Word end_sentence_;
 
     const Weights &weights_;
 
@@ -59,7 +58,7 @@ class ContextBase {
 
 template <class Model> class Context : public ContextBase {
   public:
-    Context(const Config &config, const Model &model) : ContextBase(config, model.BaseVocabulary()), model_(model) {}
+    Context(const Config &config, Word end_sentence, const Model &model) : ContextBase(config, end_sentence), model_(model) {}
 
     const Model &LanguageModel() const { return model_; }
 

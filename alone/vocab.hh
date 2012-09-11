@@ -1,5 +1,5 @@
-#ifndef SEARCH_VOCAB__
-#define SEARCH_VOCAB__
+#ifndef ALONE_VOCAB__
+#define ALONE_VOCAB__
 
 #include "lm/word_index.hh"
 #include "search/word.hh"
@@ -12,15 +12,15 @@
 
 namespace lm { namespace base { class Vocabulary; } }
 
-namespace search {
+namespace alone {
 
 class Vocab {
   public:
     explicit Vocab(const lm::base::Vocabulary &backing);
 
-    Word FindOrAdd(const StringPiece &str);
+    search::Word FindOrAdd(const StringPiece &str);
 
-    Word EndSentence() const {
+    search::Word EndSentence() const {
       return end_sentence_;
     }
 
@@ -30,8 +30,8 @@ class Vocab {
 
     const lm::base::Vocabulary &backing_;
 
-    Word end_sentence_;
+    search::Word end_sentence_;
 };
 
-} // namespace search
-#endif // SEARCH_VCOAB__
+} // namespace alone
+#endif // ALONE_VCOAB__

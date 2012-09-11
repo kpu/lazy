@@ -4,7 +4,7 @@
 #include "lm/left.hh"
 #include "search/arity.hh"
 #include "search/types.hh"
-#include "search/vocab.hh"
+#include "search/word.hh"
 
 #include <boost/array.hpp>
 

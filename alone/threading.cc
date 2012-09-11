@@ -3,6 +3,7 @@
 #include "alone/assemble.hh"
 #include "alone/graph.hh"
 #include "alone/read.hh"
+#include "alone/vocab.hh"
 #include "lm/model.hh"
 #include "search/context.hh"
 #include "search/vertex_generator.hh"
@@ -15,11 +16,12 @@
 
 namespace alone {
 template <class Model> void Decode(const search::Config &config, const Model &model, util::FilePiece *in_ptr, std::ostream &out) {
-  search::Context<Model> context(config, model);
+  Vocab vocab(model.GetVocabulary());
+  search::Context<Model> context(config, vocab.EndSentence(), model);
   Graph graph;
   {
     boost::scoped_ptr<util::FilePiece> in(in_ptr);
-    ReadCDec(context, *in, graph);
+    ReadCDec(context, *in, graph, vocab);
   }
 
   for (std::size_t i = 0; i < graph.VertexSize(); ++i) {

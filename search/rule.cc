@@ -22,7 +22,7 @@ template <class Model> void Rule::FinishedAdding(const Context<Model> &context, 
   additive_ = additive;
   bos_ = add_sentence_bounds;
   if (add_sentence_bounds) {
-    AppendTerminal(context.GetVocab().EndSentence());
+    AppendTerminal(context.EndSentence());
     // Don't count </s> as a word for purposes of word penalty.   
     additive_ -= word_penalty;
   }

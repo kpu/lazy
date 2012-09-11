@@ -1,6 +1,7 @@
 #include "alone/read.hh"
 
 #include "alone/graph.hh"
+#include "alone/vocab.hh"
 #include "search/arity.hh"
 #include "search/context.hh"
 #include "search/weights.hh"
@@ -15,7 +16,7 @@ namespace alone {
 
 namespace {
 
-template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &to, bool final) {
+template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab, bool final) {
   Graph::Edge *ret = to.NewEdge();
   search::Rule &rule = ret->InitRule();
   StringPiece got;
@@ -29,7 +30,7 @@ template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, ut
       ret->Add(to.MutableVertex(child));
       rule.AppendNonTerminal();
     } else {
-      rule.AppendTerminal(context.MutableVocab().FindOrAdd(got));
+      rule.AppendTerminal(vocab.FindOrAdd(got));
     }
   }
   rule.FinishedAdding(context, context.GetWeights().DotNoLM(from.ReadLine()), final);
@@ -64,7 +65,7 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
   from.ReadLine();
 }
 
-template <class Model> bool ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to) {
+template <class Model> bool ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab) {
   unsigned long int vertices;
   try {
     vertices = from.ReadULong();
@@ -83,7 +84,7 @@ template <class Model> bool ReadCDec(search::Context<Model> &context, util::File
     bool root = (i == vertices - 1);
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      vertex->Add(ReadEdge(context, from, to, root));
+      vertex->Add(ReadEdge(context, from, to, vocab, root));
     }
     vertex->FinishedAdding();
     if (root) break;
@@ -96,7 +97,7 @@ template <class Model> bool ReadCDec(search::Context<Model> &context, util::File
   return true;
 }
 
-template bool ReadCDec(search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &to);
-template bool ReadCDec(search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &to);
+template bool ReadCDec(search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
+template bool ReadCDec(search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
 
 } // namespace alone
