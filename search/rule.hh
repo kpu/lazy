@@ -53,8 +53,6 @@ class Rule {
     std::vector<lm::ngram::ChartState> lexical_;
 };
 
-std::ostream &operator<<(std::ostream &o, const Rule &rule);
-
 } // namespace search
 
 #endif // SEARCH_RULE__

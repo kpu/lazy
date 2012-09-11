@@ -40,16 +40,4 @@ template <class Model> void Rule::FinishedAdding(const Context<Model> &context, 
 template void Rule::FinishedAdding(const Context<lm::ngram::RestProbingModel> &context, Score additive, bool prepend_bos);
 template void Rule::FinishedAdding(const Context<lm::ngram::ProbingModel> &context, Score additive, bool prepend_bos);
 
-std::ostream &operator<<(std::ostream &o, const Rule &rule) {
-  const Rule::ItemsRet &items = rule.Items();
-  for (Rule::ItemsRet::const_iterator i = items.begin(); i != items.end(); ++i) {
-    if (i->Terminal()) {
-      o << i->String() << ' ';
-    } else {
-      o << "[] ";
-    }
-  }
-  return o;
-}
-
 } // namespace search
