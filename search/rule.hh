@@ -17,7 +17,7 @@ template <class Model> class Context;
 
 class Rule {
   public:
-    Rule() : arity_(0), bos_(false) {}
+    Rule() : arity_(0) {}
 
     void AppendTerminal(Word w) { items_.push_back(w); }
 
@@ -33,8 +33,6 @@ class Rule {
     Score Additive() const { return additive_; }
 
     unsigned int Arity() const { return arity_; }
-
-    bool BeginSentence() const { return bos_; }
 
     const lm::ngram::ChartState &Lexical(unsigned int index) const {
       return lexical_[index];
@@ -53,8 +51,6 @@ class Rule {
     std::vector<Word> items_;
 
     std::vector<lm::ngram::ChartState> lexical_;
-
-    bool bos_;
 };
 
 std::ostream &operator<<(std::ostream &o, const Rule &rule);

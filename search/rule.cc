@@ -9,18 +9,9 @@
 
 namespace search {
 
-/*float PositiveBackoffs(const lm::ngram::ChartState &state) {
-  float ret = 0.0;
-  for (unsigned char i = 0; i < state.right.length; ++i) {
-    if (state.right.backoff[i] > 0.0) ret+= state.right.backoff[i];
-  }
-  return ret;
-}*/
-
 template <class Model> void Rule::FinishedAdding(const Context<Model> &context, Score additive, bool add_sentence_bounds) {
   const float word_penalty = -1.0 / M_LN10 * context.GetWeights().WordPenalty();
   additive_ = additive;
-  bos_ = add_sentence_bounds;
   if (add_sentence_bounds) {
     AppendTerminal(context.EndSentence());
     // Don't count </s> as a word for purposes of word penalty.   
@@ -34,7 +25,7 @@ template <class Model> void Rule::FinishedAdding(const Context<Model> &context, 
     lexical_.resize(lexical_.size() + 1);
     lm::ngram::RuleScore<Model> scorer(context.LanguageModel(), lexical_.back());
     // TODO: optimize
-    if (bos_ && (word == items_.begin())) {
+    if (add_sentence_bounds && (word == items_.begin())) {
       scorer.BeginSentence();
     }
     for (; ; ++word) {
@@ -50,7 +41,6 @@ template <class Model> void Rule::FinishedAdding(const Context<Model> &context, 
       additive_ += word_penalty;
     }
     lm_score += scorer.Finish();
-//    lm_score += PositiveBackoffs(state);
   }
 }
 
