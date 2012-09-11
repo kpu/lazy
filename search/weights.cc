@@ -19,8 +19,8 @@ struct DotProduct {
 
   void operator()(const boost::unordered_map<std::string, search::Score> &map, StringPiece name, search::Score score) {
     boost::unordered_map<std::string, search::Score>::const_iterator i(FindStringPiece(map, name));
-    if (i == map.end()) return;
-    total += score * i->second;
+    if (i != map.end()) 
+      total += score * i->second;
   }
 };
 
