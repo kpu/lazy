@@ -10,6 +10,3 @@ exe build_binary : build_binary.cc kenlm ../util//kenutil ;
 exe kenlm_max_order : max_order.cc : <include>.. ;
 
 alias programs : query build_binary kenlm_max_order ;
-
-install legacy : build_binary query kenlm_max_order
-  : <location>$(TOP)/lm <install-type>EXE <install-dependencies>on <link>shared:<dll-path>$(TOP)/lm <link>shared:<install-type>LIB ;
