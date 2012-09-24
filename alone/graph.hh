@@ -1,7 +1,7 @@
 #ifndef ALONE_GRAPH__
 #define ALONE_GRAPH__
 
-#include "search/edge.hh"
+#include "alone/labeled_edge.hh"
 #include "search/rule.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
@@ -45,7 +45,7 @@ template <class T> class FixedAllocator : boost::noncopyable {
 
 class Graph : boost::noncopyable {
   public:
-    typedef search::Edge Edge;
+    typedef LabeledEdge Edge;
     typedef search::Vertex Vertex;
 
     Graph() {}

@@ -2,4 +2,4 @@ lib search : weights.cc vertex.cc vertex_generator.cc edge_generator.cc rule.cc 
 
 import testing ;
 
-unit-test weights_test : weights_test.cc search ..//boost_unit_test_framework ;
+unit-test weights_test : weights_test.cc search /top//boost_unit_test_framework ;

@@ -1,29 +1,29 @@
 #include "alone/assemble.hh"
 
+#include "alone/labeled_edge.hh"
 #include "search/final.hh"
-#include "search/rule.hh"
 
 #include <iostream>
 
 namespace alone {
 
 std::ostream &operator<<(std::ostream &o, const search::Final &final) {
-  const search::Rule::ItemsRet &words = final.From().Items();
+  const std::vector<const std::string*> &words = static_cast<const LabeledEdge&>(final.From()).Words();
   if (words.empty()) return o;
   const search::Final *const *child = final.Children().data();
-  search::Rule::ItemsRet::const_iterator i(words.begin());
+  std::vector<const std::string*>::const_iterator i(words.begin());
   for (; i != words.end() - 1; ++i) {
-    if (i->Terminal()) {
-      o << i->String() << ' ';
+    if (*i) {
+      o << **i << ' ';
     } else {
       o << **child << ' ';
       ++child;
     }
   }
 
-  if (i->Terminal()) {
-    if (i->String() != "</s>") {
-      o << i->String();
+  if (*i) {
+    if (**i != "</s>") {
+      o << **i;
     }
   } else {
     o << **child;
@@ -42,11 +42,11 @@ void MakeIndent(std::ostream &o, const char *indent_str, unsigned int level) {
 void DetailedFinalInternal(std::ostream &o, const search::Final &final, const char *indent_str, unsigned int indent) {
   o << "(\n";
   MakeIndent(o, indent_str, indent);
-  const search::Rule::ItemsRet &words = final.From().Items();
+  const std::vector<const std::string*> &words = static_cast<const LabeledEdge&>(final.From()).Words();
   const search::Final *const *child = final.Children().data();
-  for (search::Rule::ItemsRet::const_iterator i(words.begin()); i != words.end(); ++i) {
-    if (i->Terminal()) {
-      o << i->String();
+  for (std::vector<const std::string*>::const_iterator i(words.begin()); i != words.end(); ++i) {
+    if (*i) {
+      o << **i;
       if (i == words.end() - 1) {
         o << '\n';
         MakeIndent(o, indent_str, indent);

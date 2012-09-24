@@ -18,8 +18,10 @@ namespace {
 
 template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab, bool final) {
   Graph::Edge *ret = to.NewEdge();
-  search::Rule &rule = ret->InitRule();
+
   StringPiece got;
+
+  std::vector<lm::WordIndex> words;
   unsigned long int terminals = 0;
   while ("|||" != (got = from.ReadDelimited())) {
     if ('[' == *got.data() && ']' == got.data()[got.size() - 1]) {
@@ -29,20 +31,25 @@ template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, ut
       UTIL_THROW_IF(end_ptr != got.data() + got.size() - 1, FormatException, "Bad non-terminal" << got);
       UTIL_THROW_IF(child >= to.VertexSize(), FormatException, "Reference to vertex " << child << " but we only have " << to.VertexSize() << " vertices.  Is the file in bottom-up format?");
       ret->Add(to.MutableVertex(child));
-      rule.AppendNonTerminal();
+      words.push_back(lm::kMaxWordIndex);
+      ret->AppendWord(NULL);
     } else {
-      rule.AppendTerminal(vocab.FindOrAdd(got));
+      const std::pair<const std::string, lm::WordIndex> &found = vocab.FindOrAdd(got);
+      words.push_back(found.second);
+      ret->AppendWord(&found.first);
       ++terminals;
     }
   }
   if (final) {
     // This is not counted for the word penalty.  
-    rule.AppendTerminal(vocab.EndSentence());
+    words.push_back(vocab.EndSentence().second);
+    ret->AppendWord(&vocab.EndSentence().first);
   }
   // Hard-coded word penalty.  
   float additive = context.GetWeights().DotNoLM(from.ReadLine()) - context.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10;
-  rule.FinishedAdding(context, additive, final);
-  UTIL_THROW_IF(rule.Arity() > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << rule.Arity());
+  ret->InitRule().Init(context, additive, words, final);
+  unsigned int arity = ret->GetRule().Arity();
+  UTIL_THROW_IF(arity > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << arity);
   return *ret;
 }
 
