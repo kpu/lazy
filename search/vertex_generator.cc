@@ -7,26 +7,19 @@
 
 namespace search {
 
-template <class Model> VertexGenerator::VertexGenerator(Context<Model> &context, Vertex &gen) : context_(context), edges_(gen.edges_.size()), partial_edge_pool_(sizeof(PartialEdge), context.PopLimit() * 2) {
-  for (std::size_t i = 0; i < gen.edges_.size(); ++i) {
-    if (edges_[i].Init(*gen.edges_[i], *this))
-      generate_.push(&edges_[i]);
-  }
+VertexGenerator::VertexGenerator(ContextBase &context, Vertex &gen) : context_(context), partial_edge_pool_(sizeof(PartialEdge), context.PopLimit() * 2) {
   gen.root_.InitRoot();
   root_.under = &gen.root_;
   to_pop_ = context.PopLimit();
-  while (to_pop_ > 0 && !generate_.empty()) {
-    EdgeGenerator *top = generate_.top();
-    generate_.pop();
-    if (top->Pop(context, *this)) {
-      generate_.push(top);
-    }
-  }
-  gen.root_.SortAndSet(context, NULL);
 }
 
-template VertexGenerator::VertexGenerator(Context<lm::ngram::ProbingModel> &context, Vertex &gen);
-template VertexGenerator::VertexGenerator(Context<lm::ngram::RestProbingModel> &context, Vertex &gen);
+void VertexGenerator::AddEdge(Edge &edge) {
+  // Ignore empty edges.  
+  for (unsigned int i = 0; i < edge.GetRule().Arity(); ++i) { 
+    if (edge.GetVertex(i).RootPartial().Empty()) return;
+  }
+  generate_.push(edge_pool_.construct(edge, *MallocPartialEdge()));
+}
 
 namespace {
 const uint64_t kCompleteAdd = static_cast<uint64_t>(-1);

@@ -28,8 +28,9 @@ struct PartialEdgePointerLess : std::binary_function<const PartialEdge *, const 
 
 class EdgeGenerator {
   public:
-    // True if it has a hypothesis.  
-    bool Init(Edge &edge, VertexGenerator &parent);
+    // Precondition: edge is non-empty: every vertex has at least one hypothesis.  
+    // The root is uninitialized, but given as a parameter for memory management purposes.  
+    EdgeGenerator(Edge &edge, PartialEdge &root);
 
     Score Top() const {
       return top_;

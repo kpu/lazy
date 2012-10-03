@@ -10,12 +10,7 @@
 
 namespace search {
 
-bool EdgeGenerator::Init(Edge &edge, VertexGenerator &parent) {
-  from_ = &edge;
-  for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
-    if (edge.GetVertex(i).RootPartial().Empty()) return false;
-  }
-  PartialEdge &root = *parent.MallocPartialEdge();
+EdgeGenerator::EdgeGenerator(Edge &edge, PartialEdge &root) : from_(&edge) {
   root.score = GetRule().Bound();
   for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
     root.nt[i] = edge.GetVertex(i).RootPartial();
@@ -27,11 +22,8 @@ bool EdgeGenerator::Init(Edge &edge, VertexGenerator &parent) {
   for (unsigned int i = 0; i < GetRule().Arity() + 1; ++i) {
     root.between[i] = GetRule().Lexical(i);
   }
-  // wtf no clear method?
-  generate_ = Generate();
   generate_.push(&root);
   top_ = root.score;
-  return true;
 }
 
 namespace {

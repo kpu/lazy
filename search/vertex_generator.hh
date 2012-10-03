@@ -4,6 +4,7 @@
 #include "search/edge.hh"
 #include "search/edge_generator.hh"
 
+#include <boost/pool/object_pool.hpp>
 #include <boost/pool/pool.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -23,7 +24,21 @@ class Final;
 
 class VertexGenerator {
   public:
-    template <class Model> VertexGenerator(Context<Model> &context, Vertex &gen);
+    VertexGenerator(ContextBase &context, Vertex &gen);
+
+    void AddEdge(Edge &edge);
+
+    // Returns true if more could be popped.  
+    template <class Model> void Search(Context<Model> &context) {
+      while (to_pop_ > 0 && !generate_.empty()) {
+        EdgeGenerator *top = generate_.top();
+        generate_.pop();
+        if (top->Pop(context, *this)) {
+          generate_.push(top);
+        }
+      }
+      root_.under->SortAndSet(context, NULL);
+    }
 
     PartialEdge *MallocPartialEdge() { return static_cast<PartialEdge*>(partial_edge_pool_.malloc()); }
     void FreePartialEdge(PartialEdge *value) { partial_edge_pool_.free(value); }
@@ -45,7 +60,7 @@ class VertexGenerator {
 
     ContextBase &context_;
 
-    std::vector<EdgeGenerator> edges_;
+    boost::object_pool<EdgeGenerator> edge_pool_;
 
     struct LessByTop : public std::binary_function<const EdgeGenerator *, const EdgeGenerator *, bool> {
       bool operator()(const EdgeGenerator *first, const EdgeGenerator *second) const {

@@ -128,35 +128,12 @@ extern PartialVertex kBlankPartialVertex;
 
 class Vertex {
   public:
-    Vertex() 
-#ifdef DEBUG
-      : finished_adding_(false)
-#endif
-    {}
-
-    void Add(Edge &edge) {
-#ifdef DEBUG
-      assert(!finished_adding_);
-#endif
-      edges_.push_back(&edge);
-    }
-
-    void FinishedAdding() {
-#ifdef DEBUG
-      assert(!finished_adding_);
-      finished_adding_ = true;
-#endif
-    }
+    Vertex() {}
 
     PartialVertex RootPartial() const { return PartialVertex(root_); }
 
   private:
     friend class VertexGenerator;
-    std::vector<Edge*> edges_;
-
-#ifdef DEBUG
-    bool finished_adding_;
-#endif
 
     VertexNode root_;
 };

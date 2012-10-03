@@ -4,6 +4,7 @@
 #include "alone/vocab.hh"
 #include "search/arity.hh"
 #include "search/context.hh"
+#include "search/vertex_generator.hh"
 #include "search/weights.hh"
 #include "util/file_piece.hh"
 
@@ -95,13 +96,14 @@ template <class Model> bool ReadCDec(search::Context<Model> &context, util::File
   Graph::Vertex *vertex;
   for (unsigned long int i = 0; ; ++i) {
     vertex = to.NewVertex();
+    search::VertexGenerator gen(context, *vertex);
     unsigned long int edge_count = from.ReadULong();
     bool root = (i == vertices - 1);
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      vertex->Add(ReadEdge(context, from, to, vocab, root));
+      gen.AddEdge(ReadEdge(context, from, to, vocab, root));
     }
-    vertex->FinishedAdding();
+    gen.Search(context);
     if (root) break;
   }
   to.SetRoot(vertex);

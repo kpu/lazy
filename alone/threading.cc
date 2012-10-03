@@ -6,7 +6,6 @@
 #include "alone/vocab.hh"
 #include "lm/model.hh"
 #include "search/context.hh"
-#include "search/vertex_generator.hh"
 
 #include <boost/ref.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -24,9 +23,6 @@ template <class Model> void Decode(const search::Config &config, const Model &mo
     ReadCDec(context, *in, graph, vocab);
   }
 
-  for (std::size_t i = 0; i < graph.VertexSize(); ++i) {
-    search::VertexGenerator(context, graph.MutableVertex(i));
-  }
   search::PartialVertex top = graph.Root().RootPartial();
   if (top.Empty()) {
     out << "NO PATH FOUND";
