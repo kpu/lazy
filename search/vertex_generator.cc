@@ -18,7 +18,7 @@ void VertexGenerator::AddEdge(Edge &edge) {
   for (unsigned int i = 0; i < edge.GetRule().Arity(); ++i) { 
     if (edge.GetVertex(i).RootPartial().Empty()) return;
   }
-  generate_.push(edge_pool_.construct(edge, *MallocPartialEdge()));
+  generate_.push(edge_pool_.construct(edge, *static_cast<PartialEdge*>(partial_edge_pool_.malloc())));
 }
 
 namespace {

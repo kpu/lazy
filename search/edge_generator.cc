@@ -70,28 +70,9 @@ template <class Model> float FastScore(const Context<Model> &context, unsigned c
 
 } // namespace
 
-template <class Model> bool EdgeGenerator::Pop(Context<Model> &context, VertexGenerator &parent) {
-  assert(!generate_.empty());
-  PartialEdge &top = *generate_.top();
-  generate_.pop();
-  unsigned int victim = 0;
-  unsigned char lowest_length = 255;
-  for (unsigned int i = 0; i != GetRule().Arity(); ++i) {
-    if (!top.nt[i].Complete() && top.nt[i].Length() < lowest_length) {
-      lowest_length = top.nt[i].Length();
-      victim = i;
-    }
-  }
-  if (lowest_length == 255) {
-    // All states report complete.  
-    top.between[0].right = top.between[GetRule().Arity()].right;
-    parent.NewHypothesis(top.between[0], *from_, top);
-    top_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
-    return !generate_.empty();
-  }
-
+template <class Model> void EdgeGenerator::Split(Context<Model> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim) {
   unsigned int stay = !victim;
-  PartialEdge &continuation = *parent.MallocPartialEdge();
+  PartialEdge &continuation = *static_cast<PartialEdge*>(partial_edge_pool.malloc());
   float old_bound = top.nt[victim].Bound();
   // The alternate's score will change because alternate.nt[victim] changes.  
   bool split = top.nt[victim].Split(continuation.nt[victim]);
@@ -108,14 +89,13 @@ template <class Model> bool EdgeGenerator::Pop(Context<Model> &context, VertexGe
     // TODO: dedupe?  
     generate_.push(&top);
   } else {
-    parent.FreePartialEdge(&top);
+    partial_edge_pool.free(&top);
   }
 
   top_ = generate_.top()->score;
-  return true;
 }
 
-template bool EdgeGenerator::Pop(Context<lm::ngram::RestProbingModel> &context, VertexGenerator &parent);
-template bool EdgeGenerator::Pop(Context<lm::ngram::ProbingModel> &context, VertexGenerator &parent);
+template void EdgeGenerator::Split(Context<lm::ngram::RestProbingModel> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim);
+template void EdgeGenerator::Split(Context<lm::ngram::ProbingModel> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim);
 
 } // namespace search

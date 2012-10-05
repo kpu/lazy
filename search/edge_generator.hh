@@ -3,6 +3,7 @@
 
 #include "search/edge.hh"
 
+#include <boost/pool/pool.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <functional>
@@ -36,12 +37,35 @@ class EdgeGenerator {
       return top_;
     }
 
-    template <class Model> bool Pop(Context<Model> &context, VertexGenerator &parent);
+    template <class Model, class Callback> bool Pop(Context<Model> &context, Callback &callback, boost::pool<> &partial_edge_pool) {
+      assert(!generate_.empty());
+      PartialEdge &top = *generate_.top();
+      generate_.pop();
+      unsigned int victim = 0;
+      unsigned char lowest_length = 255;
+      for (unsigned int i = 0; i != GetRule().Arity(); ++i) {
+        if (!top.nt[i].Complete() && top.nt[i].Length() < lowest_length) {
+          lowest_length = top.nt[i].Length();
+          victim = i;
+        }
+      }
+      if (lowest_length == 255) {
+        // All states report complete.  
+        top.between[0].right = top.between[GetRule().Arity()].right;
+        callback.NewHypothesis(top.between[0], *from_, top);
+        top_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
+        return !generate_.empty();
+      }
+      Split(context, partial_edge_pool, top, victim);
+      return true;
+    }
 
   private:
     const Rule &GetRule() const {
       return from_->GetRule();
     }
+
+    template <class Model> void Split(Context<Model> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim);
 
     Score top_;
 

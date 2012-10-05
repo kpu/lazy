@@ -103,6 +103,10 @@ class PartialVertex {
 
     unsigned char Length() const { return back_->Length(); }
 
+    bool HasAlternative() const {
+      return index_ + 1 < back_->Size();
+    }
+
     // Split into continuation and alternative, rendering this the alternative.
     bool Split(PartialVertex &continuation) {
       assert(!Complete());

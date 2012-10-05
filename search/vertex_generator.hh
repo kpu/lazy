@@ -33,15 +33,12 @@ class VertexGenerator {
       while (to_pop_ > 0 && !generate_.empty()) {
         EdgeGenerator *top = generate_.top();
         generate_.pop();
-        if (top->Pop(context, *this)) {
+        if (top->Pop(context, *this, partial_edge_pool_)) {
           generate_.push(top);
         }
       }
       root_.under->SortAndSet(context, NULL);
     }
-
-    PartialEdge *MallocPartialEdge() { return static_cast<PartialEdge*>(partial_edge_pool_.malloc()); }
-    void FreePartialEdge(PartialEdge *value) { partial_edge_pool_.free(value); }
 
     void NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
