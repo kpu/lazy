@@ -23,7 +23,7 @@ EdgeGenerator::EdgeGenerator(Edge &edge, PartialEdge &root) : from_(&edge) {
     root.between[i] = GetRule().Lexical(i);
   }
   generate_.push(&root);
-  top_ = root.score;
+  top_score_ = root.score;
 }
 
 namespace {
@@ -92,7 +92,7 @@ template <class Model> void EdgeGenerator::Split(Context<Model> &context, boost:
     partial_edge_pool.free(&top);
   }
 
-  top_ = generate_.top()->score;
+  top_score_ = generate_.top()->score;
 }
 
 template void EdgeGenerator::Split(Context<lm::ngram::RestProbingModel> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim);

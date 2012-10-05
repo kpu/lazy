@@ -30,19 +30,27 @@ class VertexGenerator {
 
     // Returns true if more could be popped.  
     template <class Model> void Search(Context<Model> &context) {
-      while (to_pop_ > 0 && !generate_.empty()) {
+      int to_pop = context.PopLimit();
+      while (to_pop > 0 && !generate_.empty()) {
         EdgeGenerator *top = generate_.top();
         generate_.pop();
-        if (top->Pop(context, *this, partial_edge_pool_)) {
+        PartialEdge *ret = top->Pop(context, partial_edge_pool_);
+        if (ret) {
+          NewHypothesis(ret->between[0], top->GetEdge(), *ret);
+          --to_pop;
+          if (top->Top() != -kScoreInf) {
+            generate_.push(top);
+          }
+        } else {
           generate_.push(top);
         }
       }
       root_.under->SortAndSet(context, NULL);
     }
 
+  private:
     void NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
-  private:
     // Parallel structure to VertexNode.  
     struct Trie {
       Trie() : under(NULL) {}
@@ -72,8 +80,6 @@ class VertexGenerator {
 
     typedef boost::unordered_map<uint64_t, Final*> Existing;
     Existing existing_;
-
-    int to_pop_;
 
     boost::pool<> partial_edge_pool_;
 };

@@ -34,10 +34,14 @@ class EdgeGenerator {
     EdgeGenerator(Edge &edge, PartialEdge &root);
 
     Score Top() const {
-      return top_;
+      return top_score_;
     }
 
-    template <class Model, class Callback> bool Pop(Context<Model> &context, Callback &callback, boost::pool<> &partial_edge_pool) {
+    const Edge &GetEdge() const {
+      return *from_;
+    }
+
+    template <class Model> PartialEdge *Pop(Context<Model> &context, boost::pool<> &partial_edge_pool) {
       assert(!generate_.empty());
       PartialEdge &top = *generate_.top();
       generate_.pop();
@@ -52,12 +56,12 @@ class EdgeGenerator {
       if (lowest_length == 255) {
         // All states report complete.  
         top.between[0].right = top.between[GetRule().Arity()].right;
-        callback.NewHypothesis(top.between[0], *from_, top);
-        top_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
-        return !generate_.empty();
+        // Now top.between[0] is the full edge state.  
+        top_score_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
+        return &top;
       }
       Split(context, partial_edge_pool, top, victim);
-      return true;
+      return NULL;
     }
 
   private:
@@ -67,7 +71,7 @@ class EdgeGenerator {
 
     template <class Model> void Split(Context<Model> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim);
 
-    Score top_;
+    Score top_score_;
 
     typedef std::priority_queue<PartialEdge*, std::vector<PartialEdge*>, PartialEdgePointerLess> Generate;
     Generate generate_;

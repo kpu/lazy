@@ -10,7 +10,6 @@ namespace search {
 VertexGenerator::VertexGenerator(ContextBase &context, Vertex &gen) : context_(context), partial_edge_pool_(sizeof(PartialEdge), context.PopLimit() * 2) {
   gen.root_.InitRoot();
   root_.under = &gen.root_;
-  to_pop_ = context.PopLimit();
 }
 
 void VertexGenerator::AddEdge(Edge &edge) {
@@ -33,7 +32,6 @@ void VertexGenerator::NewHypothesis(const lm::ngram::ChartState &state, const Ed
     if (exists.Bound() < partial.score) {
       exists.Reset(partial.score, from, partial.nt[0].End(), partial.nt[1].End());
     }
-    --to_pop_;
     return;
   }
   unsigned char left = 0, right = 0;
@@ -61,7 +59,6 @@ void VertexGenerator::NewHypothesis(const lm::ngram::ChartState &state, const Ed
 
   node = &FindOrInsert(*node, kCompleteAdd - state.left.full, state, state.left.length, true, state.right.length, true);
   got.first->second = CompleteTransition(*node, state, from, partial);
-  --to_pop_;
 }
 
 VertexGenerator::Trie &VertexGenerator::FindOrInsert(VertexGenerator::Trie &node, uint64_t added, const lm::ngram::ChartState &state, unsigned char left, bool left_full, unsigned char right, bool right_full) {
