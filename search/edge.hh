@@ -19,7 +19,7 @@ class Edge {
 
     Rule &InitRule() { return rule_; }
 
-    void Add(Vertex &vertex) {
+    void Add(const Vertex &vertex) {
       assert(end_to_ - to_ < kMaxArity);
       *(end_to_++) = &vertex;
     }
@@ -34,8 +34,8 @@ class Edge {
     // Rule and pointers to rule arguments.  
     Rule rule_;
 
-    Vertex *to_[kMaxArity];
-    Vertex **end_to_;
+    const Vertex *to_[kMaxArity];
+    const Vertex **end_to_;
 };
 
 struct PartialEdge {
