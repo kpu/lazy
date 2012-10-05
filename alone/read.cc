@@ -4,6 +4,7 @@
 #include "alone/vocab.hh"
 #include "search/arity.hh"
 #include "search/context.hh"
+#include "search/edge_queue.hh"
 #include "search/vertex_generator.hh"
 #include "search/weights.hh"
 #include "util/file_piece.hh"
@@ -81,6 +82,7 @@ void JustVocab(util::FilePiece &from, std::ostream &out) {
   from.ReadLine();
 }
 
+// TODO: pull out algorithm. 
 template <class Model> bool ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab) {
   unsigned long int vertices;
   try {
@@ -95,15 +97,16 @@ template <class Model> bool ReadCDec(search::Context<Model> &context, util::File
   to.SetCounts(vertices, edges);
   Graph::Vertex *vertex;
   for (unsigned long int i = 0; ; ++i) {
-    vertex = to.NewVertex();
-    search::VertexGenerator gen(context, *vertex);
+    search::EdgeQueue edge_queue(context.PopLimit());
     unsigned long int edge_count = from.ReadULong();
     bool root = (i == vertices - 1);
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      gen.AddEdge(ReadEdge(context, from, to, vocab, root));
+      edge_queue.AddEdge(ReadEdge(context, from, to, vocab, root));
     }
-    gen.Search(context);
+    vertex = to.NewVertex();
+    search::VertexGenerator gen(context, *vertex);
+    edge_queue.Search(context, gen);
     if (root) break;
   }
   to.SetRoot(vertex);

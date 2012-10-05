@@ -2,29 +2,23 @@
 
 #include "lm/left.hh"
 #include "search/context.hh"
+#include "search/edge.hh"
 
 #include <stdint.h>
 
 namespace search {
 
-VertexGenerator::VertexGenerator(ContextBase &context, Vertex &gen) : context_(context), partial_edge_pool_(sizeof(PartialEdge), context.PopLimit() * 2) {
+VertexGenerator::VertexGenerator(ContextBase &context, Vertex &gen) : context_(context) {
   gen.root_.InitRoot();
   root_.under = &gen.root_;
-}
-
-void VertexGenerator::AddEdge(Edge &edge) {
-  // Ignore empty edges.  
-  for (unsigned int i = 0; i < edge.GetRule().Arity(); ++i) { 
-    if (edge.GetVertex(i).RootPartial().Empty()) return;
-  }
-  generate_.push(edge_pool_.construct(edge, *static_cast<PartialEdge*>(partial_edge_pool_.malloc())));
 }
 
 namespace {
 const uint64_t kCompleteAdd = static_cast<uint64_t>(-1);
 } // namespace
 
-void VertexGenerator::NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial) {
+void VertexGenerator::NewHypothesis(const PartialEdge &partial, const Edge &from) {
+  const lm::ngram::ChartState &state = partial.CompletedState();
   std::pair<Existing::iterator, bool> got(existing_.insert(std::pair<uint64_t, Final*>(hash_value(state), NULL)));
   if (!got.second) {
     // Found it already.  

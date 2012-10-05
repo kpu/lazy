@@ -45,6 +45,10 @@ struct PartialEdge {
   // Non-terminals
   PartialVertex nt[kMaxArity];
 
+  const lm::ngram::ChartState &CompletedState() const {
+    return between[0];
+  }
+
   bool operator<(const PartialEdge &other) const {
     return score < other.score;
   }

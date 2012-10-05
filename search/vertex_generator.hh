@@ -1,11 +1,8 @@
 #ifndef SEARCH_VERTEX_GENERATOR__
 #define SEARCH_VERTEX_GENERATOR__
 
-#include "search/edge.hh"
-#include "search/edge_generator.hh"
+#include "search/vertex.hh"
 
-#include <boost/pool/object_pool.hpp>
-#include <boost/pool/pool.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <queue>
@@ -18,39 +15,22 @@ class ChartState;
 
 namespace search {
 
-template <class Model> class Context;
 class ContextBase;
 class Final;
+struct PartialEdge;
+class Edge;
 
 class VertexGenerator {
   public:
     VertexGenerator(ContextBase &context, Vertex &gen);
 
-    void AddEdge(Edge &edge);
+    void NewHypothesis(const PartialEdge &partial, const Edge &from);
 
-    // Returns true if more could be popped.  
-    template <class Model> void Search(Context<Model> &context) {
-      int to_pop = context.PopLimit();
-      while (to_pop > 0 && !generate_.empty()) {
-        EdgeGenerator *top = generate_.top();
-        generate_.pop();
-        PartialEdge *ret = top->Pop(context, partial_edge_pool_);
-        if (ret) {
-          NewHypothesis(ret->between[0], top->GetEdge(), *ret);
-          --to_pop;
-          if (top->TopScore() != -kScoreInf) {
-            generate_.push(top);
-          }
-        } else {
-          generate_.push(top);
-        }
-      }
-      root_.under->SortAndSet(context, NULL);
+    void FinishedSearch() {
+      root_.under->SortAndSet(context_, NULL);
     }
 
   private:
-    void NewHypothesis(const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
-
     // Parallel structure to VertexNode.  
     struct Trie {
       Trie() : under(NULL) {}
@@ -65,23 +45,10 @@ class VertexGenerator {
 
     ContextBase &context_;
 
-    boost::object_pool<EdgeGenerator> edge_pool_;
-
-    struct LessByTopScore : public std::binary_function<const EdgeGenerator *, const EdgeGenerator *, bool> {
-      bool operator()(const EdgeGenerator *first, const EdgeGenerator *second) const {
-        return first->TopScore() < second->TopScore();
-      }
-    };
-
-    typedef std::priority_queue<EdgeGenerator*, std::vector<EdgeGenerator*>, LessByTopScore> Generate;
-    Generate generate_;
-
     Trie root_;
 
     typedef boost::unordered_map<uint64_t, Final*> Existing;
     Existing existing_;
-
-    boost::pool<> partial_edge_pool_;
 };
 
 } // namespace search
