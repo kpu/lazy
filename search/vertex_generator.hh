@@ -38,7 +38,7 @@ class VertexGenerator {
         if (ret) {
           NewHypothesis(ret->between[0], top->GetEdge(), *ret);
           --to_pop;
-          if (top->Top() != -kScoreInf) {
+          if (top->TopScore() != -kScoreInf) {
             generate_.push(top);
           }
         } else {
@@ -67,13 +67,13 @@ class VertexGenerator {
 
     boost::object_pool<EdgeGenerator> edge_pool_;
 
-    struct LessByTop : public std::binary_function<const EdgeGenerator *, const EdgeGenerator *, bool> {
+    struct LessByTopScore : public std::binary_function<const EdgeGenerator *, const EdgeGenerator *, bool> {
       bool operator()(const EdgeGenerator *first, const EdgeGenerator *second) const {
-        return first->Top() < second->Top();
+        return first->TopScore() < second->TopScore();
       }
     };
 
-    typedef std::priority_queue<EdgeGenerator*, std::vector<EdgeGenerator*>, LessByTop> Generate;
+    typedef std::priority_queue<EdgeGenerator*, std::vector<EdgeGenerator*>, LessByTopScore> Generate;
     Generate generate_;
 
     Trie root_;

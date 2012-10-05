@@ -70,7 +70,26 @@ template <class Model> float FastScore(const Context<Model> &context, unsigned c
 
 } // namespace
 
-template <class Model> void EdgeGenerator::Split(Context<Model> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim) {
+template <class Model> PartialEdge *EdgeGenerator::Pop(Context<Model> &context, boost::pool<> &partial_edge_pool) {
+  assert(!generate_.empty());
+  PartialEdge &top = *generate_.top();
+  generate_.pop();
+  unsigned int victim = 0;
+  unsigned char lowest_length = 255;
+  for (unsigned int i = 0; i != GetRule().Arity(); ++i) {
+    if (!top.nt[i].Complete() && top.nt[i].Length() < lowest_length) {
+      lowest_length = top.nt[i].Length();
+      victim = i;
+    }
+  }
+  if (lowest_length == 255) {
+    // All states report complete.  
+    top.between[0].right = top.between[GetRule().Arity()].right;
+    // Now top.between[0] is the full edge state.  
+    top_score_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
+    return &top;
+  }
+
   unsigned int stay = !victim;
   PartialEdge &continuation = *static_cast<PartialEdge*>(partial_edge_pool.malloc());
   float old_bound = top.nt[victim].Bound();
@@ -93,9 +112,10 @@ template <class Model> void EdgeGenerator::Split(Context<Model> &context, boost:
   }
 
   top_score_ = generate_.top()->score;
+  return NULL;
 }
 
-template void EdgeGenerator::Split(Context<lm::ngram::RestProbingModel> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim);
-template void EdgeGenerator::Split(Context<lm::ngram::ProbingModel> &context, boost::pool<> &partial_edge_pool, PartialEdge &top, unsigned int victim);
+template PartialEdge *EdgeGenerator::Pop(Context<lm::ngram::RestProbingModel> &context, boost::pool<> &partial_edge_pool);
+template PartialEdge *EdgeGenerator::Pop(Context<lm::ngram::ProbingModel> &context, boost::pool<> &partial_edge_pool);
 
 } // namespace search
