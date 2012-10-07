@@ -30,6 +30,8 @@ class VertexGenerator {
       root_.under->SortAndSet(context_, NULL);
     }
 
+    const Vertex &Generating() const { return gen_; }
+
   private:
     // Parallel structure to VertexNode.  
     struct Trie {
@@ -44,6 +46,8 @@ class VertexGenerator {
     Final *CompleteTransition(Trie &node, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
 
     ContextBase &context_;
+
+    Vertex &gen_;
 
     Trie root_;
 

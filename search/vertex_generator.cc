@@ -8,7 +8,7 @@
 
 namespace search {
 
-VertexGenerator::VertexGenerator(ContextBase &context, Vertex &gen) : context_(context) {
+VertexGenerator::VertexGenerator(ContextBase &context, Vertex &gen) : context_(context), gen_(gen) {
   gen.root_.InitRoot();
   root_.under = &gen.root_;
 }
