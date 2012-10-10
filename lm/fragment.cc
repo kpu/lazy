@@ -1,31 +1,37 @@
-#include "lm/left.hh"
+#include "lm/binary_format.hh"
 #include "lm/model.hh"
-#include "util/file_piece.hh"
+#include "lm/left.hh"
 #include "util/tokenize_piece.hh"
+
+template <class Model> void Query(const char *name) {
+  Model model(name);
+  std::string line;
+  lm::ngram::ChartState ignored;
+  while (getline(std::cin, line)) {
+    lm::ngram::RuleScore<Model> scorer(model, ignored);
+    for (util::TokenIter<util::SingleCharacter, true> i(line, ' '); i; ++i) {
+      scorer.Terminal(model.GetVocabulary().Index(*i));
+    }
+    std::cout << scorer.Finish() << '\n';
+  }
+}
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
-    std::cerr << "Pass lm" << std::endl;
+    std::cerr << "Expected model file name." << std::endl;
     return 1;
   }
-  lm::ngram::RestProbingModel m(argv[1]);
-  util::FilePiece f(0, "stdin");
-  StringPiece str;
-  while (true) {
-    float test;
-/*    try {
-      test = f.ReadFloat();
-    } catch (const util::EndOfFileException &e) { break; }*/
-    str = f.ReadLine();
-    lm::ngram::ChartState state;
-    lm::ngram::RuleScore<lm::ngram::RestProbingModel> scorer(m, state);
-    for (util::TokenIter<util::SingleCharacter, true> i(str, ' '); i; ++i) {
-      scorer.Terminal(m.GetVocabulary().Index(*i));
-    }
-    float actual = scorer.Finish();
-    std::cout << actual << std::endl;
-/*    if (fabs(test - actual) > 0.0001) {
-      std::cout << actual << " != " << test << " for" << str << std::endl;
-    }*/
+  const char *name = argv[1];
+  lm::ngram::ModelType model_type = lm::ngram::PROBING;
+  lm::ngram::RecognizeBinary(name, model_type);
+  switch (model_type) {
+    case lm::ngram::PROBING:
+      Query<lm::ngram::ProbingModel>(name);
+      break;
+    case lm::ngram::REST_PROBING:
+      Query<lm::ngram::RestProbingModel>(name);
+      break;
+    default:
+      std::cerr << "Model type not supported yet." << std::endl;
   }
 }
