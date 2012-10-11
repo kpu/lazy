@@ -19,6 +19,8 @@ class EdgeQueue {
 
     void AddEdge(Edge &edge);
 
+    bool Empty() const { return generate_.empty(); }
+
     /* Generate hypotheses and send them to output.  Normally, output is a
      * VertexGenerator, but the decoder may want to route edges to different
      * vertices i.e. if they have different LHS non-terminal labels.  
