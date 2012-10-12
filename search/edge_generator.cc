@@ -11,10 +11,8 @@
 namespace search {
 
 EdgeGenerator::EdgeGenerator(Edge &edge, PartialEdge &root) : from_(&edge) {
-  root.score = GetRule().Bound();
   for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
     root.nt[i] = edge.GetVertex(i).RootPartial();
-    root.score += root.nt[i].Bound();
   }
   for (unsigned int i = GetRule().Arity(); i < 2; ++i) {
     root.nt[i] = kBlankPartialVertex;

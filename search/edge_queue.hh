@@ -17,7 +17,7 @@ class EdgeQueue {
   public:
     explicit EdgeQueue(unsigned int pop_limit_hint);
 
-    void AddEdge(Edge &edge);
+    void AddEdge(Edge &edge, float total_score);
 
     bool Empty() const { return generate_.empty(); }
 

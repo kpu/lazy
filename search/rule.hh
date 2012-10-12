@@ -21,19 +21,7 @@ class Rule {
   public:
     Rule() : arity_(0) {}
 
-    // Use kNonTerminal for non-terminals.  
-    template <class C> void Init(const C &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos) {
-      InitRet ret(InternalInit(context.LanguageModel(), words, prepend_bos));
-      bound_ = additive + static_cast<float>(ret.oov) * context.GetWeights().OOV();
-      bound_ += ret.prob * context.GetWeights().LM();
-    }
-
-    template <class C> void InitFromTotal(const C &context, Score total, const std::vector<lm::WordIndex> &words, bool prepend_bos) {
-      bound_ = total;
-      InternalInit(context.LanguageModel(), words, prepend_bos);
-    }
-
-    Score Bound() const { return bound_; }
+    template <class Model> float Init(const Context<Model> &context, const std::vector<lm::WordIndex> &words, bool prepend_bos);
 
     unsigned int Arity() const { return arity_; }
 
@@ -42,14 +30,6 @@ class Rule {
     }
 
   private:
-    struct InitRet {
-      unsigned int oov;
-      float prob;
-    };
-    template <class Model> InitRet InternalInit(const Model &model, const std::vector<lm::WordIndex> &words, bool prepend_bos);
-
-    Score bound_;
-
     unsigned int arity_;
 
     std::vector<lm::ngram::ChartState> lexical_;

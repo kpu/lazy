@@ -18,7 +18,7 @@ namespace alone {
 
 namespace {
 
-template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab, bool final) {
+template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab, bool final, float &score) {
   Graph::Edge *ret = to.NewEdge();
 
   StringPiece got;
@@ -48,8 +48,8 @@ template <class Model> Graph::Edge &ReadEdge(search::Context<Model> &context, ut
     ret->AppendWord(&vocab.EndSentence().first);
   }
   // Hard-coded word penalty.  
-  float additive = context.GetWeights().DotNoLM(from.ReadLine()) - context.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10;
-  ret->InitRule().Init(context, additive, words, final);
+  score = context.GetWeights().DotNoLM(from.ReadLine()) - context.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10;
+  score += ret->InitRule().Init(context, words, final);
   unsigned int arity = ret->GetRule().Arity();
   UTIL_THROW_IF(arity > search::kMaxArity, util::Exception, "Edit search/arity.hh and increase " << search::kMaxArity << " to at least " << arity);
   return *ret;
@@ -102,7 +102,9 @@ template <class Model> bool ReadCDec(search::Context<Model> &context, util::File
     bool root = (i == vertices - 1);
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      edge_queue.AddEdge(ReadEdge(context, from, to, vocab, root));
+      float score;
+      Graph::Edge &edge = ReadEdge(context, from, to, vocab, root, score);
+      edge_queue.AddEdge(edge, score);
     }
     vertex = to.NewVertex();
     search::VertexGenerator gen(context, *vertex);

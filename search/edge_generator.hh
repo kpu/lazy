@@ -30,7 +30,7 @@ struct PartialEdgePointerLess : std::binary_function<const PartialEdge *, const 
 class EdgeGenerator {
   public:
     // Precondition: edge is non-empty: every vertex has at least one hypothesis.  
-    // The root is uninitialized, but given as a parameter for memory management purposes.  
+    // The root's score is initialized to the edge's score.  
     EdgeGenerator(Edge &edge, PartialEdge &root);
 
     Score TopScore() const {
