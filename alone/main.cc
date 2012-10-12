@@ -10,6 +10,8 @@
 #include <iostream>
 #include <memory>
 
+#include <errno.h>
+
 namespace alone {
 
 template <class Control> void ReadLoop(const std::string &graph_prefix, Control &control) {
