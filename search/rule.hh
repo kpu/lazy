@@ -15,11 +15,11 @@ namespace search {
 
 template <class Model> class Context;
 
+const lm::WordIndex kNonTerminal = lm::kMaxWordIndex;
+
 class Rule {
   public:
     Rule() : arity_(0) {}
-
-    static const lm::WordIndex kNonTerminal = lm::kMaxWordIndex;
 
     // Use kNonTerminal for non-terminals.  
     template <class Model> void Init(const Context<Model> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);

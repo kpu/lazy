@@ -136,6 +136,20 @@ class Vertex {
 
     PartialVertex RootPartial() const { return PartialVertex(root_); }
 
+    const Final *BestChild() const {
+      PartialVertex top(RootPartial());
+      if (top.Empty()) {
+        return NULL;
+      } else {
+        PartialVertex continuation;
+        while (!top.Complete()) {
+          top.Split(continuation);
+          top = continuation;
+        }
+        return &top.End();
+      }
+    }
+
   private:
     friend class VertexGenerator;
 

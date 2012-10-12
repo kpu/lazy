@@ -39,5 +39,9 @@ template <class Model> void Rule::Init(const Context<Model> &context, Score addi
 
 template void Rule::Init(const Context<lm::ngram::RestProbingModel> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);
 template void Rule::Init(const Context<lm::ngram::ProbingModel> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);
+template void Rule::Init(const Context<lm::ngram::TrieModel> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);
+template void Rule::Init(const Context<lm::ngram::QuantTrieModel> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);
+template void Rule::Init(const Context<lm::ngram::ArrayTrieModel> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);
+template void Rule::Init(const Context<lm::ngram::QuantArrayTrieModel> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);
 
 } // namespace search
