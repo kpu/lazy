@@ -28,6 +28,12 @@ class Rule {
       bound_ = additive_ + ret.prob * context.GetWeights().LM();
     }
 
+    template <class C> void InitFromTotal(const C &context, Score total, const std::vector<lm::WordIndex> &words, bool prepend_bos) {
+      bound_ = total;
+      InitRet ret(InternalInit(context.LanguageModel(), words, prepend_bos));
+      additive_ = bound_ - ret.prob * context.GetWeights().LM();
+    }
+
     Score Bound() const { return bound_; }
 
     Score Additive() const { return additive_; }
