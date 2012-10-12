@@ -22,7 +22,11 @@ class Rule {
     Rule() : arity_(0) {}
 
     // Use kNonTerminal for non-terminals.  
-    template <class Model> void Init(const Context<Model> &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos);
+    template <class C> void Init(const C &context, Score additive, const std::vector<lm::WordIndex> &words, bool prepend_bos) {
+      InitRet ret(InternalInit(context.LanguageModel(), words, prepend_bos));
+      additive_ = additive + static_cast<float>(ret.oov) * context.GetWeights().OOV();
+      bound_ = additive_ + ret.prob * context.GetWeights().LM();
+    }
 
     Score Bound() const { return bound_; }
 
@@ -35,6 +39,12 @@ class Rule {
     }
 
   private:
+    struct InitRet {
+      unsigned int oov;
+      float prob;
+    };
+    template <class Model> InitRet InternalInit(const Model &model, const std::vector<lm::WordIndex> &words, bool prepend_bos);
+
     Score bound_, additive_;
 
     unsigned int arity_;
