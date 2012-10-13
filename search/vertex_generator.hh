@@ -1,6 +1,7 @@
 #ifndef SEARCH_VERTEX_GENERATOR__
 #define SEARCH_VERTEX_GENERATOR__
 
+#include "search/note.hh"
 #include "search/vertex.hh"
 
 #include <boost/unordered_map.hpp>
@@ -18,13 +19,12 @@ namespace search {
 class ContextBase;
 class Final;
 struct PartialEdge;
-class Edge;
 
 class VertexGenerator {
   public:
     VertexGenerator(ContextBase &context, Vertex &gen);
 
-    void NewHypothesis(const PartialEdge &partial, const Edge &from);
+    void NewHypothesis(const PartialEdge &partial, Note note);
 
     void FinishedSearch() {
       root_.under->SortAndSet(context_, NULL);
@@ -43,7 +43,7 @@ class VertexGenerator {
 
     Trie &FindOrInsert(Trie &node, uint64_t added, const lm::ngram::ChartState &state, unsigned char left, bool left_full, unsigned char right, bool right_full);
 
-    Final *CompleteTransition(Trie &node, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial);
+    Final *CompleteTransition(Trie &node, const lm::ngram::ChartState &state, Note note, const PartialEdge &partial);
 
     ContextBase &context_;
 

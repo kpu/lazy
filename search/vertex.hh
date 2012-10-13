@@ -16,8 +16,6 @@ namespace search {
 
 class ContextBase;
 
-class Edge;
-
 class VertexNode {
   public:
     VertexNode() : end_(NULL) {}

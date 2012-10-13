@@ -17,14 +17,14 @@ namespace {
 const uint64_t kCompleteAdd = static_cast<uint64_t>(-1);
 } // namespace
 
-void VertexGenerator::NewHypothesis(const PartialEdge &partial, const Edge &from) {
+void VertexGenerator::NewHypothesis(const PartialEdge &partial, Note note) {
   const lm::ngram::ChartState &state = partial.CompletedState();
   std::pair<Existing::iterator, bool> got(existing_.insert(std::pair<uint64_t, Final*>(hash_value(state), NULL)));
   if (!got.second) {
     // Found it already.  
     Final &exists = *got.first->second;
     if (exists.Bound() < partial.score) {
-      exists.Reset(partial.score, from, partial.nt[0].End(), partial.nt[1].End());
+      exists.Reset(partial.score, note, partial.nt[0].End(), partial.nt[1].End());
     }
     return;
   }
@@ -52,7 +52,7 @@ void VertexGenerator::NewHypothesis(const PartialEdge &partial, const Edge &from
   }
 
   node = &FindOrInsert(*node, kCompleteAdd - state.left.full, state, state.left.length, true, state.right.length, true);
-  got.first->second = CompleteTransition(*node, state, from, partial);
+  got.first->second = CompleteTransition(*node, state, note, partial);
 }
 
 VertexGenerator::Trie &VertexGenerator::FindOrInsert(VertexGenerator::Trie &node, uint64_t added, const lm::ngram::ChartState &state, unsigned char left, bool left_full, unsigned char right, bool right_full) {
@@ -70,12 +70,12 @@ VertexGenerator::Trie &VertexGenerator::FindOrInsert(VertexGenerator::Trie &node
   return next;
 }
 
-Final *VertexGenerator::CompleteTransition(VertexGenerator::Trie &starter, const lm::ngram::ChartState &state, const Edge &from, const PartialEdge &partial) {
+Final *VertexGenerator::CompleteTransition(VertexGenerator::Trie &starter, const lm::ngram::ChartState &state, Note note, const PartialEdge &partial) {
   VertexNode &node = *starter.under;
   assert(node.State().left.full == state.left.full);
   assert(!node.End());
   Final *final = context_.NewFinal();
-  final->Reset(partial.score, from, partial.nt[0].End(), partial.nt[1].End());
+  final->Reset(partial.score, note, partial.nt[0].End(), partial.nt[1].End());
   node.SetEnd(final);
   return final;
 }

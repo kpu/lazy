@@ -7,18 +7,19 @@
 
 namespace search {
 
-EdgeQueue::EdgeQueue(unsigned int pop_limit_hint) : partial_edge_pool_(sizeof(PartialEdge), pop_limit_hint * 2) {}
+EdgeQueue::EdgeQueue(unsigned int pop_limit_hint) : partial_edge_pool_(sizeof(PartialEdge), pop_limit_hint * 2) {
+  take_ = static_cast<PartialEdge*>(partial_edge_pool_.malloc());
+}
 
-void EdgeQueue::AddEdge(Edge &edge, float total_score) {
+/*void EdgeQueue::AddEdge(PartialEdge &root, unsigned char arity, Note note) {
   // Ignore empty edges.  
-  for (unsigned int i = 0; i < edge.GetRule().Arity(); ++i) {
+  for (unsigned char i = 0; i < edge.Arity(); ++i) {
     PartialVertex root(edge.GetVertex(i).RootPartial());
     if (root.Empty()) return;
     total_score += root.Bound();
   }
   PartialEdge &allocated = *static_cast<PartialEdge*>(partial_edge_pool_.malloc());
   allocated.score = total_score;
-  generate_.push(edge_pool_.construct(edge, allocated));
-}
+}*/
 
 } // namespace search

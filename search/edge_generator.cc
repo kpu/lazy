@@ -10,16 +10,13 @@
 
 namespace search {
 
-EdgeGenerator::EdgeGenerator(Edge &edge, PartialEdge &root) : from_(&edge) {
-  for (unsigned int i = 0; i < GetRule().Arity(); ++i) {
+EdgeGenerator::EdgeGenerator(PartialEdge &root, unsigned char arity, Note note) : arity_(arity), note_(note) {
+/*  for (unsigned char i = 0; i < edge.Arity(); ++i) {
     root.nt[i] = edge.GetVertex(i).RootPartial();
   }
-  for (unsigned int i = GetRule().Arity(); i < 2; ++i) {
+  for (unsigned char i = edge.Arity(); i < 2; ++i) {
     root.nt[i] = kBlankPartialVertex;
-  }
-  for (unsigned int i = 0; i < GetRule().Arity() + 1; ++i) {
-    root.between[i] = GetRule().Lexical(i);
-  }
+  }*/
   generate_.push(&root);
   top_score_ = root.score;
 }
@@ -74,7 +71,7 @@ template <class Model> PartialEdge *EdgeGenerator::Pop(Context<Model> &context, 
   generate_.pop();
   unsigned int victim = 0;
   unsigned char lowest_length = 255;
-  for (unsigned int i = 0; i != GetRule().Arity(); ++i) {
+  for (unsigned char i = 0; i != arity_; ++i) {
     if (!top.nt[i].Complete() && top.nt[i].Length() < lowest_length) {
       lowest_length = top.nt[i].Length();
       victim = i;
@@ -82,7 +79,7 @@ template <class Model> PartialEdge *EdgeGenerator::Pop(Context<Model> &context, 
   }
   if (lowest_length == 255) {
     // All states report complete.  
-    top.between[0].right = top.between[GetRule().Arity()].right;
+    top.between[0].right = top.between[arity_].right;
     // Now top.between[0] is the full edge state.  
     top_score_ = generate_.empty() ? -kScoreInf : generate_.top()->score;
     return &top;
@@ -96,7 +93,7 @@ template <class Model> PartialEdge *EdgeGenerator::Pop(Context<Model> &context, 
   // top is now the alternate.  
 
   continuation.nt[stay] = top.nt[stay];
-  continuation.score = FastScore(context, victim, GetRule().Arity(), top, continuation);
+  continuation.score = FastScore(context, victim, arity_, top, continuation);
   // TODO: dedupe?  
   generate_.push(&continuation);
 

@@ -11,33 +11,6 @@
 
 namespace search {
 
-class Edge {
-  public:
-    Edge() {
-      end_to_ = to_;
-    }
-
-    Rule &InitRule() { return rule_; }
-
-    void Add(const Vertex &vertex) {
-      assert(end_to_ - to_ < kMaxArity);
-      *(end_to_++) = &vertex;
-    }
-
-    const Vertex &GetVertex(std::size_t index) const {
-      return *to_[index];
-    }
-
-    const Rule &GetRule() const { return rule_; }
-
-  private:
-    // Rule and pointers to rule arguments.  
-    Rule rule_;
-
-    const Vertex *to_[kMaxArity];
-    const Vertex **end_to_;
-};
-
 struct PartialEdge {
   Score score;
   // Terminals

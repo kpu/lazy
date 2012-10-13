@@ -3,6 +3,7 @@
 
 #include "search/edge.hh"
 #include "search/edge_generator.hh"
+#include "search/note.hh"
 
 #include <boost/pool/pool.hpp>
 #include <boost/pool/object_pool.hpp>
@@ -17,7 +18,14 @@ class EdgeQueue {
   public:
     explicit EdgeQueue(unsigned int pop_limit_hint);
 
-    void AddEdge(Edge &edge, float total_score);
+    PartialEdge &InitializeEdge() {
+      return *take_;
+    }
+
+    void AddEdge(unsigned char arity, Note note) {
+      generate_.push(edge_pool_.construct(*take_, arity, note));
+      take_ = static_cast<PartialEdge*>(partial_edge_pool_.malloc());
+    }
 
     bool Empty() const { return generate_.empty(); }
 
@@ -32,7 +40,7 @@ class EdgeQueue {
         generate_.pop();
         PartialEdge *ret = top->Pop(context, partial_edge_pool_);
         if (ret) {
-          output.NewHypothesis(*ret, top->GetEdge());
+          output.NewHypothesis(*ret, top->GetNote());
           --to_pop;
           if (top->TopScore() != -kScoreInf) {
             generate_.push(top);
@@ -57,6 +65,8 @@ class EdgeQueue {
     Generate generate_;
 
     boost::pool<> partial_edge_pool_;
+
+    PartialEdge *take_;
 };
 
 } // namespace search
