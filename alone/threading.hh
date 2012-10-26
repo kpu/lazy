@@ -3,7 +3,7 @@
 
 #ifdef WITH_THREADS
 #include "util/pcqueue.hh"
-#include "util/pool.hh"
+#include "util/thread_pool.hh"
 #endif
 
 #include <iosfwd>
@@ -101,9 +101,9 @@ template <class Model> class Controller {
   private:
     unsigned int sentence_id_;
 
-    util::Pool<PrintHandler> printer_;
+    util::ThreadPool<PrintHandler> printer_;
 
-    util::Pool<DecodeHandler<Model> > decoder_;
+    util::ThreadPool<DecodeHandler<Model> > decoder_;
 };
 #endif
 

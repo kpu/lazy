@@ -1,16 +1,14 @@
-#ifndef ALONE_LABELED_EDGE__
-#define ALONE_LABELED_EDGE__
-
-#include "search/edge.hh"
+#ifndef ALONE_EDGE_WORDS__
+#define ALONE_EDGE_WORDS__
 
 #include <string>
 #include <vector>
 
 namespace alone {
 
-class LabeledEdge : public search::Edge {
+class EdgeWords {
   public:
-    LabeledEdge() {}
+    EdgeWords() {}
 
     void AppendWord(const std::string *word) {
       words_.push_back(word);
@@ -27,4 +25,4 @@ class LabeledEdge : public search::Edge {
 
 } // namespace alone
 
-#endif // ALONE_LABELED_EDGE__
+#endif // ALONE_EDGE_WORDS__

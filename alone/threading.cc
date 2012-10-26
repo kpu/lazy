@@ -32,7 +32,7 @@ template <class Model> void Decode(const search::Config &config, const Model &mo
       top.Split(continuation);
       top = continuation;
     }
-    out << top.End() << " ||| " << top.End().Bound() << std::endl;
+    out << top.End() << " ||| " << top.End().GetScore() << std::endl;
   }
 }
 

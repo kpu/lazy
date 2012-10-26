@@ -9,12 +9,9 @@ class Final;
 
 namespace alone {
 
-std::ostream &operator<<(std::ostream &o, const search::Final &final);
+std::ostream &operator<<(std::ostream &o, const search::Final final);
 
-void DetailedFinal(std::ostream &o, const search::Final &final, const char *indent_str = "  ");
-
-// This isn't called anywhere but makes it easy to print from gdb.
-void PrintFinal(const search::Final &final);
+void DetailedFinal(std::ostream &o, const search::Final final, const char *indent_str = "  ");
 
 } // namespace alone
 

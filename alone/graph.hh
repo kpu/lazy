@@ -1,7 +1,7 @@
 #ifndef ALONE_GRAPH__
 #define ALONE_GRAPH__
 
-#include "alone/labeled_edge.hh"
+#include "alone/edge_words.hh"
 #include "search/rule.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
@@ -27,6 +27,9 @@ template <class T> class FixedAllocator : boost::noncopyable {
     T &operator[](std::size_t idx) {
       return array_.get()[idx];
     }
+    const T &operator[](std::size_t idx) const {
+      return array_.get()[idx];
+    }
 
     T *New() {
       T *ret = current_++;
@@ -45,7 +48,6 @@ template <class T> class FixedAllocator : boost::noncopyable {
 
 class Graph : boost::noncopyable {
   public:
-    typedef LabeledEdge Edge;
     typedef search::Vertex Vertex;
 
     Graph() {}
@@ -61,15 +63,13 @@ class Graph : boost::noncopyable {
 
     std::size_t VertexSize() const { return vertices_.Size(); }
 
-    Vertex &MutableVertex(std::size_t index) {
+    const Vertex &GetVertex(std::size_t index) const {
       return vertices_[index];
     }
 
-    Edge *NewEdge() {      
+    EdgeWords *NewEdgeWords() {      
       return edges_.New();
     }
-
-    std::size_t EdgeSize() const { return edges_.Size(); }
 
     void SetRoot(Vertex *root) { root_ = root; }
 
@@ -77,7 +77,7 @@ class Graph : boost::noncopyable {
 
   private:
     FixedAllocator<Vertex> vertices_;
-    FixedAllocator<Edge> edges_;
+    FixedAllocator<EdgeWords> edges_;
     
     Vertex *root_;
 };
