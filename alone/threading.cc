@@ -38,6 +38,10 @@ template <class Model> void Decode(const search::Config &config, const Model &mo
 
 template void Decode(const search::Config &config, const lm::ngram::ProbingModel &model, util::FilePiece *in_ptr, std::ostream &out);
 template void Decode(const search::Config &config, const lm::ngram::RestProbingModel &model, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(const search::Config &config, const lm::ngram::TrieModel &model, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(const search::Config &config, const lm::ngram::QuantTrieModel &model, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(const search::Config &config, const lm::ngram::ArrayTrieModel &model, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(const search::Config &config, const lm::ngram::QuantArrayTrieModel &model, util::FilePiece *in_ptr, std::ostream &out);
 
 #ifdef WITH_THREADS
 template <class Model> void DecodeHandler<Model>::operator()(Input message) {
@@ -70,6 +74,10 @@ template <class Model> Controller<Model>::Controller(const search::Config &confi
 
 template class Controller<lm::ngram::RestProbingModel>;
 template class Controller<lm::ngram::ProbingModel>;
+template class Controller<lm::ngram::TrieModel>;
+template class Controller<lm::ngram::QuantTrieModel>;
+template class Controller<lm::ngram::ArrayTrieModel>;
+template class Controller<lm::ngram::QuantArrayTrieModel>;
 
 #endif
 

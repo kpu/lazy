@@ -99,5 +99,9 @@ template <class Model> bool ReadCDec(search::Context<Model> &context, util::File
 
 template bool ReadCDec(search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
 template bool ReadCDec(search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
+template bool ReadCDec(search::Context<lm::ngram::TrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
+template bool ReadCDec(search::Context<lm::ngram::QuantTrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
+template bool ReadCDec(search::Context<lm::ngram::ArrayTrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
+template bool ReadCDec(search::Context<lm::ngram::QuantArrayTrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
 
 } // namespace alone

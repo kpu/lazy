@@ -57,6 +57,18 @@ void Run(const char *graph_prefix, const char *lm_name, StringPiece weight_str, 
     case lm::ngram::REST_PROBING:
       RunWithModelType<lm::ngram::RestProbingModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
       break;
+    case lm::ngram::TRIE:
+      RunWithModelType<lm::ngram::TrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      break;
+    case lm::ngram::QUANT_TRIE:
+      RunWithModelType<lm::ngram::QuantTrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      break;
+    case lm::ngram::ARRAY_TRIE:
+      RunWithModelType<lm::ngram::ArrayTrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      break;
+    case lm::ngram::QUANT_ARRAY_TRIE:
+      RunWithModelType<lm::ngram::QuantArrayTrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      break;
     default:
       UTIL_THROW(util::Exception, "Sorry this lm type isn't supported yet.");
   }
