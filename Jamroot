@@ -10,5 +10,5 @@ project : default-build <threading>multi <warnings>on <variant>release ;
 
 }
 
-#install-bin-libs alone//decode alone//just_vocab lm//build_binary ;
+install-bin-libs alone//decode lm//programs ;
 build-projects search lm util ;
