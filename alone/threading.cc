@@ -23,16 +23,11 @@ template <class Model> void Decode(const search::Config &config, const Model &mo
     ReadCDec(context, *in, graph, vocab);
   }
 
-  search::PartialVertex top = graph.Root().RootPartial();
-  if (top.Empty()) {
+  search::Final best(graph.Root().BestChild());
+  if (!best.Valid()) {
     out << "NO PATH FOUND";
   } else {
-    search::PartialVertex continuation;
-    while (!top.Complete()) {
-      top.Split(continuation);
-      top = continuation;
-    }
-    out << top.End() << " ||| " << top.End().GetScore() << std::endl;
+    out << best << " ||| " << best.GetScore() << std::endl;
   }
 }
 
