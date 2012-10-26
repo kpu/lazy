@@ -25,7 +25,7 @@ struct DotProduct {
 };
 
 template <class Map, class Op> void Parse(StringPiece text, Map &map, Op &op) {
-  for (util::TokenIter<util::SingleCharacter, true> spaces(text, ' '); spaces; ++spaces) {
+  for (util::TokenIter<util::AnyCharacter, true> spaces(text, " \n\t"); spaces; ++spaces) {
     util::TokenIter<util::SingleCharacter> equals(*spaces, '=');
     UTIL_THROW_IF(!equals, WeightParseException, "Bad weight token " << *spaces);
     StringPiece name(*equals);
