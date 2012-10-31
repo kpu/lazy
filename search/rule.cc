@@ -1,7 +1,7 @@
 #include "search/rule.hh"
 
+#include "lm/model.hh"
 #include "search/context.hh"
-#include "search/final.hh"
 
 #include <ostream>
 
@@ -14,12 +14,12 @@ template <class Model> float ScoreRule(const Context<Model> &context, const std:
   float prob = 0.0;
   const Model &model = context.LanguageModel();
   const lm::WordIndex oov = model.GetVocabulary().NotFound();
+  lm::ngram::RuleScore<Model> scorer(model, *(writing++));
+  if (prepend_bos) {
+    scorer.BeginSentence();
+  }
   for (std::vector<lm::WordIndex>::const_iterator word = words.begin(); ; ++word) {
-    lm::ngram::RuleScore<Model> scorer(model, *(writing++));
     // TODO: optimize
-    if (prepend_bos && (word == words.begin())) {
-      scorer.BeginSentence();
-    }
     for (; ; ++word) {
       if (word == words.end()) {
         prob += scorer.Finish();
@@ -30,6 +30,7 @@ template <class Model> float ScoreRule(const Context<Model> &context, const std:
       scorer.Terminal(*word);
     }
     prob += scorer.Finish();
+    scorer.Reset();
   }
 }
 
