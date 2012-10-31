@@ -9,6 +9,12 @@ typedef float Score;
 
 typedef uint32_t Arity;
 
+typedef void *History;
+
+union Note {
+  const void *vp;
+};
+
 } // namespace search
 
 #endif // SEARCH_TYPES__

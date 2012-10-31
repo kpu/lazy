@@ -3,7 +3,6 @@
 
 // Header consisting of Score, Arity, and Note
 
-#include "search/note.hh"
 #include "search/types.hh"
 
 #include <stdint.h>
