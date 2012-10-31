@@ -26,7 +26,7 @@ class VertexNode {
       state_.left.length = 0;
       state_.right.length = 0;
       right_full_ = false;
-      end_ = Final();
+      end_ = History();
     }
 
     lm::ngram::ChartState &MutableState() { return state_; }
@@ -36,20 +36,21 @@ class VertexNode {
       extend_.push_back(next);
     }
 
-    void SetEnd(Final end) {
-      assert(!end_.Valid());
+    void SetEnd(History end, Score score) {
+      assert(!end_);
       end_ = end;
+      bound_ = score;
     }
     
     void SortAndSet(ContextBase &context, VertexNode **parent_pointer);
 
     // Should only happen to a root node when the entire vertex is empty.   
     bool Empty() const {
-      return !end_.Valid() && extend_.empty();
+      return !end_ && extend_.empty();
     }
 
     bool Complete() const {
-      return end_.Valid();
+      return end_;
     }
 
     const lm::ngram::ChartState &State() const { return state_; }
@@ -64,7 +65,7 @@ class VertexNode {
     }
 
     // Will be invalid unless this is a leaf.   
-    const Final End() const { return end_; }
+    const History End() const { return end_; }
 
     const VertexNode &operator[](size_t index) const {
       return *extend_[index];
@@ -81,7 +82,7 @@ class VertexNode {
     bool right_full_;
 
     Score bound_;
-    Final end_;
+    History end_;
 };
 
 class PartialVertex {
@@ -97,7 +98,7 @@ class PartialVertex {
     const lm::ngram::ChartState &State() const { return back_->State(); }
     bool RightFull() const { return back_->RightFull(); }
 
-    Score Bound() const { return Complete() ? back_->End().GetScore() : (*back_)[index_].Bound(); }
+    Score Bound() const { return Complete() ? back_->Bound() : (*back_)[index_].Bound(); }
 
     unsigned char Length() const { return back_->Length(); }
 
@@ -121,7 +122,7 @@ class PartialVertex {
       return ret;
     }
 
-    const Final End() const {
+    const History End() const {
       return back_->End();
     }
 
@@ -136,10 +137,10 @@ class Vertex {
 
     PartialVertex RootPartial() const { return PartialVertex(root_); }
 
-    const Final BestChild() const {
+    const History BestChild() const {
       PartialVertex top(RootPartial());
       if (top.Empty()) {
-        return Final();
+        return History();
       } else {
         PartialVertex continuation;
         while (!top.Complete()) {

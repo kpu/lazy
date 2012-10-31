@@ -17,6 +17,12 @@ class Final : public Header {
       SetNote(note);
     }
 
+    explicit Final(History from) : Header(from) {}
+
+    History AsHistory() {
+      return Base();
+    }
+
     // These are arrays of length GetArity().
     Final *Children() {
       return reinterpret_cast<Final*>(After());

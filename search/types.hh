@@ -9,11 +9,11 @@ typedef float Score;
 
 typedef uint32_t Arity;
 
-typedef void *History;
-
 union Note {
   const void *vp;
 };
+
+typedef void *History;
 
 } // namespace search
 

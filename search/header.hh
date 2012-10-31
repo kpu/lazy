@@ -38,6 +38,8 @@ class Header {
   protected:
     Header() : base_(NULL) {}
 
+    explicit Header(void *base) : base_(static_cast<uint8_t*>(base)) {}
+
     Header(void *base, Arity arity) : base_(static_cast<uint8_t*>(base)) {
       *reinterpret_cast<Arity*>(base_ + sizeof(Score)) = arity;
     }
@@ -46,6 +48,8 @@ class Header {
 
     uint8_t *After() { return base_ + kHeaderSize; }
     const uint8_t *After() const { return base_ + kHeaderSize; }
+
+    uint8_t *Base() { return base_; }
 
   private:
     uint8_t *base_;

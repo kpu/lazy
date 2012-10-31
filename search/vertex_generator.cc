@@ -49,9 +49,9 @@ void CompleteTransition(ContextBase &context, Trie &starter, PartialEdge partial
   const PartialVertex *part = partial.NT();
   const PartialVertex *const part_end_loop = part + partial.GetArity();
   for (; part != part_end_loop; ++part, ++child_out)
-    *child_out = part->End();
+    *child_out = Final(part->End());
 
-  starter.under->SetEnd(final);
+  starter.under->SetEnd(final.AsHistory(), final.GetScore());
 }
 
 void AddHypothesis(ContextBase &context, Trie &root, PartialEdge partial) {
