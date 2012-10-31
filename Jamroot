@@ -1,14 +1,16 @@
-if ! $(TOP) {
 path-constant TOP : . ;
 include $(TOP)/sanity.jam ;
 
 boost 104200 ;
 external-lib z ;
 
-project : requirements $(requirements) <threading>multi:<define>WITH_THREADS <library>boost_system ;
+project : requirements $(requirements) <threading>multi:<define>WITH_THREADS <library>boost_system <define>HAVE_BOOST ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
-}
+build-projects search lm util ;
 
 install-bin-libs alone//decode lm//programs ;
-build-projects search lm util ;
+install-headers headers : [ glob-tree *.hh : dist include ] : . ;
+alias install : prefix-bin prefix-lib prefix-include ; 
+explicit headers ;
+explicit install ;
