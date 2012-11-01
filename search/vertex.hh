@@ -17,7 +17,7 @@ class ContextBase;
 
 class VertexNode {
   public:
-    VertexNode() {}
+    VertexNode() : end_() {}
 
     void InitRoot() {
       extend_.clear();
