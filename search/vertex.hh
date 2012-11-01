@@ -130,7 +130,7 @@ class PartialVertex {
     unsigned int index_;
 };
 
-template <class NBest> class VertexGenerator;
+template <class Output> class VertexGenerator;
 
 class Vertex {
   public:
@@ -152,7 +152,7 @@ class Vertex {
     }
 
   private:
-    template <class NBest> friend class VertexGenerator;
+    template <class Output> friend class VertexGenerator;
     VertexNode root_;
 };
 

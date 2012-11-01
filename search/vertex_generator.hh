@@ -30,9 +30,10 @@ void AddHypothesis(ContextBase &context, Trie &root, const NBestComplete &end);
 
 #endif // BOOST_VERSION
 
-template <class NBest> class VertexGenerator {
+// Output makes the single-best or n-best list.   
+template <class Output> class VertexGenerator {
   public:
-    VertexGenerator(ContextBase &context, Vertex &gen, NBest &nbest) : context_(context), gen_(gen), nbest_(nbest) {
+    VertexGenerator(ContextBase &context, Vertex &gen, Output &nbest) : context_(context), gen_(gen), nbest_(nbest) {
       gen.root_.InitRoot();
     }
 
@@ -60,10 +61,10 @@ template <class NBest> class VertexGenerator {
 
     Vertex &gen_;
 
-    typedef boost::unordered_map<uint64_t, typename NBest::Combine> Existing;
+    typedef boost::unordered_map<uint64_t, typename Output::Combine> Existing;
     Existing existing_;
 
-    NBest &nbest_;
+    Output &nbest_;
 };
 
 } // namespace search
