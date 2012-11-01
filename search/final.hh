@@ -12,10 +12,14 @@ class Final : public Header {
   public:
     Final() {}
 
-    Final(util::Pool &pool, Score score, Arity arity, Note note) 
-      : Header(pool.Allocate(Size(arity)), arity) {
-      SetScore(score);
-      SetNote(note);
+    Final(util::Pool &pool, PartialEdge partial) 
+      : Header(pool.Allocate(Size(partial.GetArity()))) {
+      memcpy(Base(), partial.Base(), kHeaderSize);
+      Final *child_out = Children();
+      const PartialVertex *part = partial.NT();
+      const PartialVertex *const part_end_loop = part + partial.GetArity();
+      for (; part != part_end_loop; ++part, ++child_out)
+        *child_out = Final(part->End());
     }
 
     explicit Final(History from) : Header(from) {}
@@ -48,14 +52,8 @@ class SingleBest {
     }
 
     NBestComplete Complete(PartialEdge partial) {
-      Final final(pool_, partial.GetScore(), partial.GetArity(), partial.GetNote());
-      Final *child_out = final.Children();
-      const PartialVertex *part = partial.NT();
-      const PartialVertex *const part_end_loop = part + partial.GetArity();
-      for (; part != part_end_loop; ++part, ++child_out)
-        *child_out = Final(part->End());
       NBestComplete ret;
-      ret.history = final.AsHistory();
+      ret.history = Final(pool_, partial).AsHistory();
       ret.state = &partial.CompletedState();
       ret.score = partial.GetScore();
       return ret;

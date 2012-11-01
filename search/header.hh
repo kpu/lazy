@@ -35,6 +35,9 @@ class Header {
       *reinterpret_cast<Note*>(base_ + sizeof(Score) + sizeof(Arity)) = to;
     }
 
+    uint8_t *Base() { return base_; }
+    const uint8_t *Base() const { return base_; }
+
   protected:
     Header() : base_(NULL) {}
 
@@ -48,8 +51,6 @@ class Header {
 
     uint8_t *After() { return base_ + kHeaderSize; }
     const uint8_t *After() const { return base_ + kHeaderSize; }
-
-    uint8_t *Base() { return base_; }
 
   private:
     uint8_t *base_;
