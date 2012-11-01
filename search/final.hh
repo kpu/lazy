@@ -1,6 +1,7 @@
 #ifndef SEARCH_FINAL__
 #define SEARCH_FINAL__
 
+#include "search/edge.hh"
 #include "search/header.hh"
 #include "util/pool.hh"
 
@@ -35,6 +36,33 @@ class Final : public Header {
     static std::size_t Size(Arity arity) {
       return kHeaderSize + arity * sizeof(const Final);
     }
+};
+
+class SingleBest {
+  public:
+    typedef PartialEdge Combine;
+
+    void Add(PartialEdge &existing, PartialEdge add) const {
+      if (!existing.Valid() || existing.GetScore() < add.GetScore())
+        existing = add;
+    }
+
+    NBestComplete Complete(PartialEdge partial) {
+      Final final(pool_, partial.GetScore(), partial.GetArity(), partial.GetNote());
+      Final *child_out = final.Children();
+      const PartialVertex *part = partial.NT();
+      const PartialVertex *const part_end_loop = part + partial.GetArity();
+      for (; part != part_end_loop; ++part, ++child_out)
+        *child_out = Final(part->End());
+      NBestComplete ret;
+      ret.history = final.AsHistory();
+      ret.state = &partial.CompletedState();
+      ret.score = partial.GetScore();
+      return ret;
+    }
+
+  private:
+    util::Pool pool_;
 };
 
 } // namespace search

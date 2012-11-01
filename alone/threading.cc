@@ -6,6 +6,7 @@
 #include "alone/vocab.hh"
 #include "lm/model.hh"
 #include "search/context.hh"
+#include "search/final.hh"
 
 #include <boost/ref.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -18,9 +19,10 @@ template <class Model> void Decode(const search::Config &config, const Model &mo
   search::Context<Model> context(config, model);
   Graph graph;
   Vocab vocab(model.GetVocabulary());
+  search::SingleBest single_best;
   {
     boost::scoped_ptr<util::FilePiece> in(in_ptr);
-    ReadCDec(context, *in, graph, vocab);
+    ReadCDec(context, *in, graph, vocab, single_best);
   }
 
   search::Final best(graph.Root().BestChild());

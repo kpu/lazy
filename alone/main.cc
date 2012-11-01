@@ -1,4 +1,5 @@
 #include "alone/threading.hh"
+#include "lm/model.hh"
 #include "search/config.hh"
 #include "search/context.hh"
 #include "util/exception.hh"

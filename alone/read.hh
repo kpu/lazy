@@ -7,7 +7,10 @@
 
 namespace util { class FilePiece; }
 
-namespace search { template <class Model> class Context; }
+namespace search {
+template <class Model> class Context;
+class SingleBest;
+} // namespace search
 
 namespace alone {
 
@@ -20,9 +23,7 @@ class FormatException : public util::Exception {
     ~FormatException() throw() {}
 };
 
-void JustVocab(util::FilePiece &from, std::ostream &to);
-
-template <class Model> bool ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab);
+template <class Model> void ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
 
 } // namespace alone
 

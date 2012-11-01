@@ -1,6 +1,7 @@
 #include "search/edge_generator.hh"
 
 #include "lm/left.hh"
+#include "lm/model.hh"
 #include "lm/partial.hh"
 #include "search/context.hh"
 #include "search/vertex.hh"

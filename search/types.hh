@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+namespace lm { namespace ngram { class ChartState; } }
+
 namespace search {
 
 typedef float Score;
@@ -14,6 +16,12 @@ union Note {
 };
 
 typedef void *History;
+
+struct NBestComplete {
+  History history;
+  const lm::ngram::ChartState *state;
+  Score score;
+};
 
 } // namespace search
 

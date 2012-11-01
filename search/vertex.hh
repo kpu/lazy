@@ -2,7 +2,6 @@
 #define SEARCH_VERTEX__
 
 #include "lm/left.hh"
-#include "search/final.hh"
 #include "search/types.hh"
 
 #include <boost/unordered_set.hpp>
@@ -131,6 +130,8 @@ class PartialVertex {
     unsigned int index_;
 };
 
+template <class NBest> class VertexGenerator;
+
 class Vertex {
   public:
     Vertex() {}
@@ -151,8 +152,7 @@ class Vertex {
     }
 
   private:
-    friend class VertexGenerator;
-
+    template <class NBest> friend class VertexGenerator;
     VertexNode root_;
 };
 

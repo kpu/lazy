@@ -5,6 +5,7 @@
 #include "search/vertex.hh"
 
 #include <boost/unordered_map.hpp>
+#include <boost/version.hpp>
 
 namespace lm {
 namespace ngram {
@@ -15,21 +16,42 @@ class ChartState;
 namespace search {
 
 class ContextBase;
-class Final;
 
-class VertexGenerator {
+#if BOOST_VERSION > 104200
+// Parallel structure to VertexNode.  
+struct Trie {
+  Trie() : under(NULL) {}
+
+  VertexNode *under;
+  boost::unordered_map<uint64_t, Trie> extend;
+};
+
+void AddHypothesis(ContextBase &context, Trie &root, const NBestComplete &end);
+
+#endif // BOOST_VERSION
+
+template <class NBest> class VertexGenerator {
   public:
-    VertexGenerator(ContextBase &context, Vertex &gen);
-
-    void NewHypothesis(PartialEdge partial) {
-      const lm::ngram::ChartState &state = partial.CompletedState();
-      std::pair<Existing::iterator, bool> ret(existing_.insert(std::make_pair(hash_value(state), partial)));
-      if (!ret.second && ret.first->second < partial) {
-        ret.first->second = partial;
-      }
+    VertexGenerator(ContextBase &context, Vertex &gen, NBest &nbest) : context_(context), gen_(gen), nbest_(nbest) {
+      gen.root_.InitRoot();
     }
 
-    void FinishedSearch();
+    void NewHypothesis(PartialEdge partial) {
+      nbest_.Add(existing_[hash_value(partial.CompletedState())], partial);
+    }
+
+    void FinishedSearch() {
+#if BOOST_VERSION > 104200
+      Trie root;
+      root.under = &gen_.root_;
+      for (typename Existing::const_iterator i(existing_.begin()); i != existing_.end(); ++i) {
+        AddHypothesis(context_, root, nbest_.Complete(i->second));
+      }
+      root.under->SortAndSet(context_, NULL);
+#else
+      UTIL_THROW(util::Exception, "Upgrade Boost to >= 1.42.0 to use incremental search.");
+#endif
+    }
 
     const Vertex &Generating() const { return gen_; }
 
@@ -38,8 +60,10 @@ class VertexGenerator {
 
     Vertex &gen_;
 
-    typedef boost::unordered_map<uint64_t, PartialEdge> Existing;
+    typedef boost::unordered_map<uint64_t, typename NBest::Combine> Existing;
     Existing existing_;
+
+    NBest &nbest_;
 };
 
 } // namespace search
