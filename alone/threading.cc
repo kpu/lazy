@@ -48,7 +48,6 @@ template <class Model> void Decode(const search::Config &config, const Model &mo
 
   if (config.GetNBest().size == 1) {
     search::SingleBest single_best;
-    InnerDecode(context, graph, *in, single_best);
     search::Applied best(InnerDecode(context, graph, *in, single_best));
     out << sentence_id << " ||| " << best << '\n';
   } else {
@@ -69,9 +68,14 @@ template void Decode(const search::Config &config, const lm::ngram::QuantArrayTr
 
 #ifdef WITH_THREADS
 template <class Model> void DecodeHandler<Model>::operator()(Input message) {
-  std::stringstream assemble;
-  Decode(config_, model_, message.sentence_id, message.file, assemble);
-  Produce(message.sentence_id, assemble.str());
+  try {
+    std::stringstream assemble;
+    Decode(config_, model_, message.sentence_id, message.file, assemble);
+    Produce(message.sentence_id, assemble.str());
+  } catch (util::Exception &e) {
+    e << " in sentence " << message.sentence_id;
+    throw;
+  }
 }
 
 template <class Model> void DecodeHandler<Model>::Produce(unsigned int sentence_id, const std::string &str) {
