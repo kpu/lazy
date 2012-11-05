@@ -7,7 +7,7 @@
 
 namespace alone {
 
-std::ostream &operator<<(std::ostream &o, const search::Applied final) {
+std::ostream &JustText(std::ostream &o, const search::Applied final) {
   const std::vector<const std::string*> &words = static_cast<const EdgeWords *>(final.GetNote().vp)->Words();
   if (words.empty()) return o;
   const search::Applied *child = final.Children();
@@ -16,7 +16,7 @@ std::ostream &operator<<(std::ostream &o, const search::Applied final) {
     if (*i) {
       o << **i << ' ';
     } else {
-      o << *child << ' ';
+      JustText(o, *child) << ' ';
       ++child;
     }
   }
@@ -26,10 +26,17 @@ std::ostream &operator<<(std::ostream &o, const search::Applied final) {
       o << **i;
     }
   } else {
-    o << *child;
+    JustText(o, *child);
   }
 
   return o;
+}
+
+std::ostream &operator<<(std::ostream &o, const search::Applied final) {
+  if (!final.Valid()) {
+    return o << "NO PATH FOUND";
+  }
+  return JustText(o, final) << " ||| " << final.GetScore();
 }
 
 namespace {

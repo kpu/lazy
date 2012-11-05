@@ -21,7 +21,7 @@ template <class Model> class Context;
 
 namespace alone {
 
-template <class Model> void Decode(const search::Config &config, const Model &model, util::FilePiece *in_ptr, std::ostream &out);
+template <class Model> void Decode(const search::Config &config, const Model &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
 
 class Graph;
 
@@ -110,11 +110,11 @@ template <class Model> class Controller {
 // Same API as controller.  
 template <class Model> class InThread {
   public:
-    InThread(const search::Config &config, const Model &model, std::ostream &to) : config_(config), model_(model), to_(to) {}
+    InThread(const search::Config &config, const Model &model, std::ostream &to) : config_(config), model_(model), to_(to), sentence_id_(0) {}
 
     // Takes ownership of in.  
     void Add(util::FilePiece *in) {
-      Decode(config_, model_, in, to_);
+      Decode(config_, model_, sentence_id_++, in, to_);
     }
 
   private:
@@ -122,7 +122,9 @@ template <class Model> class InThread {
 
     const Model &model_;
 
-    std::ostream &to_; 
+    std::ostream &to_;
+
+    unsigned int sentence_id_;
 };
 
 } // namespace alone

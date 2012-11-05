@@ -72,19 +72,13 @@ class Graph : boost::noncopyable {
       return edges_.New();
     }
 
-    void SetRoot(Vertex *root) { root_ = root; }
-
-    Vertex *Root() { return root_; }
-
     Vocab &MutableVocab() { return vocab_; }
 
   private:
     Vocab vocab_;
 
     FixedAllocator<Vertex> vertices_;
-    FixedAllocator<EdgeWords> edges_;
-    
-    Vertex *root_;
+    FixedAllocator<EdgeWords> edges_;    
 };
 
 } // namespace alone

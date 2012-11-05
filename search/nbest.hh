@@ -2,6 +2,7 @@
 #define SEARCH_NBEST__
 
 #include "search/applied.hh"
+#include "search/config.hh"
 #include "search/edge.hh"
 
 #include <boost/pool/object_pool.hpp>
@@ -37,15 +38,13 @@ class NBestList {
 
     Score TopAfterConstructor() const;
 
-    Score Visit(util::Pool &pool, std::size_t index);
-
-    Applied Get(util::Pool &pool, std::size_t index) {
-      assert(index <= revealed_.size());
-      if (index == revealed_.size()) MoveTop(pool);
-      return revealed_[index];
-    }
+    const std::vector<Applied> &Extract(util::Pool &pool, std::size_t n);
 
   private:
+    Score Visit(util::Pool &pool, std::size_t index);
+
+    Applied Get(util::Pool &pool, std::size_t index);
+
     void MoveTop(util::Pool &pool);
 
     typedef std::vector<Applied> Revealed;
@@ -59,7 +58,7 @@ class NBest {
   public:
     typedef std::vector<PartialEdge> Combine;
 
-    explicit NBest(std::size_t keep) : keep_(keep) {}
+    explicit NBest(const NBestConfig &config) : config_(config) {}
 
     void Add(std::vector<PartialEdge> &existing, PartialEdge addition) const {
       existing.push_back(addition);
@@ -67,8 +66,10 @@ class NBest {
 
     NBestComplete Complete(std::vector<PartialEdge> &partials);
 
+    const std::vector<Applied> &Extract(History root);
+
   private:
-    const std::size_t keep_;
+    const NBestConfig config_;
 
     boost::object_pool<NBestList> list_pool_;
 

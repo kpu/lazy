@@ -9,6 +9,8 @@ class Applied;
 
 namespace alone {
 
+std::ostream &JustText(std::ostream &to, const search::Applied final);
+
 std::ostream &operator<<(std::ostream &o, const search::Applied final);
 
 void DetailedFinal(std::ostream &o, const search::Applied final, const char *indent_str = "  ");

@@ -33,7 +33,7 @@ template <class Control> void ReadLoop(const std::string &graph_prefix, Control 
 template <class Model> void RunWithModelType(const char *graph_prefix, const char *model_file, StringPiece weight_str, unsigned int pop_limit, unsigned int threads) {
   Model model(model_file);
   search::Weights weights(weight_str);
-  search::Config config(weights, pop_limit);
+  search::Config config(weights, pop_limit, search::NBestConfig(1));
 
   if (threads > 1) {
 #ifdef WITH_THREADS

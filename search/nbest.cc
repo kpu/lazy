@@ -30,6 +30,13 @@ Score NBestList::TopAfterConstructor() const {
   return queue_.top().GetScore();
 }
 
+const std::vector<Applied> &NBestList::Extract(util::Pool &pool, std::size_t n) {
+  while (revealed_.size() < n && !queue_.empty()) {
+    MoveTop(pool);
+  }
+  return revealed_;
+}
+
 Score NBestList::Visit(util::Pool &pool, std::size_t index) {
   if (index + 1 < revealed_.size())
     return revealed_[index + 1].GetScore() - revealed_[index].GetScore();
@@ -37,12 +44,18 @@ Score NBestList::Visit(util::Pool &pool, std::size_t index) {
     return -INFINITY;
   if (index + 1 == revealed_.size())
     return queue_.top().GetScore() - revealed_[index].GetScore();
-  assert(index + 2 == revealed_.size());
+  assert(index == revealed_.size());
 
   MoveTop(pool);
 
   if (queue_.empty()) return -INFINITY;
   return queue_.top().GetScore() - revealed_[index].GetScore();
+}
+
+Applied NBestList::Get(util::Pool &pool, std::size_t index) {
+  assert(index <= revealed_.size());
+  if (index == revealed_.size()) MoveTop(pool);
+  return revealed_[index];
 }
 
 void NBestList::MoveTop(util::Pool &pool) {
@@ -79,11 +92,15 @@ void NBestList::MoveTop(util::Pool &pool) {
 
 NBestComplete NBest::Complete(std::vector<PartialEdge> &partials) {
   assert(!partials.empty());
-  NBestList *list = list_pool_.construct(partials, entry_pool_, keep_);
+  NBestList *list = list_pool_.construct(partials, entry_pool_, config_.keep);
   return NBestComplete(
       list,
       partials.front().CompletedState(), // All partials have the same state
       list->TopAfterConstructor());
+}
+
+const std::vector<Applied> &NBest::Extract(History history) {
+  return static_cast<NBestList*>(history)->Extract(entry_pool_, config_.size);
 }
 
 } // namespace search

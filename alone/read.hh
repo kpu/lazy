@@ -9,7 +9,7 @@ namespace util { class FilePiece; }
 
 namespace search {
 template <class Model> class Context;
-class SingleBest;
+class EdgeGenerator;
 } // namespace search
 
 namespace alone {
@@ -23,7 +23,9 @@ class FormatException : public util::Exception {
     ~FormatException() throw() {}
 };
 
-template <class Model> void ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
+void ReadGraphCounts(util::FilePiece &from, Graph &graph);
+
+template <class Model> void ReadEdges(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &edges);
 
 } // namespace alone
 

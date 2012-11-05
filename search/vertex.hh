@@ -153,6 +153,7 @@ class Vertex {
 
   private:
     template <class Output> friend class VertexGenerator;
+    template <class Output> friend class RootVertexGenerator;
     VertexNode root_;
 };
 

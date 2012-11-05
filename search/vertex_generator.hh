@@ -2,6 +2,7 @@
 #define SEARCH_VERTEX_GENERATOR__
 
 #include "search/edge.hh"
+#include "search/types.hh"
 #include "search/vertex.hh"
 
 #include <boost/unordered_map.hpp>
@@ -66,6 +67,31 @@ template <class Output> class VertexGenerator {
     Existing existing_;
 
     Output &nbest_;
+};
+
+// Special case for root vertex: everything should come together into the root
+// node.  In theory, this should happen naturally due to state collapsing with
+// <s> and </s>.  If that's the case, VertexGenerator is fine, though it will
+// make one connection.  
+template <class Output> class RootVertexGenerator {
+  public:
+    RootVertexGenerator(Vertex &gen, Output &out) : gen_(gen), out_(out) {}
+
+    void NewHypothesis(PartialEdge partial) {
+      out_.Add(combine_, partial);
+    }
+
+    void FinishedSearch() {
+      gen_.root_.InitRoot();
+      NBestComplete completed(out_.Complete(combine_));
+      gen_.root_.SetEnd(completed.history, completed.score);
+    }
+
+  private:
+    Vertex &gen_;
+    
+    typename Output::Combine combine_;
+    Output &out_;
 };
 
 } // namespace search
