@@ -1,4 +1,4 @@
-lib search : edge_generator.cc rule.cc vertex.cc vertex_generator.cc weights.cc ../lm//kenlm ../util//kenutil /top//boost_system : : : <include>.. ;
+lib search : edge_generator.cc nbest.cc rule.cc vertex.cc vertex_generator.cc weights.cc ../lm//kenlm ../util//kenutil /top//boost_system : : : <include>.. ;
 
 import testing ;
 

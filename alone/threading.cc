@@ -5,8 +5,8 @@
 #include "alone/read.hh"
 #include "alone/vocab.hh"
 #include "lm/model.hh"
+#include "search/applied.hh"
 #include "search/context.hh"
-#include "search/final.hh"
 
 #include <boost/ref.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -17,17 +17,20 @@
 namespace alone {
 template <class Model> void Decode(const search::Config &config, const Model &model, util::FilePiece *in_ptr, std::ostream &out) {
   search::Context<Model> context(config, model);
-  Graph graph;
-  Vocab vocab(model.GetVocabulary());
+  Graph graph(model.GetVocabulary());
   search::SingleBest single_best;
   {
     boost::scoped_ptr<util::FilePiece> in(in_ptr);
-    ReadCDec(context, *in, graph, vocab, single_best);
+    ReadCDec(context, *in, graph, single_best);
   }
 
-  search::Final best(graph.Root().BestChild());
+  if (!graph.Root()) {
+    out << "NO PATH FOUND" << std::endl;
+    return;
+  }
+  search::Applied best(graph.Root()->BestChild());
   if (!best.Valid()) {
-    out << "NO PATH FOUND";
+    out << "NO PATH FOUND" << std::endl;
   } else {
     out << best << " ||| " << best.GetScore() << std::endl;
   }

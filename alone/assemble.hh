@@ -4,14 +4,14 @@
 #include <iosfwd>
 
 namespace search {
-class Final;
+class Applied;
 } // namespace search
 
 namespace alone {
 
-std::ostream &operator<<(std::ostream &o, const search::Final final);
+std::ostream &operator<<(std::ostream &o, const search::Applied final);
 
-void DetailedFinal(std::ostream &o, const search::Final final, const char *indent_str = "  ");
+void DetailedFinal(std::ostream &o, const search::Applied final, const char *indent_str = "  ");
 
 } // namespace alone
 

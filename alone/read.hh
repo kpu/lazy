@@ -23,7 +23,7 @@ class FormatException : public util::Exception {
     ~FormatException() throw() {}
 };
 
-template <class Model> void ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
+template <class Model> void ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
 
 } // namespace alone
 

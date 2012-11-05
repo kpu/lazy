@@ -18,6 +18,9 @@ union Note {
 typedef void *History;
 
 struct NBestComplete {
+  NBestComplete(History in_history, const lm::ngram::ChartState &in_state, Score in_score) 
+    : history(in_history), state(&in_state), score(in_score) {}
+
   History history;
   const lm::ngram::ChartState *state;
   Score score;

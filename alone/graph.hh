@@ -2,6 +2,7 @@
 #define ALONE_GRAPH__
 
 #include "alone/edge_words.hh"
+#include "alone/vocab.hh"
 #include "search/rule.hh"
 #include "search/types.hh"
 #include "search/vertex.hh"
@@ -50,7 +51,7 @@ class Graph : boost::noncopyable {
   public:
     typedef search::Vertex Vertex;
 
-    Graph() {}
+    explicit Graph(const lm::base::Vocabulary &vocab) : vocab_(vocab) {}
 
     void SetCounts(std::size_t vertices, std::size_t edges) {
       vertices_.Init(vertices);
@@ -73,9 +74,13 @@ class Graph : boost::noncopyable {
 
     void SetRoot(Vertex *root) { root_ = root; }
 
-    Vertex &Root() { return *root_; }
+    Vertex *Root() { return root_; }
+
+    Vocab &MutableVocab() { return vocab_; }
 
   private:
+    Vocab vocab_;
+
     FixedAllocator<Vertex> vertices_;
     FixedAllocator<EdgeWords> edges_;
     

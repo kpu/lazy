@@ -3,10 +3,10 @@
 #include "alone/graph.hh"
 #include "alone/vocab.hh"
 #include "lm/model.hh"
+#include "search/applied.hh"
 #include "search/context.hh"
 #include "search/edge.hh"
 #include "search/edge_generator.hh"
-#include "search/final.hh"
 #include "search/vertex_generator.hh"
 #include "search/weights.hh"
 #include "util/file_piece.hh"
@@ -20,7 +20,7 @@ namespace alone {
 
 namespace {
 
-template <class Model> void ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &graph, Vocab &vocab, search::EdgeGenerator &generator) {
+template <class Model> void ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &generator) {
   EdgeWords &strings = *graph.NewEdgeWords();
 
   StringPiece got;
@@ -48,7 +48,7 @@ template <class Model> void ReadEdge(search::Context<Model> &context, util::File
       bos = true;
       ++terminals;
     } else {
-      const std::pair<const std::string, lm::WordIndex> &found = vocab.FindOrAdd(got);
+      const std::pair<const std::string, lm::WordIndex> &found = graph.MutableVocab().FindOrAdd(got);
       strings.AppendWord(&found.first);
       words.push_back(found.second);
       ++terminals;
@@ -75,31 +75,31 @@ template <class Model> void ReadEdge(search::Context<Model> &context, util::File
 } // namespace
 
 // TODO: pull out algorithm. 
-template <class Model> void ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best) {
+template <class Model> void ReadCDec(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best) {
   unsigned long int vertices = from.ReadULong();
   unsigned long int edges = from.ReadULong();
   UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after counts");
-  to.SetCounts(vertices, edges);
-  Graph::Vertex *vertex;
+  graph.SetCounts(vertices, edges);
+  Graph::Vertex *vertex = NULL;
   for (unsigned long int i = 0; i < vertices; ++i) {
     search::EdgeGenerator generator;
     unsigned long int edge_count = from.ReadULong();
     UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected after edge count");
     for (unsigned long int e = 0; e < edge_count; ++e) {
-      ReadEdge(context, from, to, vocab, generator);
+      ReadEdge(context, from, graph, generator);
     }
-    vertex = to.NewVertex();
+    vertex = graph.NewVertex();
     search::VertexGenerator<search::SingleBest> vertex_gen(context, *vertex, best);
     generator.Search(context, vertex_gen);
   }
-  to.SetRoot(vertex);
+  graph.SetRoot(vertex);
 }
 
-template void ReadCDec(search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
-template void ReadCDec(search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
-template void ReadCDec(search::Context<lm::ngram::TrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
-template void ReadCDec(search::Context<lm::ngram::QuantTrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
-template void ReadCDec(search::Context<lm::ngram::ArrayTrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
-template void ReadCDec(search::Context<lm::ngram::QuantArrayTrieModel> &context, util::FilePiece &from, Graph &to, Vocab &vocab, search::SingleBest &best);
+template void ReadCDec(search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
+template void ReadCDec(search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
+template void ReadCDec(search::Context<lm::ngram::TrieModel> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
+template void ReadCDec(search::Context<lm::ngram::QuantTrieModel> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
+template void ReadCDec(search::Context<lm::ngram::ArrayTrieModel> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
+template void ReadCDec(search::Context<lm::ngram::QuantArrayTrieModel> &context, util::FilePiece &from, Graph &graph, search::SingleBest &best);
 
 } // namespace alone

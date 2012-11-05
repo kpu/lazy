@@ -2,7 +2,6 @@
 
 #include "lm/model.hh"
 #include "search/context.hh"
-#include "search/final.hh"
 
 #include <ostream>
 

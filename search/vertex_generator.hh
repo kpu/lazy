@@ -45,9 +45,10 @@ template <class Output> class VertexGenerator {
 #if BOOST_VERSION > 104200
       Trie root;
       root.under = &gen_.root_;
-      for (typename Existing::const_iterator i(existing_.begin()); i != existing_.end(); ++i) {
+      for (typename Existing::iterator i(existing_.begin()); i != existing_.end(); ++i) {
         AddHypothesis(context_, root, nbest_.Complete(i->second));
       }
+      existing_.clear();
       root.under->SortAndSet(context_, NULL);
 #else
       UTIL_THROW(util::Exception, "Upgrade Boost to >= 1.42.0 to use incremental search.");

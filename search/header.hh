@@ -23,6 +23,9 @@ class Header {
     bool operator<(const Header &other) const {
       return GetScore() < other.GetScore();
     }
+    bool operator>(const Header &other) const {
+      return GetScore() > other.GetScore();
+    }
 
     Arity GetArity() const {
       return *reinterpret_cast<const Arity*>(base_ + sizeof(Score));
