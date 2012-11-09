@@ -1,7 +1,7 @@
 #ifndef SEARCH_CONFIG__
 #define SEARCH_CONFIG__
 
-#include "search/weights.hh"
+#include "search/types.hh"
 
 namespace search {
 
@@ -12,6 +12,25 @@ struct NBestConfig {
   }
   
   unsigned int keep, size;
+};
+
+class Weights {
+  public:
+    Weights() {}
+
+    Weights(Score lm, Score oov) : lm_(lm), oov_(oov) {}
+
+    void Set(Score lm, Score oov) {
+      lm_ = lm;
+      oov_ = oov;
+    }
+
+    Score LM() const { return lm_; }
+
+    Score OOV() const { return oov_; }
+
+  private:
+    Score lm_, oov_;
 };
 
 class Config {

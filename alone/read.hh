@@ -14,6 +14,7 @@ class EdgeGenerator;
 
 namespace alone {
 
+class Config;
 class Graph;
 class Vocab;
 
@@ -25,7 +26,7 @@ class FormatException : public util::Exception {
 
 void ReadGraphCounts(util::FilePiece &from, Graph &graph);
 
-template <class Model> void ReadEdges(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &edges);
+template <class Model> void ReadEdges(const Config &config, search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &edges);
 
 } // namespace alone
 

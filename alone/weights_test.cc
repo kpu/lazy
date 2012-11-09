@@ -1,10 +1,10 @@
-#include "search/weights.hh"
+#include "alone/weights.hh"
 
 #define BOOST_TEST_MODULE WeightTest
 #include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
-namespace search {
+namespace alone {
 namespace {
 
 #define CHECK_WEIGHT(value, string) \
@@ -35,4 +35,4 @@ BOOST_AUTO_TEST_CASE(dot) {
 }
 
 } // namespace
-} // namespace search
+} // namespace alone
