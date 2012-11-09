@@ -9,7 +9,6 @@
 #include "util/exception.hh"
 
 #include <boost/noncopyable.hpp>
-#include <boost/pool/object_pool.hpp>
 #include <boost/scoped_array.hpp>
 
 namespace alone {

@@ -1,9 +1,9 @@
-#include "search/weights.hh"
+#include "alone/weights.hh"
 #include "util/tokenize_piece.hh"
 
 #include <cstdlib>
 
-namespace search {
+namespace alone {
 
 namespace {
 struct Insert {
@@ -44,12 +44,9 @@ template <class Map, class Op> void Parse(StringPiece text, Map &map, Op &op) {
 Weights::Weights(StringPiece text) {
   Insert op;
   Parse<Map, Insert>(text, map_, op);
-  lm_ = Steal("LanguageModel");
-  oov_ = Steal("OOV");
+  Set(Steal("LanguageModel"), Steal("OOV"));
   word_penalty_ = Steal("WordPenalty");
 }
-
-Weights::Weights(Score lm, Score oov, Score word_penalty) : lm_(lm), oov_(oov), word_penalty_(word_penalty) {}
 
 search::Score Weights::DotNoLM(StringPiece text) const {
   DotProduct dot;
@@ -68,4 +65,4 @@ float Weights::Steal(const std::string &str) {
   }
 }
 
-} // namespace search
+} // namespace alone

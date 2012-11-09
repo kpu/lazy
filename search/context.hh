@@ -12,7 +12,7 @@ class Weights;
 
 class ContextBase {
   public:
-    explicit ContextBase(const Config &config) : pop_limit_(config.PopLimit()), weights_(config.GetWeights()) {}
+    explicit ContextBase(const Config &config) : config_(config) {}
 
     VertexNode *NewVertexNode() {
       VertexNode *ret = vertex_node_pool_.construct();
@@ -24,16 +24,14 @@ class ContextBase {
       vertex_node_pool_.destroy(node);
     }
 
-    unsigned int PopLimit() const { return pop_limit_; }
+    unsigned int PopLimit() const { return config_.PopLimit(); }
 
-    const Weights &GetWeights() const { return weights_; }
+    const Weights &GetWeights() const { return config_.GetWeights(); }
 
   private:
     boost::object_pool<VertexNode> vertex_node_pool_;
 
-    unsigned int pop_limit_;
-
-    const Weights &weights_;
+    Config config_;
 };
 
 template <class Model> class Context : public ContextBase {

@@ -1,12 +1,13 @@
 #include "alone/read.hh"
 
+#include "alone/config.hh"
 #include "alone/graph.hh"
 #include "alone/vocab.hh"
+#include "alone/weights.hh"
 #include "lm/model.hh"
 #include "search/context.hh"
 #include "search/edge.hh"
 #include "search/edge_generator.hh"
-#include "search/weights.hh"
 #include "util/file_piece.hh"
 
 #include <boost/unordered_map.hpp>
@@ -18,7 +19,7 @@ namespace alone {
 
 namespace {
 
-template <class Model> void ReadEdge(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &generator) {
+template <class Model> void ReadEdge(const Config &config, search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &generator) {
   EdgeWords &strings = *graph.NewEdgeWords();
 
   StringPiece got;
@@ -60,7 +61,7 @@ template <class Model> void ReadEdge(search::Context<Model> &context, util::File
     // Hypotheses below
     below_score +
     // Hard-coded word penalty.  
-    context.GetWeights().DotNoLM(from.ReadLine()) - context.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10 +
+    config.GetWeights().DotNoLM(from.ReadLine()) - config.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10 +
     // Language model feature. 
     search::ScoreRule(context, words, bos, edge.Between()));
 
@@ -79,19 +80,19 @@ void ReadGraphCounts(util::FilePiece &from, Graph &graph) {
   graph.SetCounts(vertices, edges);
 }
 
-template <class Model> void ReadEdges(search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &edges) {
+template <class Model> void ReadEdges(const Config &config, search::Context<Model> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &edges) {
   unsigned long int edge_count = from.ReadULong();
   UTIL_THROW_IF('\n' != from.get(), FormatException, "Expected newline after edge count");
   for (unsigned long int e = 0; e < edge_count; ++e) {
-    ReadEdge(context, from, graph, edges);
+    ReadEdge(config, context, from, graph, edges);
   }
 }
 
-template void ReadEdges(search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
-template void ReadEdges(search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
-template void ReadEdges(search::Context<lm::ngram::TrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
-template void ReadEdges(search::Context<lm::ngram::QuantTrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
-template void ReadEdges(search::Context<lm::ngram::ArrayTrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
-template void ReadEdges(search::Context<lm::ngram::QuantArrayTrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
+template void ReadEdges(const Config &config, search::Context<lm::ngram::ProbingModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
+template void ReadEdges(const Config &config, search::Context<lm::ngram::RestProbingModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
+template void ReadEdges(const Config &config, search::Context<lm::ngram::TrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
+template void ReadEdges(const Config &config, search::Context<lm::ngram::QuantTrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
+template void ReadEdges(const Config &config, search::Context<lm::ngram::ArrayTrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
+template void ReadEdges(const Config &config, search::Context<lm::ngram::QuantArrayTrieModel> &context, util::FilePiece &from, Graph &graph, search::EdgeGenerator &gen);
 
 } // namespace alone

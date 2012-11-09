@@ -1,3 +1,6 @@
-lib standalone : assemble.cc read.cc threading.cc vocab.cc ../lm//kenlm ../util//kenutil ../search//search : <include>.. : : <include>.. <library>../search//search <library>../lm//kenlm ;
+lib standalone : assemble.cc read.cc threading.cc weights.cc vocab.cc ../lm//kenlm ../util//kenutil ../search//search : <include>.. : : <include>.. <library>../search//search <library>../lm//kenlm ;
 
 exe decode : main.cc standalone main.cc : <threading>multi:<library>/top//boost_thread ;
+
+import testing ;
+unit-test weights_test : weights_test.cc ../util//kenutil /top//boost_unit_test_framework ;
