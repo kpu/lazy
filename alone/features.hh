@@ -38,6 +38,11 @@ class Vector {
     struct Entry {
       ID id;
       search::Score score;
+
+      // sorting order inside values_.  
+      bool operator<(const Entry &other) const {
+        return id < other.id;
+      }
     };
 
     std::vector<Entry> values_;

@@ -105,6 +105,7 @@ search::Score WeightsBase::Parse(StringPiece from, Vector &to) {
     }
     to.values_.push_back(to_add);
   }
+  std::sort(to.values_.begin(), to.values_.end());
   return dot;
 }
 
