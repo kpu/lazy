@@ -1,0 +1,128 @@
+// Handling for individual feature values.  
+// Feature vectors are represented sparsely as a vector pairing id and value.
+#ifndef ALONE_FEATURES__
+#define ALONE_FEATURES__
+
+#include "search/config.hh"
+#include "search/types.hh"
+#include "util/exception.hh"
+#include "util/pool.hh"
+#include "util/string_piece.hh"
+
+#include <boost/unordered_map.hpp>
+
+#include <cstddef>
+#include <functional>
+#include <queue>
+#include <string>
+#include <vector>
+
+#include <stdint.h>
+
+namespace util { class FilePiece; }
+
+namespace alone {
+namespace feature {
+
+typedef uint32_t ID;
+
+class Vector {
+  public:
+    Vector() {}
+
+  private:
+    friend class Adder;
+    friend class WeightsBase;
+    friend class Test;
+
+    struct Entry {
+      ID id;
+      search::Score score;
+    };
+
+    std::vector<Entry> values_;
+};
+
+// Sum a bunch of Vector at once.  
+class Adder {
+  public:
+    void Add(const Vector &vec) {
+      if (vec.values_.empty()) return;
+      Part part;
+      part.cur = &*vec.values_.begin();
+      part.end = part.cur + vec.values_.size();
+      queue_.push(part);
+    }
+
+    void Finish(Vector &out);
+
+  private:
+    struct Part {
+      const Vector::Entry *cur, *end;
+      bool operator>(const Part &other) const {
+        return cur->id > other.cur->id;
+      }
+    };
+
+    std::priority_queue<Part, std::vector<Part>, std::greater<Part> > queue_;
+};
+
+class WeightParseException : public util::Exception {
+  public:
+    WeightParseException() {}
+    ~WeightParseException() throw() {}
+};
+
+// Integrated weight and string identification.  Why?  One hash table lookup
+// for parsing.  
+class WeightsBase {
+  public:
+    explicit WeightsBase(util::FilePiece &f);
+
+    explicit WeightsBase(StringPiece str);
+
+    // Parse a feature vector, returning the dot product with eights.
+    search::Score Parse(StringPiece from, Vector &to);
+
+    void Write(const Vector &from, std::ostream &to) const;
+
+  protected:
+    search::Score Lookup(StringPiece name) const;
+
+  private:
+    ID Add(StringPiece str, search::Score weight);
+
+    // owns strings behind the StringPieces.  
+    util::Pool pool_;
+    // id to string lookup
+    std::vector<StringPiece> id_;
+
+    // string to id lookup
+    struct Value {
+      ID id;
+      search::Score weight;
+    };
+    typedef boost::unordered_map<StringPiece, Value> Map;
+    Map str_;
+};
+
+class Weights : public WeightsBase {
+  public:
+    explicit Weights(util::FilePiece &f);
+
+    explicit Weights(StringPiece str);
+
+    search::Score WordPenalty() const { return word_penalty_; }
+
+    const search::Weights &GetSearch() const { return search_; }
+
+  private:
+    search::Score word_penalty_;
+
+    search::Weights search_;
+};
+
+} // namespace feature
+} // namespace alone
+
+#endif // ALONE_FEATURES__

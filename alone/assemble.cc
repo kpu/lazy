@@ -1,6 +1,6 @@
 #include "alone/assemble.hh"
 
-#include "alone/edge_words.hh"
+#include "alone/edge.hh"
 #include "search/applied.hh"
 
 #include <iostream>
@@ -8,7 +8,7 @@
 namespace alone {
 
 std::ostream &JustText(std::ostream &o, const search::Applied final) {
-  const std::vector<const std::string*> &words = static_cast<const EdgeWords *>(final.GetNote().vp)->Words();
+  const std::vector<const std::string*> &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
   if (words.empty()) return o;
   const search::Applied *child = final.Children();
   std::vector<const std::string*>::const_iterator i(words.begin());
@@ -49,7 +49,7 @@ void MakeIndent(std::ostream &o, const char *indent_str, unsigned int level) {
 void DetailedAppliedInternal(std::ostream &o, const search::Applied final, const char *indent_str, unsigned int indent) {
   o << "(\n";
   MakeIndent(o, indent_str, indent);
-  const std::vector<const std::string*> &words = static_cast<const EdgeWords *>(final.GetNote().vp)->Words();
+  const std::vector<const std::string*> &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
   const search::Applied *child = final.Children();
   for (std::vector<const std::string*>::const_iterator i(words.begin()); i != words.end(); ++i) {
     if (*i) {

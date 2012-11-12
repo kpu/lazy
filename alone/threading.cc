@@ -21,7 +21,7 @@
 namespace alone {
 
 // Return root's history.  
-template <class Model, class Best> search::History InnerDecode(const Config &config, search::Context<Model> &context, Graph &graph, util::FilePiece &in, Best &best) {
+template <class Model, class Best> search::History InnerDecode(Config &config, search::Context<Model> &context, Graph &graph, util::FilePiece &in, Best &best) {
   assert(graph.VertexSize());
   for (std::size_t v = 0; v < graph.VertexSize() - 1; ++v) {
     search::EdgeGenerator edges;
@@ -37,7 +37,7 @@ template <class Model, class Best> search::History InnerDecode(const Config &con
   return root.BestChild();
 }
 
-template <class Model> void Decode(const Config &config, const Model &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out) {
+template <class Model> void Decode(Config &config, const Model &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out) {
   boost::scoped_ptr<util::FilePiece> in(in_ptr);
   search::Context<Model> context(config.GetSearch(), model);
   Graph graph(model.GetVocabulary());
@@ -60,12 +60,12 @@ template <class Model> void Decode(const Config &config, const Model &model, uns
   }
 }
 
-template void Decode(const Config &config, const lm::ngram::ProbingModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(const Config &config, const lm::ngram::RestProbingModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(const Config &config, const lm::ngram::TrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(const Config &config, const lm::ngram::QuantTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(const Config &config, const lm::ngram::ArrayTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(const Config &config, const lm::ngram::QuantArrayTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(Config &config, const lm::ngram::ProbingModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(Config &config, const lm::ngram::RestProbingModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(Config &config, const lm::ngram::TrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(Config &config, const lm::ngram::QuantTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(Config &config, const lm::ngram::ArrayTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
+template void Decode(Config &config, const lm::ngram::QuantArrayTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
 
 #ifdef WITH_THREADS
 template <class Model> void DecodeHandler<Model>::operator()(Input message) {
@@ -96,7 +96,7 @@ void PrintHandler::operator()(Output message) {
   }
 }
 
-template <class Model> Controller<Model>::Controller(const Config &config, const Model &model, size_t decode_workers, std::ostream &to) : 
+template <class Model> Controller<Model>::Controller(Config &config, const Model &model, size_t decode_workers, std::ostream &to) : 
   sentence_id_(0),
   printer_(decode_workers, 1, boost::ref(to), Output::Poison()),
   decoder_(3, decode_workers, boost::in_place(boost::ref(config), boost::ref(model), boost::ref(printer_.In())), Input::Poison()) {}

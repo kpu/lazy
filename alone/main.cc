@@ -32,9 +32,9 @@ template <class Control> void ReadLoop(const std::string &graph_prefix, Control 
   }
 }
 
-template <class Model> void RunWithModelType(const char *graph_prefix, const char *model_file, StringPiece weight_str, unsigned int pop_limit, unsigned int threads) {
+template <class Model> void RunWithModelType(const char *graph_prefix, const char *model_file, util::FilePiece &weights_file, unsigned int pop_limit, unsigned int threads) {
   Model model(model_file);
-  Config config(weight_str, pop_limit, 1);
+  Config config(weights_file, pop_limit, 1);
 
   if (threads > 1) {
 #ifdef WITH_THREADS
@@ -49,27 +49,27 @@ template <class Model> void RunWithModelType(const char *graph_prefix, const cha
   }
 }
 
-void Run(const char *graph_prefix, const char *lm_name, StringPiece weight_str, unsigned int pop_limit, unsigned int threads) {
+void Run(const char *graph_prefix, const char *lm_name, util::FilePiece &weights_file, unsigned int pop_limit, unsigned int threads) {
   lm::ngram::ModelType model_type;
   if (!lm::ngram::RecognizeBinary(lm_name, model_type)) model_type = lm::ngram::PROBING;
   switch (model_type) {
     case lm::ngram::PROBING:
-      RunWithModelType<lm::ngram::ProbingModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      RunWithModelType<lm::ngram::ProbingModel>(graph_prefix, lm_name, weights_file, pop_limit, threads);
       break;
     case lm::ngram::REST_PROBING:
-      RunWithModelType<lm::ngram::RestProbingModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      RunWithModelType<lm::ngram::RestProbingModel>(graph_prefix, lm_name, weights_file, pop_limit, threads);
       break;
     case lm::ngram::TRIE:
-      RunWithModelType<lm::ngram::TrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      RunWithModelType<lm::ngram::TrieModel>(graph_prefix, lm_name, weights_file, pop_limit, threads);
       break;
     case lm::ngram::QUANT_TRIE:
-      RunWithModelType<lm::ngram::QuantTrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      RunWithModelType<lm::ngram::QuantTrieModel>(graph_prefix, lm_name, weights_file, pop_limit, threads);
       break;
     case lm::ngram::ARRAY_TRIE:
-      RunWithModelType<lm::ngram::ArrayTrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      RunWithModelType<lm::ngram::ArrayTrieModel>(graph_prefix, lm_name, weights_file, pop_limit, threads);
       break;
     case lm::ngram::QUANT_ARRAY_TRIE:
-      RunWithModelType<lm::ngram::QuantArrayTrieModel>(graph_prefix, lm_name, weight_str, pop_limit, threads);
+      RunWithModelType<lm::ngram::QuantArrayTrieModel>(graph_prefix, lm_name, weights_file, pop_limit, threads);
       break;
     default:
       UTIL_THROW(util::Exception, "Sorry this lm type isn't supported yet.");
@@ -94,7 +94,8 @@ int main(int argc, char *argv[]) {
     UTIL_THROW_IF(!thread_count, util::Exception, "Thread count 0");
   }
   UTIL_THROW_IF(!thread_count, util::Exception, "Boost doesn't know how many threads there are.  Pass it on the command line.");
-  alone::Run(argv[1], argv[2], argv[3], boost::lexical_cast<unsigned int>(argv[4]), thread_count);
+  util::FilePiece weights_file(argv[3]);
+  alone::Run(argv[1], argv[2], weights_file, boost::lexical_cast<unsigned int>(argv[4]), thread_count);
 
   util::PrintUsage(std::cerr);
   return 0;

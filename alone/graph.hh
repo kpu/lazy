@@ -1,7 +1,7 @@
 #ifndef ALONE_GRAPH__
 #define ALONE_GRAPH__
 
-#include "alone/edge_words.hh"
+#include "alone/edge.hh"
 #include "alone/vocab.hh"
 #include "search/rule.hh"
 #include "search/types.hh"
@@ -67,7 +67,7 @@ class Graph : boost::noncopyable {
       return vertices_[index];
     }
 
-    EdgeWords *NewEdgeWords() {      
+    Edge *NewEdge() {      
       return edges_.New();
     }
 
@@ -77,7 +77,7 @@ class Graph : boost::noncopyable {
     Vocab vocab_;
 
     FixedAllocator<Vertex> vertices_;
-    FixedAllocator<EdgeWords> edges_;    
+    FixedAllocator<Edge> edges_;    
 };
 
 } // namespace alone
