@@ -148,7 +148,7 @@ Weights::Weights(util::FilePiece &f, std::ostream *complain) :
   word_penalty_(Lookup("WordPenalty", complain)) {}
 
 Weights::Weights(StringPiece str, std::ostream *complain) : 
-  WeightsBase(f),
+  WeightsBase(str),
   lm_(Lookup("LanguageModel", complain)),
   oov_(Lookup("OOV", complain)),
   word_penalty_(Lookup("WordPenalty", complain)) {}

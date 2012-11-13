@@ -124,8 +124,6 @@ class Weights : public WeightsBase {
     search::Score OOV() const { return oov_; }
     search::Score WordPenalty() const { return word_penalty_; }
 
-    const search::Weights &GetSearch() const { return search_; }
-
   private:
     search::Score lm_, oov_, word_penalty_;
 };
