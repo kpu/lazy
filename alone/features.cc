@@ -143,13 +143,15 @@ std::ostream &WeightsBase::Write(std::ostream &to, const Vector &from) const {
 
 Weights::Weights(util::FilePiece &f, std::ostream *complain) : 
   WeightsBase(f),
-  word_penalty_(Lookup("WordPenalty", complain)),
-  search_(Lookup("LanguageModel", complain), Lookup("OOV", complain)) {}
+  lm_(Lookup("LanguageModel", complain)),
+  oov_(Lookup("OOV", complain)),
+  word_penalty_(Lookup("WordPenalty", complain)) {}
 
 Weights::Weights(StringPiece str, std::ostream *complain) : 
-  WeightsBase(str),
-  word_penalty_(Lookup("WordPenalty", complain)),
-  search_(Lookup("LanguageModel", complain), Lookup("OOV", complain)) {}
+  WeightsBase(f),
+  lm_(Lookup("LanguageModel", complain)),
+  oov_(Lookup("OOV", complain)),
+  word_penalty_(Lookup("WordPenalty", complain)) {}
 
 } // namespace feature
 } // namespace alone

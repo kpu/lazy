@@ -3,7 +3,6 @@
 #ifndef ALONE_FEATURES__
 #define ALONE_FEATURES__
 
-#include "search/config.hh"
 #include "search/types.hh"
 #include "util/exception.hh"
 #include "util/pool.hh"
@@ -121,17 +120,14 @@ class Weights : public WeightsBase {
 
     explicit Weights(StringPiece str, std::ostream *complain = NULL);
 
+    search::Score LM() const { return lm_; }
+    search::Score OOV() const { return oov_; }
     search::Score WordPenalty() const { return word_penalty_; }
-
-    search::Score LM() const { return search_.LM(); }
-    search::Score OOV() const { return search_.OOV(); }
 
     const search::Weights &GetSearch() const { return search_; }
 
   private:
-    search::Score word_penalty_;
-
-    search::Weights search_;
+    search::Score lm_, oov_, word_penalty_;
 };
 
 } // namespace feature

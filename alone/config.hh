@@ -11,7 +11,7 @@ namespace alone {
 class Config {
   public:
     Config(util::FilePiece &weights_file, unsigned int pop_limit, unsigned int nbest, std::ostream *complain = NULL) 
-      : weights_(weights_file, complain), search_(weights_.GetSearch(), pop_limit, search::NBestConfig(nbest)) {}
+      : weights_(weights_file, complain), search_(weights_.LM(), pop_limit, search::NBestConfig(nbest)) {}
 
     const feature::Weights &GetWeights() const { return weights_; }
 

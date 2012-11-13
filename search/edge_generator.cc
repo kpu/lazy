@@ -39,7 +39,7 @@ template <class Model> void FastScore(const Context<Model> &context, Arity victi
       *cover = *(cover + 1);
     }
   }
-  update.SetScore(update.GetScore() + adjustment * context.GetWeights().LM());
+  update.SetScore(update.GetScore() + adjustment * context.LMWeight());
 }
 
 } // namespace

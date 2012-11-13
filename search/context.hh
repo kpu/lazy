@@ -8,8 +8,6 @@
 
 namespace search {
 
-class Weights;
-
 class ContextBase {
   public:
     explicit ContextBase(const Config &config) : config_(config) {}
@@ -26,7 +24,7 @@ class ContextBase {
 
     unsigned int PopLimit() const { return config_.PopLimit(); }
 
-    const Weights &GetWeights() const { return config_.GetWeights(); }
+    Score LMWeight() const { return config_.LMWeight(); }
 
   private:
     boost::object_pool<VertexNode> vertex_node_pool_;

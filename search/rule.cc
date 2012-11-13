@@ -26,7 +26,6 @@ template <class Model> ScoreRuleRet ScoreRule(const Context<Model> &context, con
       if (word == words.end()) {
         ret.prob += scorer.Finish();
         return ret;
-        //static_cast<float>(oov_count) * context.GetWeights().OOV() + prob * context.GetWeights().LM();
       }
       if (*word == kNonTerminal) break;
       if (*word == oov) ++ret.oov;

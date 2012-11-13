@@ -14,38 +14,20 @@ struct NBestConfig {
   unsigned int keep, size;
 };
 
-class Weights {
-  public:
-    Weights() {}
-
-    Weights(Score lm, Score oov) : lm_(lm), oov_(oov) {}
-
-    void Set(Score lm, Score oov) {
-      lm_ = lm;
-      oov_ = oov;
-    }
-
-    Score LM() const { return lm_; }
-
-    Score OOV() const { return oov_; }
-
-  private:
-    Score lm_, oov_;
-};
-
 class Config {
   public:
-    Config(const Weights &weights, unsigned int pop_limit, const NBestConfig &nbest) :
-      weights_(weights), pop_limit_(pop_limit), nbest_(nbest) {}
+    Config(Score lm_weight, unsigned int pop_limit, const NBestConfig &nbest) :
+      lm_weight_(lm_weight), pop_limit_(pop_limit), nbest_(nbest) {}
 
-    const Weights &GetWeights() const { return weights_; }
+    Score LMWeight() const { return lm_weight_; }
 
     unsigned int PopLimit() const { return pop_limit_; }
 
     const NBestConfig &GetNBest() const { return nbest_; }
 
   private:
-    Weights weights_;
+    Score lm_weight_;
+
     unsigned int pop_limit_;
 
     NBestConfig nbest_;
