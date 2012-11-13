@@ -26,6 +26,8 @@ class ContextBase {
 
     Score LMWeight() const { return config_.LMWeight(); }
 
+    const Config &GetConfig() const { return config_; }
+
   private:
     boost::object_pool<VertexNode> vertex_node_pool_;
 

@@ -1,6 +1,8 @@
 #ifndef ALONE_THREADING__
 #define ALONE_THREADING__
 
+#include "alone/feature_computer.hh"
+
 #ifdef WITH_THREADS
 #include "util/pcqueue.hh"
 #include "util/thread_pool.hh"
@@ -15,14 +17,10 @@ class FilePiece;
 } // namespace util
 
 namespace search {
-template <class Model> class Context;
+class Config;
 } // namespace search
 
 namespace alone {
-
-class Config;
-
-template <class Model> void Decode(Config &config, const Model &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
 
 #ifdef WITH_THREADS
 struct SentenceID {
@@ -56,16 +54,19 @@ template <class Model> class DecodeHandler {
   public:
     typedef Input Request;
 
-    DecodeHandler(Config &config, const Model &model, util::PCQueue<Output> &out) : config_(config), model_(model), out_(out) {}
+    DecodeHandler(const search::Config &config, const Model &model, const feature::Weights &weights, util::PCQueue<Output> &out) :
+      config_(config), model_(model), features_(weights), out_(out) {}
 
     void operator()(Input message);
 
   private:
     void Produce(unsigned int sentence_id, const std::string &str);
 
-    Config &config_;
+    const search::Config &config_;
 
     const Model &model_;
+
+    feature::Computer features_;
     
     util::PCQueue<Output> &out_;
 };
@@ -87,7 +88,7 @@ class PrintHandler {
 template <class Model> class Controller {
   public:
     // This config must remain valid.   
-    explicit Controller(Config &config, const Model &model, size_t decode_workers, std::ostream &to);
+    explicit Controller(const search::Config &config, const Model &model, const feature::Weights &weights, size_t decode_workers, std::ostream &to);
 
     // Takes ownership of in.    
     void Add(util::FilePiece *in) {
@@ -109,17 +110,18 @@ template <class Model> class Controller {
 // Same API as controller.  
 template <class Model> class InThread {
   public:
-    InThread(Config &config, const Model &model, std::ostream &to) : config_(config), model_(model), to_(to), sentence_id_(0) {}
+    InThread(const search::Config &config, const Model &model, const feature::Weights &weights, std::ostream &to) :
+      config_(config), model_(model), features_(weights), to_(to), sentence_id_(0) {}
 
     // Takes ownership of in.  
-    void Add(util::FilePiece *in) {
-      Decode(config_, model_, sentence_id_++, in, to_);
-    }
+    void Add(util::FilePiece *in);
 
   private:
-    Config &config_;
+    const search::Config &config_;
 
     const Model &model_;
+
+    feature::Computer features_;
 
     std::ostream &to_;
 

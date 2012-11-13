@@ -9,13 +9,13 @@
 namespace alone {
 
 std::ostream &JustText(std::ostream &o, const search::Applied final) {
-  const std::vector<const std::string*> &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
+  const Edge::WordVec &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
   if (words.empty()) return o;
   const search::Applied *child = final.Children();
-  std::vector<const std::string*>::const_iterator i(words.begin());
+  Edge::WordVec::const_iterator i(words.begin());
   for (; i != words.end() - 1; ++i) {
     if (*i) {
-      o << **i << ' ';
+      o << (*i)->first << ' ';
     } else {
       JustText(o, *child) << ' ';
       ++child;
@@ -23,8 +23,8 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
   }
 
   if (*i) {
-    if (**i != "</s>") {
-      o << **i;
+    if ((*i)->first != "</s>") {
+      o << (*i)->first;
     }
   } else {
     JustText(o, *child);
@@ -33,25 +33,27 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
   return o;
 }
 
-void SumFeatures(const search::Applied final, feature::Adder &to) {
-  to.Add(static_cast<const Edge*>(final.GetNote().vp)->Features());
-  for (search::Arity i = 0; i < final.GetArity(); ++i) {
-    SumFeatures(final.Children()[i], to);
+namespace {
+void RecurseFeatures(const search::Applied final, std::vector<lm::WordIndex> &words, feature::Adder &adder) {
+  const Edge &edge = *static_cast<const Edge*>(final.GetNote().vp);
+  adder.Add(edge.Features());
+  const Edge::WordVec &vec = edge.Words();
+  const search::Applied *child = final.Children();
+  for (Edge::WordVec::const_iterator i(vec.begin()); i != vec.end(); ++i) {
+    if (*i) {
+      words.push_back((*i)->second);
+    } else {
+      RecurseFeatures(*child++, words, adder);
+    }
   }
 }
+} // namespace
 
-std::ostream &SingleLine(std::ostream &o, const search::Applied final, const feature::WeightsBase &weights) {
-  if (!final.Valid()) {
-    return o << "NO PATH FOUND";
-  }
+void ComputeForFeatures(const search::Applied final, std::vector<lm::WordIndex> &words, feature::Vector &vec) {
+  assert(final.Valid());
   feature::Adder adder;
-  SumFeatures(final, adder);
-  feature::Vector vec;
+  RecurseFeatures(final, words, adder);
   adder.Finish(vec);
-  JustText(o, final);
-  o << " ||| ";
-  weights.Write(o, vec);
-  return o << " ||| " << final.GetScore();
 }
 
 namespace {
@@ -64,11 +66,11 @@ void MakeIndent(std::ostream &o, const char *indent_str, unsigned int level) {
 void DetailedAppliedInternal(std::ostream &o, const search::Applied final, const char *indent_str, unsigned int indent) {
   o << "(\n";
   MakeIndent(o, indent_str, indent);
-  const std::vector<const std::string*> &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
+  const Edge::WordVec &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
   const search::Applied *child = final.Children();
-  for (std::vector<const std::string*>::const_iterator i(words.begin()); i != words.end(); ++i) {
+  for (Edge::WordVec::const_iterator i(words.begin()); i != words.end(); ++i) {
     if (*i) {
-      o << **i;
+      o << (*i)->first;
       if (i == words.end() - 1) {
         o << '\n';
         MakeIndent(o, indent_str, indent);

@@ -1,6 +1,5 @@
 #include "alone/threading.hh"
 
-#include "alone/config.hh"
 #include "lm/model.hh"
 #include "search/config.hh"
 #include "search/context.hh"
@@ -34,43 +33,43 @@ template <class Control> void ReadLoop(StringPiece graph_dir, Control &control) 
   }
 }
 
-template <class Model> void RunWithModelType(StringPiece graph_dir, const std::string &lm_name, Config &config, unsigned int threads) {
+template <class Model> void RunWithModelType(StringPiece graph_dir, const std::string &lm_name, const search::Config &config, const feature::Weights &weights, unsigned int threads) {
   Model model(lm_name.c_str());
 
   if (threads > 1) {
 #ifdef WITH_THREADS
-    Controller<Model> controller(config, model, threads, std::cout);
+    Controller<Model> controller(config, model, weights, threads, std::cout);
     ReadLoop(graph_dir, controller);
 #else
     UTIL_THROW(util::Exception, "Threading support not compiled in.");
 #endif
   } else {
-    InThread<Model> controller(config, model, std::cout);
+    InThread<Model> controller(config, model, weights, std::cout);
     ReadLoop(graph_dir, controller);
   }
 }
 
-void Run(StringPiece graph_dir, const std::string &lm_name, Config &config, unsigned int threads) {
+void Run(StringPiece graph_dir, const std::string &lm_name, const search::Config &config, const feature::Weights &weights, unsigned int threads) {
   lm::ngram::ModelType model_type;
   if (!lm::ngram::RecognizeBinary(lm_name.c_str(), model_type)) model_type = lm::ngram::PROBING;
   switch (model_type) {
     case lm::ngram::PROBING:
-      RunWithModelType<lm::ngram::ProbingModel>(graph_dir, lm_name, config, threads);
+      RunWithModelType<lm::ngram::ProbingModel>(graph_dir, lm_name, config, weights, threads);
       break;
     case lm::ngram::REST_PROBING:
-      RunWithModelType<lm::ngram::RestProbingModel>(graph_dir, lm_name, config, threads);
+      RunWithModelType<lm::ngram::RestProbingModel>(graph_dir, lm_name, config, weights, threads);
       break;
     case lm::ngram::TRIE:
-      RunWithModelType<lm::ngram::TrieModel>(graph_dir, lm_name, config, threads);
+      RunWithModelType<lm::ngram::TrieModel>(graph_dir, lm_name, config, weights, threads);
       break;
     case lm::ngram::QUANT_TRIE:
-      RunWithModelType<lm::ngram::QuantTrieModel>(graph_dir, lm_name, config, threads);
+      RunWithModelType<lm::ngram::QuantTrieModel>(graph_dir, lm_name, config, weights, threads);
       break;
     case lm::ngram::ARRAY_TRIE:
-      RunWithModelType<lm::ngram::ArrayTrieModel>(graph_dir, lm_name, config, threads);
+      RunWithModelType<lm::ngram::ArrayTrieModel>(graph_dir, lm_name, config, weights, threads);
       break;
     case lm::ngram::QUANT_ARRAY_TRIE:
-      RunWithModelType<lm::ngram::QuantArrayTrieModel>(graph_dir, lm_name, config, threads);
+      RunWithModelType<lm::ngram::QuantArrayTrieModel>(graph_dir, lm_name, config, weights, threads);
       break;
     default:
       UTIL_THROW(util::Exception, "Sorry this lm type isn't supported yet.");
@@ -115,10 +114,10 @@ int main(int argc, char *argv[]) {
     }
     UTIL_THROW_IF(!threads, util::Exception, "Thread count 0");
 
-    boost::scoped_ptr<util::FilePiece> weights(new util::FilePiece(weights_file.c_str()));
-    alone::Config config(*weights, beam, nbest, &std::cerr);
-    weights.reset();
-    alone::Run(graph_dir, lm_file, config, threads);
+    using namespace alone;
+    feature::Weights weights(feature::Weights::FromFile(), weights_file.c_str());
+    search::Config config(weights.Lookup(feature::Computer::kLanguageModelName), beam, search::NBestConfig(nbest));
+    Run(graph_dir, lm_file, config, weights, threads);
 
     util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {

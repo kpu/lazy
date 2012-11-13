@@ -8,6 +8,7 @@
 #include "util/pool.hh"
 #include "util/string_piece.hh"
 
+#include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <cstddef>
@@ -32,7 +33,7 @@ class Vector {
 
   private:
     friend class Adder;
-    friend class WeightsBase;
+    friend class Weights;
     friend class Test;
 
     struct Entry {
@@ -80,19 +81,30 @@ class WeightParseException : public util::Exception {
 
 // Integrated weight and string identification.  Why?  One hash table lookup
 // for parsing.  
-class WeightsBase {
+class Weights : boost::noncopyable {
   public:
-    explicit WeightsBase(util::FilePiece &f);
+    // Discriminated constructors.  
+    struct FromFile {};
+    Weights(FromFile, const char *name);
 
-    explicit WeightsBase(StringPiece str);
+    struct FromString {};
+    Weights(FromString, StringPiece str);
 
-    // Parse a feature vector, returning the dot product with eights.
+    // Makes a partly shallow copy for use by threads.  
+    // This does copy a lot though; if we're going to have a lot of features,
+    // then this should be replaced with locking or freezing the feature
+    // vector to make it immutable.  
+    struct ForThread {};
+    Weights(ForThread, const Weights &copy_from);
+
+    // Parse a feature vector, returning the dot product with weights.
     search::Score Parse(StringPiece from, Vector &to);
 
     std::ostream &Write(std::ostream &to, const Vector &from) const;
 
-  protected:
-    // Lookup a feature by name and complain if it can't be found.  
+    // Lookup a feature by name and complain if it wasn't found.  This is
+    // intended to setup weights for hard-coded features,  Callers should cache
+    // the result.  
     search::Score Lookup(StringPiece name, std::ostream *complain = NULL) const;
 
   private:
@@ -103,29 +115,14 @@ class WeightsBase {
     // id to string lookup
     std::vector<StringPiece> id_;
 
-    // string to id lookup
+    // id and weight for a feature name.  
     struct Value {
       ID id;
       search::Score weight;
     };
+
     typedef boost::unordered_map<StringPiece, Value> Map;
     Map str_;
-};
-
-class Weights : public WeightsBase {
-  public:
-    // If complain is non-null then write a complaint for any implicitly zero
-    // hard-coded feature.  
-    explicit Weights(util::FilePiece &f, std::ostream *complain = NULL);
-
-    explicit Weights(StringPiece str, std::ostream *complain = NULL);
-
-    search::Score LM() const { return lm_; }
-    search::Score OOV() const { return oov_; }
-    search::Score WordPenalty() const { return word_penalty_; }
-
-  private:
-    search::Score lm_, oov_, word_penalty_;
 };
 
 } // namespace feature

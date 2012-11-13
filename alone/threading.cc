@@ -1,7 +1,6 @@
 #include "alone/threading.hh"
 
 #include "alone/assemble.hh"
-#include "alone/config.hh"
 #include "alone/graph.hh"
 #include "alone/read.hh"
 #include "alone/vocab.hh"
@@ -19,63 +18,65 @@
 #include <sstream>
 
 namespace alone {
-
+namespace {
 // Return root's history.  
-template <class Model, class Best> search::History InnerDecode(Config &config, search::Context<Model> &context, Graph &graph, util::FilePiece &in, Best &best) {
+template <class Model, class Best> search::History InnerDecode(feature::Computer &features, search::Context<Model> &context, Graph &graph, util::FilePiece &in, Best &best) {
   assert(graph.VertexSize());
   for (std::size_t v = 0; v < graph.VertexSize() - 1; ++v) {
     search::EdgeGenerator edges;
-    ReadEdges(config, context, in, graph, edges);
+    ReadEdges(features, context.LanguageModel(), in, graph, edges);
     search::VertexGenerator<Best> vertex_gen(context, *graph.NewVertex(), best);
     edges.Search(context, vertex_gen);
   }
   search::EdgeGenerator edges;
-  ReadEdges(config, context, in, graph, edges);
+  ReadEdges(features, context.LanguageModel(), in, graph, edges);
   search::Vertex &root = *graph.NewVertex();
   search::RootVertexGenerator<Best> vertex_gen(root, best);
   edges.Search(context, vertex_gen);
   return root.BestChild();
 }
 
-template <class Model> void Decode(Config &config, const Model &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out) {
+template <class Model> void Decode(search::Context<Model> &context, feature::Computer &features, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out) {
   boost::scoped_ptr<util::FilePiece> in(in_ptr);
-  search::Context<Model> context(config.GetSearch(), model);
-  Graph graph(model.GetVocabulary());
+  Graph graph(context.LanguageModel().GetVocabulary());
   ReadGraphCounts(*in, graph);
   if (!graph.VertexSize()) {
     out << sentence_id << "NO PATH FOUND" << '\n';
     return;
   }
 
-  if (config.GetSearch().GetNBest().size == 1) {
+  if (context.GetConfig().GetNBest().size == 1) {
     search::SingleBest single_best;
-    search::Applied best(InnerDecode(config, context, graph, *in, single_best));
+    search::Applied best(InnerDecode(features, context, graph, *in, single_best));
     out << sentence_id << " ||| ";
-    SingleLine(out, best, config.GetWeights());
-    out << '\n';
+    if (!best.Valid()) {
+      out << "NO PATH FOUND" << '\n';
+    } else {
+      JustText(out, best);
+      out << " ||| ";
+      features.Write(out, best, context.LanguageModel());
+      out << " ||| " << best.GetScore() << '\n';
+    }
   } else {
-    search::NBest n_best(config.GetSearch().GetNBest());
-    const std::vector<search::Applied> &applied = n_best.Extract(InnerDecode(config, context, graph, *in, n_best));
+    search::NBest n_best(context.GetConfig().GetNBest());
+    const std::vector<search::Applied> &applied = n_best.Extract(InnerDecode(features, context, graph, *in, n_best));
     for (std::vector<search::Applied>::const_iterator i = applied.begin(); i != applied.end(); ++i) {
       out << sentence_id << " ||| ";
-      SingleLine(out, *i, config.GetWeights());
-      out << '\n';
+      JustText(out, *i);
+      out << " ||| ";
+      features.Write(out, *i, context.LanguageModel());
+      out << " ||| " << i->GetScore() << '\n';
     }
   }
 }
-
-template void Decode(Config &config, const lm::ngram::ProbingModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(Config &config, const lm::ngram::RestProbingModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(Config &config, const lm::ngram::TrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(Config &config, const lm::ngram::QuantTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(Config &config, const lm::ngram::ArrayTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
-template void Decode(Config &config, const lm::ngram::QuantArrayTrieModel &model, unsigned int sentence_id, util::FilePiece *in_ptr, std::ostream &out);
+} // namespace
 
 #ifdef WITH_THREADS
 template <class Model> void DecodeHandler<Model>::operator()(Input message) {
   try {
     std::stringstream assemble;
-    Decode(config_, model_, message.sentence_id, message.file, assemble);
+    search::Context<Model> context(config_, model_);
+    Decode(context, features_, message.sentence_id, message.file, assemble);
     Produce(message.sentence_id, assemble.str());
   } catch (util::Exception &e) {
     e << " in sentence " << message.sentence_id;
@@ -100,10 +101,14 @@ void PrintHandler::operator()(Output message) {
   }
 }
 
-template <class Model> Controller<Model>::Controller(Config &config, const Model &model, size_t decode_workers, std::ostream &to) : 
+template <class Model> Controller<Model>::Controller(const search::Config &config, const Model &model, const feature::Weights &weights, size_t decode_workers, std::ostream &to) : 
   sentence_id_(0),
   printer_(decode_workers, 1, boost::ref(to), Output::Poison()),
-  decoder_(3, decode_workers, boost::in_place(boost::ref(config), boost::ref(model), boost::ref(printer_.In())), Input::Poison()) {}
+  decoder_(
+      3, // Buffer of three FilePieces for threads to read.  
+      decode_workers,
+      boost::in_place(boost::ref(config), boost::ref(model), boost::ref(weights), boost::ref(printer_.In())),
+      Input::Poison()) {}
 
 template class Controller<lm::ngram::RestProbingModel>;
 template class Controller<lm::ngram::ProbingModel>;
@@ -113,5 +118,18 @@ template class Controller<lm::ngram::ArrayTrieModel>;
 template class Controller<lm::ngram::QuantArrayTrieModel>;
 
 #endif
+
+template <class Model> void InThread<Model>::Add(util::FilePiece *in) {
+  search::Context<Model> context(config_, model_);
+  Decode(context, features_, sentence_id_++, in, to_);
+}
+
+template class InThread<lm::ngram::RestProbingModel>;
+template class InThread<lm::ngram::ProbingModel>;
+template class InThread<lm::ngram::TrieModel>;
+template class InThread<lm::ngram::QuantTrieModel>;
+template class InThread<lm::ngram::ArrayTrieModel>;
+template class InThread<lm::ngram::QuantArrayTrieModel>;
+
 
 } // namespace alone

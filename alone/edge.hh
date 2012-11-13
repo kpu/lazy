@@ -5,6 +5,7 @@
 #define ALONE_EDGE__
 
 #include "alone/features.hh"
+#include "lm/word_index.hh"
 
 #include <string>
 #include <vector>
@@ -15,11 +16,13 @@ class Edge {
   public:
     Edge() {}
 
-    void AppendWord(const std::string *word) {
+    void AppendWord(const std::pair<const std::string, lm::WordIndex> *word) {
       words_.push_back(word);
     }
 
-    const std::vector<const std::string *> &Words() const {
+    typedef std::vector<const std::pair<const std::string, lm::WordIndex> *> WordVec;
+
+    const WordVec &Words() const {
       return words_;
     }
 
@@ -29,7 +32,7 @@ class Edge {
 
   private:
     // NULL for non-terminals.  
-    std::vector<const std::string*> words_;
+    std::vector<const std::pair<const std::string, lm::WordIndex> *> words_;
 
     feature::Vector features_;
 };

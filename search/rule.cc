@@ -9,11 +9,10 @@
 
 namespace search {
 
-template <class Model> ScoreRuleRet ScoreRule(const Context<Model> &context, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing) {
+template <class Model> ScoreRuleRet ScoreRule(const Model &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing) {
   ScoreRuleRet ret;
   ret.prob = 0.0;
   ret.oov = 0;
-  const Model &model = context.LanguageModel();
   const lm::WordIndex oov = model.GetVocabulary().NotFound(), bos = model.GetVocabulary().BeginSentence();
   for (std::vector<lm::WordIndex>::const_iterator word = words.begin(); ; ++word) {
     lm::ngram::RuleScore<Model> scorer(model, *(writing++));
@@ -35,11 +34,11 @@ template <class Model> ScoreRuleRet ScoreRule(const Context<Model> &context, con
   }
 }
 
-template ScoreRuleRet ScoreRule(const Context<lm::ngram::RestProbingModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
-template ScoreRuleRet ScoreRule(const Context<lm::ngram::ProbingModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
-template ScoreRuleRet ScoreRule(const Context<lm::ngram::TrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
-template ScoreRuleRet ScoreRule(const Context<lm::ngram::QuantTrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
-template ScoreRuleRet ScoreRule(const Context<lm::ngram::ArrayTrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
-template ScoreRuleRet ScoreRule(const Context<lm::ngram::QuantArrayTrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const lm::ngram::RestProbingModel &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const lm::ngram::ProbingModel &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const lm::ngram::TrieModel &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const lm::ngram::QuantTrieModel &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const lm::ngram::ArrayTrieModel &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const lm::ngram::QuantArrayTrieModel &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
 
 } // namespace search

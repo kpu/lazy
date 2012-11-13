@@ -1,4 +1,4 @@
-lib standalone : assemble.cc features.cc read.cc threading.cc vocab.cc ../lm//kenlm ../util//kenutil ../search//search ..//boost_thread : <include>.. : : <include>.. <library>../search//search <library>../lm//kenlm ;
+lib standalone : assemble.cc features.cc feature_computer.cc read.cc threading.cc vocab.cc ../lm//kenlm ../util//kenutil ../search//search ..//boost_thread : <include>.. : : <include>.. <library>../search//search <library>../lm//kenlm ;
 
 exe decode : main.cc standalone main.cc /top//boost_program_options : <threading>multi:<library>/top//boost_thread ;
 

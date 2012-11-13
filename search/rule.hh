@@ -9,8 +9,6 @@
 
 namespace search {
 
-template <class Model> class Context;
-
 const lm::WordIndex kNonTerminal = lm::kMaxWordIndex;
 
 struct ScoreRuleRet {
@@ -20,7 +18,7 @@ struct ScoreRuleRet {
 
 // Pass <s> and </s> normally.  
 // Indicate non-terminals with kNonTerminal.  
-template <class Model> ScoreRuleRet ScoreRule(const Context<Model> &context, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *state_out);
+template <class Model> ScoreRuleRet ScoreRule(const Model &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *state_out);
 
 } // namespace search
 

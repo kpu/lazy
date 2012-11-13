@@ -66,7 +66,8 @@ ParseRet RawParse(util::TokenIter<util::AnyCharacter, true> &spaces) {
 
 } // namespace
 
-WeightsBase::WeightsBase(util::FilePiece &f) {
+Weights::Weights(Weights::FromFile, const char *name) {
+  util::FilePiece f(name);
   StringPiece line;
   while (true) {
     try {
@@ -81,14 +82,18 @@ WeightsBase::WeightsBase(util::FilePiece &f) {
   }
 }
 
-WeightsBase::WeightsBase(StringPiece from) {
+Weights::Weights(Weights::FromString, StringPiece from) {
   for (util::TokenIter<util::AnyCharacter, true> spaces(from, " \n\t"); spaces;) {
     ParseRet res(RawParse(spaces));
     Add(res.name, res.score);
   }
 }
 
-search::Score WeightsBase::Parse(StringPiece from, Vector &to) {
+// copy id_ and str_ but assume pool_ is still alive from the parent.  
+Weights::Weights(Weights::ForThread, const Weights &copy_from) 
+  : id_(copy_from.id_), str_(copy_from.str_) {}
+
+search::Score Weights::Parse(StringPiece from, Vector &to) {
   to.values_.clear();
   search::Score dot = 0.0;
   Vector::Entry to_add;
@@ -109,7 +114,7 @@ search::Score WeightsBase::Parse(StringPiece from, Vector &to) {
   return dot;
 }
 
-search::Score WeightsBase::Lookup(StringPiece name, std::ostream *complain) const {
+search::Score Weights::Lookup(StringPiece name, std::ostream *complain) const {
   Map::const_iterator i = str_.find(name);
   if (i == str_.end()) {
     if (complain) *complain << "Warning: hard-coded feature " << name << " was not given a weight." << std::endl;
@@ -118,7 +123,7 @@ search::Score WeightsBase::Lookup(StringPiece name, std::ostream *complain) cons
   return i->second.weight;
 }
 
-ID WeightsBase::Add(StringPiece str, search::Score weight) {
+ID Weights::Add(StringPiece str, search::Score weight) {
   char *copied_mem = static_cast<char*>(pool_.Allocate(str.size()));
   memcpy(copied_mem, str.data(), str.size());
   std::pair<StringPiece, Value> to_ins;
@@ -132,7 +137,7 @@ ID WeightsBase::Add(StringPiece str, search::Score weight) {
   return to_ins.second.id;
 }
 
-std::ostream &WeightsBase::Write(std::ostream &to, const Vector &from) const {
+std::ostream &Weights::Write(std::ostream &to, const Vector &from) const {
   std::vector<Vector::Entry>::const_iterator i(from.values_.begin());
   if (i == from.values_.end()) return to;
   to << id_[i->id] << '=' << i->score;
@@ -140,18 +145,6 @@ std::ostream &WeightsBase::Write(std::ostream &to, const Vector &from) const {
     to << ' ' << id_[i->id] << '=' << i->score;
   return to;
 }
-
-Weights::Weights(util::FilePiece &f, std::ostream *complain) : 
-  WeightsBase(f),
-  lm_(Lookup("LanguageModel", complain)),
-  oov_(Lookup("OOV", complain)),
-  word_penalty_(Lookup("WordPenalty", complain)) {}
-
-Weights::Weights(StringPiece str, std::ostream *complain) : 
-  WeightsBase(str),
-  lm_(Lookup("LanguageModel", complain)),
-  oov_(Lookup("OOV", complain)),
-  word_penalty_(Lookup("WordPenalty", complain)) {}
 
 } // namespace feature
 } // namespace alone
