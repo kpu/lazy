@@ -128,12 +128,13 @@ ID WeightsBase::Add(StringPiece str, search::Score weight) {
   return to_ins.second.id;
 }
 
-void WeightsBase::Write(const Vector &from, std::ostream &to) const {
+std::ostream &WeightsBase::Write(std::ostream &to, const Vector &from) const {
   std::vector<Vector::Entry>::const_iterator i(from.values_.begin());
-  if (i == from.values_.end()) return;
+  if (i == from.values_.end()) return to;
   to << id_[i->id] << '=' << i->score;
   for (++i; i != from.values_.end(); ++i) 
     to << ' ' << id_[i->id] << '=' << i->score;
+  return to;
 }
 
 Weights::Weights(util::FilePiece &f) : 

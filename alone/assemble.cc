@@ -1,6 +1,7 @@
 #include "alone/assemble.hh"
 
 #include "alone/edge.hh"
+#include "alone/features.hh"
 #include "search/applied.hh"
 
 #include <iostream>
@@ -32,11 +33,25 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
   return o;
 }
 
-std::ostream &operator<<(std::ostream &o, const search::Applied final) {
+void SumFeatures(const search::Applied final, feature::Adder &to) {
+  to.Add(static_cast<const Edge*>(final.GetNote().vp)->Features());
+  for (search::Arity i = 0; i < final.GetArity(); ++i) {
+    SumFeatures(final.Children()[i], to);
+  }
+}
+
+std::ostream &SingleLine(std::ostream &o, const search::Applied final, const feature::WeightsBase &weights) {
   if (!final.Valid()) {
     return o << "NO PATH FOUND";
   }
-  return JustText(o, final) << " ||| " << final.GetScore();
+  feature::Adder adder;
+  SumFeatures(final, adder);
+  feature::Vector vec;
+  adder.Finish(vec);
+  JustText(o, final);
+  o << " ||| ";
+  weights.Write(o, vec);
+  return o << " ||| " << final.GetScore();
 }
 
 namespace {

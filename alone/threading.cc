@@ -50,12 +50,16 @@ template <class Model> void Decode(Config &config, const Model &model, unsigned 
   if (config.GetSearch().GetNBest().size == 1) {
     search::SingleBest single_best;
     search::Applied best(InnerDecode(config, context, graph, *in, single_best));
-    out << sentence_id << " ||| " << best << '\n';
+    out << sentence_id << " ||| ";
+    SingleLine(out, best, config.GetWeights());
+    out << '\n';
   } else {
     search::NBest n_best(config.GetSearch().GetNBest());
     const std::vector<search::Applied> &applied = n_best.Extract(InnerDecode(config, context, graph, *in, n_best));
     for (std::vector<search::Applied>::const_iterator i = applied.begin(); i != applied.end(); ++i) {
-      out << sentence_id << " ||| " << *i << '\n';
+      out << sentence_id << " ||| ";
+      SingleLine(out, *i, config.GetWeights());
+      out << '\n';
     }
   }
 }

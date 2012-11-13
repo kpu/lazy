@@ -89,7 +89,7 @@ class WeightsBase {
     // Parse a feature vector, returning the dot product with eights.
     search::Score Parse(StringPiece from, Vector &to);
 
-    void Write(const Vector &from, std::ostream &to) const;
+    std::ostream &Write(std::ostream &to, const Vector &from) const;
 
   protected:
     search::Score Lookup(StringPiece name) const;
