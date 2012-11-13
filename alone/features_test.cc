@@ -38,8 +38,8 @@ BOOST_AUTO_TEST_CASE(parse) {
   const std::vector<Test::Entry> &behind = Test::Get(out);
 
   BOOST_CHECK_CLOSE(9.45117 * 3.0, w.Parse("phrase-TGS=3.0", out), 0.001);
-  BOOST_REQUIRE_EQUAL(1, behind.size());
-  BOOST_CHECK_EQUAL(2, behind[0].id);
+  BOOST_REQUIRE_EQUAL(1U, behind.size());
+  BOOST_CHECK_EQUAL(2U, behind[0].id);
   BOOST_CHECK_CLOSE(3.0, behind[0].score, 0.001);
 
   BOOST_CHECK_CLOSE(6.3, w.Parse("foo 1 bar \t 2\n OOV=0", out), 0.001);
@@ -78,14 +78,14 @@ BOOST_AUTO_TEST_CASE(adder) {
   adder.Add(vec[2]);
   adder.Finish(out);
   const std::vector<Entry> &f = Test::Get(out);
-  BOOST_REQUIRE_EQUAL(4, f.size()); // 0, 1, 3, 4
-  BOOST_CHECK_EQUAL(0, f[0].id);
+  BOOST_REQUIRE_EQUAL(4U, f.size()); // 0, 1, 3, 4
+  BOOST_CHECK_EQUAL(0U, f[0].id);
   BOOST_CHECK_CLOSE(6.0, f[0].score, 0.001);
-  BOOST_CHECK_EQUAL(1, f[1].id);
+  BOOST_CHECK_EQUAL(1U, f[1].id);
   BOOST_CHECK_CLOSE(3.1 + 0.5, f[1].score, 0.001);
-  BOOST_CHECK_EQUAL(3, f[2].id);
+  BOOST_CHECK_EQUAL(3U, f[2].id);
   BOOST_CHECK_CLOSE(4.7 + 2.7 + 0.07, f[2].score, 0.001);
-  BOOST_CHECK_EQUAL(4, f[3].id);
+  BOOST_CHECK_EQUAL(4U, f[3].id);
   BOOST_CHECK_CLOSE(2.7, f[3].score, 0.001);
 }
 
