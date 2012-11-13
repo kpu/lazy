@@ -13,7 +13,14 @@ template <class Model> class Context;
 
 const lm::WordIndex kNonTerminal = lm::kMaxWordIndex;
 
-template <class Model> float ScoreRule(const Context<Model> &context, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *state_out);
+struct ScoreRuleRet {
+  Score prob;
+  unsigned int oov;
+};
+
+// Pass <s> and </s> normally.  
+// Indicate non-terminals with kNonTerminal.  
+template <class Model> ScoreRuleRet ScoreRule(const Context<Model> &context, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *state_out);
 
 } // namespace search
 

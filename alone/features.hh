@@ -123,6 +123,9 @@ class Weights : public WeightsBase {
 
     search::Score WordPenalty() const { return word_penalty_; }
 
+    search::Score LM() const { return search_.LM(); }
+    search::Score OOV() const { return search_.OOV(); }
+
     const search::Weights &GetSearch() const { return search_; }
 
   private:

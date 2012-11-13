@@ -26,7 +26,6 @@ template <class Model> void ReadEdge(Config &config, search::Context<Model> &con
   std::vector<lm::WordIndex> words;
   std::vector<search::PartialVertex> children;
   unsigned long int terminals = 0;
-  bool bos = false;
   float below_score = 0.0;
   while ("|||" != (got = from.ReadDelimited())) {
     if ('[' == *got.data() && ']' == got.data()[got.size() - 1]) {
@@ -43,9 +42,6 @@ template <class Model> void ReadEdge(Config &config, search::Context<Model> &con
         return;
       }
       below_score += children.back().Bound();
-    } else if (got == "<s>") {
-      bos = true;
-      ++terminals;
     } else {
       const std::pair<const std::string, lm::WordIndex> &found = graph.MutableVocab().FindOrAdd(got);
       alone_edge.AppendWord(&found.first);
@@ -57,6 +53,8 @@ template <class Model> void ReadEdge(Config &config, search::Context<Model> &con
   search::PartialEdge edge(generator.AllocateEdge(children.size()));
   std::copy(children.begin(), children.end(), edge.NT());
 
+  search::ScoreRuleRet scored(search::ScoreRule(context, words, edge.Between()));
+
   edge.SetScore(
     // Hypotheses below
     below_score +
@@ -65,7 +63,8 @@ template <class Model> void ReadEdge(Config &config, search::Context<Model> &con
     // Hard-coded word penalty.  
     config.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10 +
     // Language model feature. 
-    search::ScoreRule(context, words, bos, edge.Between()));
+    scored.prob * config.GetWeights().LM() * scored.prob +
+    static_cast<search::Score>(scored.oov) * config.GetWeights().OOV());
 
   search::Note note;
   note.vp = &alone_edge;

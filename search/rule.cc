@@ -9,35 +9,38 @@
 
 namespace search {
 
-template <class Model> float ScoreRule(const Context<Model> &context, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *writing) {
-  unsigned int oov_count = 0;
-  float prob = 0.0;
+template <class Model> ScoreRuleRet ScoreRule(const Context<Model> &context, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing) {
+  ScoreRuleRet ret;
+  ret.prob = 0.0;
+  ret.oov = 0;
   const Model &model = context.LanguageModel();
-  const lm::WordIndex oov = model.GetVocabulary().NotFound();
+  const lm::WordIndex oov = model.GetVocabulary().NotFound(), bos = model.GetVocabulary().BeginSentence();
   for (std::vector<lm::WordIndex>::const_iterator word = words.begin(); ; ++word) {
     lm::ngram::RuleScore<Model> scorer(model, *(writing++));
     // TODO: optimize
-    if (prepend_bos && (word == words.begin())) {
+    if (*word == bos) {
       scorer.BeginSentence();
+      ++word;
     }
     for (; ; ++word) {
       if (word == words.end()) {
-        prob += scorer.Finish();
-        return static_cast<float>(oov_count) * context.GetWeights().OOV() + prob * context.GetWeights().LM();
+        ret.prob += scorer.Finish();
+        return ret;
+        //static_cast<float>(oov_count) * context.GetWeights().OOV() + prob * context.GetWeights().LM();
       }
       if (*word == kNonTerminal) break;
-      if (*word == oov) ++oov_count;
+      if (*word == oov) ++ret.oov;
       scorer.Terminal(*word);
     }
-    prob += scorer.Finish();
+    ret.prob += scorer.Finish();
   }
 }
 
-template float ScoreRule(const Context<lm::ngram::RestProbingModel> &model, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *writing);
-template float ScoreRule(const Context<lm::ngram::ProbingModel> &model, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *writing);
-template float ScoreRule(const Context<lm::ngram::TrieModel> &model, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *writing);
-template float ScoreRule(const Context<lm::ngram::QuantTrieModel> &model, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *writing);
-template float ScoreRule(const Context<lm::ngram::ArrayTrieModel> &model, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *writing);
-template float ScoreRule(const Context<lm::ngram::QuantArrayTrieModel> &model, const std::vector<lm::WordIndex> &words, bool prepend_bos, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const Context<lm::ngram::RestProbingModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const Context<lm::ngram::ProbingModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const Context<lm::ngram::TrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const Context<lm::ngram::QuantTrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const Context<lm::ngram::ArrayTrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
+template ScoreRuleRet ScoreRule(const Context<lm::ngram::QuantArrayTrieModel> &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
 
 } // namespace search
