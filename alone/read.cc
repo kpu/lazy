@@ -63,7 +63,7 @@ template <class Model> void ReadEdge(Config &config, search::Context<Model> &con
     // Hard-coded word penalty.  
     config.GetWeights().WordPenalty() * static_cast<float>(terminals) / M_LN10 +
     // Language model feature. 
-    scored.prob * config.GetWeights().LM() * scored.prob +
+    scored.prob * config.GetWeights().LM()+
     static_cast<search::Score>(scored.oov) * config.GetWeights().OOV());
 
   search::Note note;
