@@ -9,8 +9,8 @@
 #include "util/string_piece.hh"
 #include "util/usage.hh"
 
-#include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <iostream>
 #include <memory>
@@ -115,8 +115,9 @@ int main(int argc, char *argv[]) {
     }
     UTIL_THROW_IF(!threads, util::Exception, "Thread count 0");
 
-    util::FilePiece weights(weights_file.c_str());
-    alone::Config config(weights, beam, nbest, &std::cerr);
+    boost::scoped_ptr<util::FilePiece> weights(new util::FilePiece(weights_file.c_str()));
+    alone::Config config(*weights, beam, nbest, &std::cerr);
+    weights.reset();
     alone::Run(graph_dir, lm_file, config, threads);
 
     util::PrintUsage(std::cerr);
