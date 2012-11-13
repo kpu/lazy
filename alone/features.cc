@@ -109,9 +109,13 @@ search::Score WeightsBase::Parse(StringPiece from, Vector &to) {
   return dot;
 }
 
-search::Score WeightsBase::Lookup(StringPiece name) const {
+search::Score WeightsBase::Lookup(StringPiece name, std::ostream *complain) const {
   Map::const_iterator i = str_.find(name);
-  return i == str_.end() ? 0.0 : i->second.weight;
+  if (i == str_.end()) {
+    if (complain) *complain << "Warning: hard-coded feature " << name << " was not given a weight." << std::endl;
+    return 0.0;
+  }
+  return i->second.weight;
 }
 
 ID WeightsBase::Add(StringPiece str, search::Score weight) {
@@ -137,15 +141,15 @@ std::ostream &WeightsBase::Write(std::ostream &to, const Vector &from) const {
   return to;
 }
 
-Weights::Weights(util::FilePiece &f) : 
+Weights::Weights(util::FilePiece &f, std::ostream *complain) : 
   WeightsBase(f),
-  word_penalty_(Lookup("WordPenalty")),
-  search_(Lookup("LanguageModel"), Lookup("OOV")) {}
+  word_penalty_(Lookup("WordPenalty", complain)),
+  search_(Lookup("LanguageModel", complain), Lookup("OOV", complain)) {}
 
-Weights::Weights(StringPiece str) : 
+Weights::Weights(StringPiece str, std::ostream *complain) : 
   WeightsBase(str),
-  word_penalty_(Lookup("WordPenalty")),
-  search_(Lookup("LanguageModel"), Lookup("OOV")) {}
+  word_penalty_(Lookup("WordPenalty", complain)),
+  search_(Lookup("LanguageModel", complain), Lookup("OOV", complain)) {}
 
 } // namespace feature
 } // namespace alone

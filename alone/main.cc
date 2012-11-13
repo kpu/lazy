@@ -34,7 +34,7 @@ template <class Control> void ReadLoop(const std::string &graph_prefix, Control 
 
 template <class Model> void RunWithModelType(const char *graph_prefix, const char *model_file, util::FilePiece &weights_file, unsigned int pop_limit, unsigned int threads) {
   Model model(model_file);
-  Config config(weights_file, pop_limit, 1);
+  Config config(weights_file, pop_limit, 1, &std::cerr);
 
   if (threads > 1) {
 #ifdef WITH_THREADS

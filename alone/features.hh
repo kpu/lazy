@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <iosfwd>
 #include <queue>
 #include <string>
 #include <vector>
@@ -92,7 +93,8 @@ class WeightsBase {
     std::ostream &Write(std::ostream &to, const Vector &from) const;
 
   protected:
-    search::Score Lookup(StringPiece name) const;
+    // Lookup a feature by name and complain if it can't be found.  
+    search::Score Lookup(StringPiece name, std::ostream *complain = NULL) const;
 
   private:
     ID Add(StringPiece str, search::Score weight);
@@ -113,9 +115,11 @@ class WeightsBase {
 
 class Weights : public WeightsBase {
   public:
-    explicit Weights(util::FilePiece &f);
+    // If complain is non-null then write a complaint for any implicitly zero
+    // hard-coded feature.  
+    explicit Weights(util::FilePiece &f, std::ostream *complain = NULL);
 
-    explicit Weights(StringPiece str);
+    explicit Weights(StringPiece str, std::ostream *complain = NULL);
 
     search::Score WordPenalty() const { return word_penalty_; }
 
