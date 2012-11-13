@@ -5,6 +5,8 @@
 #include "search/header.hh"
 #include "util/pool.hh"
 
+#include <math.h>
+
 namespace search {
 
 // A full hypothesis: a score, arity of the rule, a pointer to the decoder's rule (Note), and pointers to non-terminals that were substituted.  
@@ -65,6 +67,8 @@ class SingleBest {
     }
 
     NBestComplete Complete(PartialEdge partial) {
+      if (!partial.Valid()) 
+        return NBestComplete(NULL, lm::ngram::ChartState(), -INFINITY);
       void *place_final = pool_.Allocate(Applied::Size(partial.GetArity()));
       Applied(place_final, partial);
       return NBestComplete(

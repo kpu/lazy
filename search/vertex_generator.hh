@@ -50,7 +50,7 @@ template <class Output> class VertexGenerator {
         AddHypothesis(context_, root, nbest_.Complete(i->second));
       }
       existing_.clear();
-      root.under->SortAndSet(context_, NULL);
+      root.under->SortAndSet(context_);
 #else
       UTIL_THROW(util::Exception, "Upgrade Boost to >= 1.42.0 to use incremental search.");
 #endif

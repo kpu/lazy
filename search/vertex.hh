@@ -9,6 +9,7 @@
 #include <queue>
 #include <vector>
 
+#include <math.h>
 #include <stdint.h>
 
 namespace search {
@@ -41,7 +42,7 @@ class VertexNode {
       bound_ = score;
     }
     
-    void SortAndSet(ContextBase &context, VertexNode **parent_pointer);
+    void SortAndSet(ContextBase &context);
 
     // Should only happen to a root node when the entire vertex is empty.   
     bool Empty() const {
@@ -75,6 +76,8 @@ class VertexNode {
     }
 
   private:
+    void RecursiveSortAndSet(ContextBase &context, VertexNode *&parent);
+
     std::vector<VertexNode*> extend_;
 
     lm::ngram::ChartState state_;
