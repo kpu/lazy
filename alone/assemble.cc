@@ -14,7 +14,7 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
   const search::Applied *child = final.Children();
   Edge::WordVec::const_iterator i(words.begin());
   // Initial case: check for <s>.
-  if (*i && (*i)->first == "<s>") {
+  if (*i && (*i)->first == StringPiece("<s>")) {
     if (++i == words.end()) return o;
   }
   // Middle case.  
@@ -29,7 +29,7 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
 
   // Final case: check for </s>.
   if (*i) {
-    if ((*i)->first != "</s>")
+    if ((*i)->first != StringPiece("</s>"))
       o << (*i)->first;
   } else {
     JustText(o, *child);

@@ -5,15 +5,15 @@
 
 namespace alone {
 
-Vocab::Vocab(const lm::base::Vocabulary &backing) : backing_(backing), end_sentence_(FindOrAdd("</s>")) {}
+Vocab::Vocab(const lm::base::Vocabulary &backing) : backing_(backing) {}
 
-const std::pair<const StringPiece, lm::WordIndex> &Vocab::FindOrAdd(const StringPiece &str) {
-  Map::const_iterator i(map_.find(str));
+const Vocab::Entry &Vocab::FindOrAdd(const StringPiece &str) {
+  Map::const_iterator i= map_.find(str, Hash(), Equals());
   if (i != map_.end()) return *i;
-  char *copied = static_cast<char*>(piece_backing_.Allocate(str.size()));
+  char *copied = static_cast<char*>(piece_backing_.Allocate(str.size() + 1));
   memcpy(copied, str.data(), str.size());
-  std::pair<StringPiece, lm::WordIndex> to_ins(StringPiece(copied, str.size()), backing_.Index(str));
-  return *map_.insert(to_ins).first;
+  copied[str.size()] = 0;
+  return *map_.insert(Entry(copied, backing_.Index(str))).first;
 }
 
 } // namespace alone
