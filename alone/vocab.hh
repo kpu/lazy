@@ -2,6 +2,7 @@
 #define ALONE_VOCAB__
 
 #include "lm/word_index.hh"
+#include "util/pool.hh"
 #include "util/string_piece.hh"
 
 #include <boost/functional/hash/hash.hpp>
@@ -17,17 +18,21 @@ class Vocab {
   public:
     explicit Vocab(const lm::base::Vocabulary &backing);
 
-    const std::pair<const std::string, lm::WordIndex> &FindOrAdd(const StringPiece &str);
+    typedef std::pair<const StringPiece, lm::WordIndex> Entry;
 
-    const std::pair<const std::string, lm::WordIndex> &EndSentence() const { return end_sentence_; }
+    const Entry &FindOrAdd(const StringPiece &str);
+
+    const Entry &EndSentence() const { return end_sentence_; }
 
   private:
-    typedef boost::unordered_map<std::string, lm::WordIndex> Map;
+    util::Pool piece_backing_;
+
+    typedef boost::unordered_map<StringPiece, lm::WordIndex> Map;
     Map map_;
 
     const lm::base::Vocabulary &backing_;
 
-    const std::pair<const std::string, lm::WordIndex> &end_sentence_;
+    const std::pair<const StringPiece, lm::WordIndex> &end_sentence_;
 };
 
 } // namespace alone

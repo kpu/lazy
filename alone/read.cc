@@ -43,7 +43,7 @@ template <class Model> void ReadEdge(feature::Computer &features, Model &model, 
       }
       below_score += children.back().Bound();
     } else {
-      const std::pair<const std::string, lm::WordIndex> &found = graph.MutableVocab().FindOrAdd(got);
+      const Vocab::Entry &found = graph.MutableVocab().FindOrAdd(got);
       alone_edge.AppendWord(&found);
       words.push_back(found.second);
       ++terminals;
