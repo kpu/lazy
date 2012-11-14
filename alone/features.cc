@@ -1,10 +1,12 @@
 #include "alone/features.hh"
 
+#include "util/double-conversion/double-conversion.h"
 #include "util/file_piece.hh"
 #include "util/tokenize_piece.hh"
 
 #include <limits>
 
+#include <math.h>
 #include <string.h>
 
 namespace alone {
@@ -41,26 +43,25 @@ struct ParseRet {
   search::Score score;
 };
 
+double_conversion::StringToDoubleConverter converter(double_conversion::StringToDoubleConverter::NO_FLAGS, NAN, NAN, "inf", "nan");
+
 // Parser allows = or space between feature name and value.  
 ParseRet RawParse(util::TokenIter<util::AnyCharacter, true> &spaces) {
   ParseRet ret;
-  util::TokenIter<util::SingleCharacter> equals(*spaces, '=');
-
-  assert(equals); // spaces skipped empty.
-  ret.name = *equals;
+  StringPiece::size_type s = spaces->find('=');
   StringPiece value;
-  if (++equals) {
-    value = *equals;
-    UTIL_THROW_IF(++equals, WeightParseException, "Too many equals in " << *spaces);
-  } else {
+  if (s == StringPiece::npos) {
+    ret.name = *spaces;
     value = *++spaces;
+  } else {
+    ret.name = StringPiece(spaces->data(), s);
+    value = StringPiece(spaces->data() + s + 1, spaces->size() - s - 1);
   }
   ++spaces;
 
-  char *end;
-  // Assumes proper termination :-(
-  ret.score = std::strtod(value.data(), &end);
-  UTIL_THROW_IF(end != value.data() + value.size(), WeightParseException, "Failed to parse weight" << value);
+  int processed;
+  ret.score = converter.StringToFloat(value.data(), value.length(), &processed);
+  UTIL_THROW_IF(isnan(ret.score), WeightParseException, "Failed to parse weight" << value);
   return ret;
 }
 
