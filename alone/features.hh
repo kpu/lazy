@@ -20,8 +20,6 @@
 
 #include <stdint.h>
 
-namespace util { class FilePiece; }
-
 namespace alone {
 namespace feature {
 
@@ -83,19 +81,19 @@ class WeightParseException : public util::Exception {
 // for parsing.  
 class Weights : boost::noncopyable {
   public:
-    // Discriminated constructors.  
-    struct FromFile {};
-    Weights(FromFile, const char *name);
-
-    struct FromString {};
-    Weights(FromString, StringPiece str);
+    Weights();
 
     // Makes a partly shallow copy for use by threads.  
     // This does copy a lot though; if we're going to have a lot of features,
     // then this should be replaced with locking or freezing the feature
     // vector to make it immutable.  
+    // Discriminated from copy constructor to make sure user is aware.  
     struct ForThread {};
     Weights(ForThread, const Weights &copy_from);
+
+    // Initialization: add weights from these sources.
+    void AppendFromFile(const char *name);
+    void AppendFromString(StringPiece str);
 
     // Parse a feature vector, returning the dot product with weights.
     search::Score Parse(StringPiece from, Vector &to);

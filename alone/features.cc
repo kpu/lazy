@@ -66,23 +66,18 @@ ParseRet RawParse(util::TokenIter<util::AnyCharacter, true> &spaces) {
 
 } // namespace
 
-Weights::Weights(Weights::FromFile, const char *name) {
+Weights::Weights() {}
+
+void Weights::AppendFromFile(const char *name) {
   util::FilePiece f(name);
-  StringPiece line;
-  while (true) {
-    try {
-      line = f.ReadLine();
-    } catch (const util::EndOfFileException &e) {
-      break;
+  try {
+    while (true) {
+      AppendFromString(f.ReadLine());
     }
-    for (util::TokenIter<util::AnyCharacter, true> spaces(line, " \n\t"); spaces;) {
-      ParseRet res(RawParse(spaces));
-      Add(res.name, res.score);
-    }
-  }
+  } catch (const util::EndOfFileException &e) {}
 }
 
-Weights::Weights(Weights::FromString, StringPiece from) {
+void Weights::AppendFromString(StringPiece from) {
   for (util::TokenIter<util::AnyCharacter, true> spaces(from, " \n\t"); spaces;) {
     ParseRet res(RawParse(spaces));
     Add(res.name, res.score);
@@ -132,7 +127,7 @@ ID Weights::Add(StringPiece str, search::Score weight) {
   to_ins.second.id = static_cast<ID>(id_.size());
   to_ins.second.weight = weight;
   std::pair<Map::iterator, bool> ret(str_.insert(to_ins));
-  UTIL_THROW_IF(!ret.second, WeightParseException, "Duplicate identifier " << str);
+  UTIL_THROW_IF(!ret.second, WeightParseException, "Duplicate weight name " << str);
   id_.push_back(to_ins.first);
   return to_ins.second.id;
 }

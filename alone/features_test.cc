@@ -31,7 +31,8 @@ void Append(std::vector<Test::Entry> *to, ID id, search::Score score) {
 }
 
 BOOST_AUTO_TEST_CASE(parse) {
-  Weights w(Weights::FromString(), "rarity=0 phrase-SGT=0 phrase-TGS=9.45117 lhsGrhs=0 lexical-SGT=2.33833 lexical-TGS=-28.3317 abstract?=0 LanguageModel=3 lexical?=1 glue?=5 OOV 1.7 foo 6.3");
+  Weights w;
+  w.AppendFromString("rarity=0 phrase-SGT=0 phrase-TGS=9.45117 lhsGrhs=0 lexical-SGT=2.33833 lexical-TGS=-28.3317 abstract?=0 LanguageModel=3 lexical?=1 glue?=5 OOV 1.7 foo 6.3");
   BOOST_CHECK_CLOSE(3.0, w.Lookup("LanguageModel"), 0.001);
   BOOST_CHECK_CLOSE(1.7, w.Lookup("OOV"), 0.001);
   Vector out;

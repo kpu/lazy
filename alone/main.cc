@@ -83,7 +83,8 @@ int main(int argc, char *argv[]) {
   try {
     namespace po = boost::program_options;
     po::options_description options("Decoding options");
-    std::string graph_dir, lm_file, weights_file;
+    std::string graph_dir, lm_file;
+    std::vector<std::string> weights_files, weights_strings;
     unsigned beam, nbest;
     unsigned threads =
 #ifdef WITH_THREADS
@@ -101,7 +102,8 @@ int main(int argc, char *argv[]) {
     options.add_options()
       ("graph_dir,i", po::value<std::string>(&graph_dir)->required(), "Directory in which input hypergraphs live.  The directory should contain one file per sentence, numbered consecutively starting with 0.")
       ("lm,l", po::value<std::string>(&lm_file)->required(), "Language model file to be loaded with KenLM.  Binary is preferred, but ARPA is also accepted.")
-      ("weights,w", po::value<std::string>(&weights_file)->required(), weights_help.c_str())
+      ("weights,w", po::value<std::vector<std::string> >(&weights_files)->multitoken()->composing(), weights_help.c_str())
+      ("weight,W", po::value<std::vector<std::string> >(&weights_strings)->multitoken()->composing(), "Specify weights on the command line i.e. -W WordPenalty=-1.0 Foo=3")
       ("beam,K", po::value<unsigned>(&beam)->required(), "Beam size aka pop limit")
       ("k_best,k", po::value<unsigned>(&nbest)->default_value(1), "k-best list size")
       ("threads,t", po::value<unsigned>(&threads)->default_value(threads), "Number of threads to use")
@@ -122,7 +124,13 @@ int main(int argc, char *argv[]) {
     }
     UTIL_THROW_IF(!threads, util::Exception, "Thread count 0");
 
-    feature::Weights weights(feature::Weights::FromFile(), weights_file.c_str());
+    feature::Weights weights;
+    for (std::vector<std::string>::const_iterator i(weights_files.begin()); i != weights_files.end(); ++i) {
+      weights.AppendFromFile(i->c_str());
+    }
+    for (std::vector<std::string>::const_iterator i(weights_strings.begin()); i != weights_strings.end(); ++i) {
+      weights.AppendFromString(*i);
+    }
     feature::Computer::CheckForWeights(weights);
     search::Config config(weights.Lookup(feature::Computer::kLanguageModelName), beam, search::NBestConfig(nbest));
     Run(graph_dir, lm_file, config, weights, threads);
