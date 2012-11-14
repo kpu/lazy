@@ -17,7 +17,7 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
   if (*i) {
     if ((*i)->first != "<s>")
       o << (*i)->first << ' ';
-    if (++i == words.end()) return;
+    if (++i == words.end()) return o;
   }
   // Middle case.  
   for (; i != words.end() - 1; ++i) {
