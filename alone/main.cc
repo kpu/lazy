@@ -79,6 +79,7 @@ void Run(StringPiece graph_dir, const std::string &lm_name, const search::Config
 } // namespace alone
 
 int main(int argc, char *argv[]) {
+  using namespace alone;
   try {
     namespace po = boost::program_options;
     po::options_description options("Decoding options");
@@ -90,10 +91,17 @@ int main(int argc, char *argv[]) {
 #else
     1;
 #endif
+    std::string weights_help("Weights file.  Format is whitespace-delimited pairs of feature_name weight.  Put = or whitespace between the feature name and the weight.  The hard-coded features are ");
+    weights_help += feature::Computer::kLanguageModelName;
+    weights_help += ", ";
+    weights_help += feature::Computer::kOOVName;
+    weights_help += ", and ";
+    weights_help += feature::Computer::kWordPenaltyName;
+    weights_help += ".";
     options.add_options()
       ("graph_dir,i", po::value<std::string>(&graph_dir)->required(), "Directory in which input hypergraphs live.  The directory should contain one file per sentence, numbered consecutively starting with 0.")
       ("lm,l", po::value<std::string>(&lm_file)->required(), "Language model file to be loaded with KenLM.  Binary is preferred, but ARPA is also accepted.")
-      ("weights,w", po::value<std::string>(&weights_file)->required(), "Weights file.  Format is whitespace-delimited pairs of feature_name weight.  Put = or whitespace between the feature name and the weight.  The hard-coded features are LanguageModel, OOV, and WordPenalty.")
+      ("weights,w", po::value<std::string>(&weights_file)->required(), weights_help.c_str())
       ("beam,K", po::value<unsigned>(&beam)->required(), "Beam size aka pop limit")
       ("k_best,k", po::value<unsigned>(&nbest)->default_value(1), "k-best list size")
       ("threads,t", po::value<unsigned>(&threads)->default_value(threads), "Number of threads to use")
@@ -114,7 +122,6 @@ int main(int argc, char *argv[]) {
     }
     UTIL_THROW_IF(!threads, util::Exception, "Thread count 0");
 
-    using namespace alone;
     feature::Weights weights(feature::Weights::FromFile(), weights_file.c_str());
     feature::Computer::CheckForWeights(weights);
     search::Config config(weights.Lookup(feature::Computer::kLanguageModelName), beam, search::NBestConfig(nbest));
