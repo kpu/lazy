@@ -53,7 +53,7 @@ template <class Model> void ReadEdge(feature::Computer &features, Model &model, 
   search::PartialEdge edge(generator.AllocateEdge(children.size()));
   std::copy(children.begin(), children.end(), edge.NT());
 
-  edge.SetScore(features.Read(model, words, edge.Between(), from.ReadLine(), alone_edge.InitFeatures()));
+  edge.SetScore(below_score + features.Read(model, words, edge.Between(), from.ReadLine(), alone_edge.InitFeatures()));
 
   search::Note note;
   note.vp = &alone_edge;
