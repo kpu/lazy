@@ -14,24 +14,23 @@ template <class Model> ScoreRuleRet ScoreRule(const Model &model, const std::vec
   ret.prob = 0.0;
   ret.oov = 0;
   const lm::WordIndex oov = model.GetVocabulary().NotFound(), bos = model.GetVocabulary().BeginSentence();
-  for (std::vector<lm::WordIndex>::const_iterator word = words.begin(); ; ++word) {
-    lm::ngram::RuleScore<Model> scorer(model, *(writing++));
-    // TODO: optimize
-    if (*word == bos) {
-      scorer.BeginSentence();
-      ++word;
-    }
-    for (; ; ++word) {
-      if (word == words.end()) {
-        ret.prob += scorer.Finish();
-        return ret;
-      }
-      if (*word == kNonTerminal) break;
+  lm::ngram::RuleScore<Model> scorer(model, *(writing++));
+  std::vector<lm::WordIndex>::const_iterator word = words.begin();
+  if (word != words.end() && *word == bos) {
+    scorer.BeginSentence();
+    ++word;
+  }
+  for (; word != words.end(); ++word) {
+    if (*word == kNonTerminal) {
+      ret.prob += scorer.Finish();
+      scorer.Reset(*(writing++));
+    } else {
       if (*word == oov) ++ret.oov;
       scorer.Terminal(*word);
     }
-    ret.prob += scorer.Finish();
   }
+  ret.prob += scorer.Finish();
+  return ret;
 }
 
 template ScoreRuleRet ScoreRule(const lm::ngram::RestProbingModel &model, const std::vector<lm::WordIndex> &words, lm::ngram::ChartState *writing);
