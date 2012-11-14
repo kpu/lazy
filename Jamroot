@@ -4,6 +4,11 @@ include $(TOP)/sanity.jam ;
 boost 104200 ;
 external-lib z ;
 
+if [ option.get "with-tcmalloc" : : "yes" ] {
+  external-lib tcmalloc ;
+  requirements += <library>tcmalloc ;
+}
+
 project : requirements $(requirements) <threading>multi:<define>WITH_THREADS <library>boost_system <define>HAVE_BOOST ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
