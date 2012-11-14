@@ -18,6 +18,10 @@ namespace feature {
 class Computer {
   public:
     static const char *kLanguageModelName;
+    static const char *kOOVName;
+    static const char *kWordPenaltyName;
+
+    static void CheckForWeights(const Weights &in);
 
     explicit Computer(const Weights &process_weights);
 

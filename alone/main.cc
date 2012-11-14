@@ -116,6 +116,7 @@ int main(int argc, char *argv[]) {
 
     using namespace alone;
     feature::Weights weights(feature::Weights::FromFile(), weights_file.c_str());
+    feature::Computer::CheckForWeights(weights);
     search::Config config(weights.Lookup(feature::Computer::kLanguageModelName), beam, search::NBestConfig(nbest));
     Run(graph_dir, lm_file, config, weights, threads);
 
