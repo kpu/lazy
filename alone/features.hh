@@ -5,6 +5,7 @@
 
 #include "search/types.hh"
 #include "util/exception.hh"
+#include "util/murmur_hash.hh"
 #include "util/pool.hh"
 #include "util/string_piece.hh"
 
@@ -119,7 +120,13 @@ class Weights : boost::noncopyable {
       search::Score weight;
     };
 
-    typedef boost::unordered_map<StringPiece, Value> Map;
+    struct HashMurmur : public std::unary_function<const StringPiece &, std::size_t> {
+      std::size_t operator()(const StringPiece &str) const {
+        return util::MurmurHashNative(str.data(), str.size());
+      }
+    };
+
+    typedef boost::unordered_map<StringPiece, Value, HashMurmur> Map;
     Map str_;
 };
 
