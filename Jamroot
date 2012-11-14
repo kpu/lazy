@@ -4,9 +4,9 @@ include $(TOP)/sanity.jam ;
 boost 104200 ;
 external-lib z ;
 
-if [ option.get "with-tcmalloc" : : "yes" ] {
-  external-lib tcmalloc ;
-  requirements += <library>tcmalloc ;
+if ! [ option.get "without-tcmalloc" : : "yes" ] && [ test_library "tcmalloc_minimal" ] {
+  external-lib tcmalloc_minimal ;
+  requirements += <threading>multi:<library>tcmalloc_minimal ;
 }
 
 project : requirements $(requirements) <threading>multi:<define>WITH_THREADS <library>boost_system <define>HAVE_BOOST ;
