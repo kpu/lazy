@@ -54,6 +54,7 @@ template <class Model> void Decode(search::Context<Model> &context, feature::Com
       WriteNBest(out, sentence_id, as_vec, features, context.LanguageModel());
     }
   } else {
+    if (!graph.VertexSize()) return;
     search::NBest n_best(context.GetConfig().GetNBest());
     WriteNBest(out, sentence_id, n_best.Extract(InnerDecode(features, context, graph, *in, n_best)), features, context.LanguageModel());
   }
