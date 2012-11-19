@@ -15,6 +15,8 @@
 namespace alone {
 namespace feature {
 
+void AssembleFeatures(const search::Applied final, std::vector<lm::WordIndex> &words, Vector &stored);
+
 class Computer {
   public:
     static const char *kLanguageModelName;
@@ -33,7 +35,7 @@ class Computer {
     template <class Model> std::ostream &Write(std::ostream &o, search::Applied final, const Model &model) const {
       std::vector<lm::WordIndex> words;
       Vector stored;
-      ComputeForFeatures(final, words, stored);
+      AssembleFeatures(final, words, stored);
       weights_.Write(o, stored);
       lm::ngram::ChartState ignored;
       Breakdown down(model, words, &ignored);

@@ -39,29 +39,6 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
 }
 
 namespace {
-void RecurseFeatures(const search::Applied final, std::vector<lm::WordIndex> &words, feature::Adder &adder) {
-  const Edge &edge = *static_cast<const Edge*>(final.GetNote().vp);
-  adder.Add(edge.Features());
-  const Edge::WordVec &vec = edge.Words();
-  const search::Applied *child = final.Children();
-  for (Edge::WordVec::const_iterator i(vec.begin()); i != vec.end(); ++i) {
-    if (*i) {
-      words.push_back((*i)->second);
-    } else {
-      RecurseFeatures(*child++, words, adder);
-    }
-  }
-}
-} // namespace
-
-void ComputeForFeatures(const search::Applied final, std::vector<lm::WordIndex> &words, feature::Vector &vec) {
-  assert(final.Valid());
-  feature::Adder adder;
-  RecurseFeatures(final, words, adder);
-  adder.Finish(vec);
-}
-
-namespace {
 
 void MakeIndent(std::ostream &o, const char *indent_str, unsigned int level) {
   for (unsigned int i = 0; i < level; ++i)
