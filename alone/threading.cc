@@ -1,6 +1,6 @@
 #include "alone/threading.hh"
 
-#include "alone/assemble.hh"
+#include "alone/output.hh"
 #include "alone/graph.hh"
 #include "alone/read.hh"
 #include "alone/vocab.hh"
@@ -40,33 +40,22 @@ template <class Model> void Decode(search::Context<Model> &context, feature::Com
   boost::scoped_ptr<util::FilePiece> in(in_ptr);
   Graph graph(context.LanguageModel().GetVocabulary());
   ReadGraphCounts(*in, graph);
-  if (!graph.VertexSize()) {
-    out << sentence_id << "NO PATH FOUND" << '\n';
-    return;
-  }
-
   if (context.GetConfig().GetNBest().size == 1) {
+    if (!graph.VertexSize()) {
+      out << sentence_id << '\n';
+      return;
+    }
     search::SingleBest single_best;
     search::Applied best(InnerDecode(features, context, graph, *in, single_best));
-    out << sentence_id << " ||| ";
     if (!best.Valid()) {
-      out << "NO PATH FOUND" << '\n';
+      out << sentence_id << '\n';
     } else {
-      JustText(out, best);
-      out << " ||| ";
-      features.Write(out, best, context.LanguageModel());
-      out << " ||| " << best.GetScore() << '\n';
+      std::vector<search::Applied> as_vec(1, best);
+      WriteNBest(out, sentence_id, as_vec, features, context.LanguageModel());
     }
   } else {
     search::NBest n_best(context.GetConfig().GetNBest());
-    const std::vector<search::Applied> &applied = n_best.Extract(InnerDecode(features, context, graph, *in, n_best));
-    for (std::vector<search::Applied>::const_iterator i = applied.begin(); i != applied.end(); ++i) {
-      out << sentence_id << " ||| ";
-      JustText(out, *i);
-      out << " ||| ";
-      features.Write(out, *i, context.LanguageModel());
-      out << " ||| " << i->GetScore() << '\n';
-    }
+    WriteNBest(out, sentence_id, n_best.Extract(InnerDecode(features, context, graph, *in, n_best)), features, context.LanguageModel());
   }
 }
 } // namespace

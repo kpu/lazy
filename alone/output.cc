@@ -1,4 +1,4 @@
-#include "alone/assemble.hh"
+#include "alone/output.hh"
 
 #include "alone/edge.hh"
 #include "alone/features.hh"
@@ -8,7 +8,7 @@
 
 namespace alone {
 
-std::ostream &JustText(std::ostream &o, const search::Applied final) {
+std::ostream &TextOutput(std::ostream &o, const search::Applied final) {
   const Edge::WordVec &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
   if (words.empty()) return o;
   const search::Applied *child = final.Children();
@@ -22,7 +22,7 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
     if (*i) {
       o << (*i)->first << ' ';
     } else {
-      JustText(o, *child) << ' ';
+      TextOutput(o, *child) << ' ';
       ++child;
     }
   }
@@ -32,7 +32,7 @@ std::ostream &JustText(std::ostream &o, const search::Applied final) {
     if ((*i)->first != StringPiece("</s>"))
       o << (*i)->first;
   } else {
-    JustText(o, *child);
+    TextOutput(o, *child);
   }
 
   return o;
@@ -45,7 +45,7 @@ void MakeIndent(std::ostream &o, const char *indent_str, unsigned int level) {
     o << indent_str;
 }
 
-void DetailedAppliedInternal(std::ostream &o, const search::Applied final, const char *indent_str, unsigned int indent) {
+void DetailedOutputInternal(std::ostream &o, const search::Applied final, const char *indent_str, unsigned int indent) {
   o << "(\n";
   MakeIndent(o, indent_str, indent);
   const Edge::WordVec &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
@@ -62,7 +62,7 @@ void DetailedAppliedInternal(std::ostream &o, const search::Applied final, const
     } else {
       // One extra indent from the line we're currently on.  
       o << indent_str;
-      DetailedAppliedInternal(o, *child, indent_str, indent + 1);
+      DetailedOutputInternal(o, *child, indent_str, indent + 1);
       for (unsigned int i = 0; i < indent; ++i) o << indent_str;
       ++child;
     }
@@ -71,8 +71,9 @@ void DetailedAppliedInternal(std::ostream &o, const search::Applied final, const
 }
 } // namespace
 
-void DetailedApplied(std::ostream &o, const search::Applied final, const char *indent_str) {
-  DetailedAppliedInternal(o, final, indent_str, 0);
+std::ostream &DetailedOutput(std::ostream &o, const search::Applied final, const char *indent_str) {
+  DetailedOutputInternal(o, final, indent_str, 0);
+  return o;
 }
 
 } // namespace alone

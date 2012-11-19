@@ -2,7 +2,6 @@
 #ifndef ALONE_FEATURE_COMPUTER__
 #define ALONE_FEATURE_COMPUTER__
 
-#include "alone/assemble.hh"
 #include "alone/features.hh"
 #include "lm/word_index.hh"
 #include "search/applied.hh"

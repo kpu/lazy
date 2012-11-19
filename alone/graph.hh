@@ -71,6 +71,10 @@ class Graph : boost::noncopyable {
       return edges_.New();
     }
 
+    const Edge *BaseEdge() {
+      return &edges_[0];
+    }
+
     Vocab &MutableVocab() { return vocab_; }
 
   private:
