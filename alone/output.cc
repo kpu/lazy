@@ -45,10 +45,11 @@ void MakeIndent(std::ostream &o, const char *indent_str, unsigned int level) {
     o << indent_str;
 }
 
-void DetailedOutputInternal(std::ostream &o, const search::Applied final, const char *indent_str, unsigned int indent) {
-  o << "(\n";
+void DerivationOutputInternal(std::ostream &o, const search::Applied final, const Edge *base_edge, const char *indent_str, unsigned int indent) {
+  const Edge *edge = static_cast<const Edge*>(final.GetNote().vp);
+  o << "(" << (edge - base_edge) << "\n";
   MakeIndent(o, indent_str, indent);
-  const Edge::WordVec &words = static_cast<const Edge*>(final.GetNote().vp)->Words();
+  const Edge::WordVec &words = edge->Words();
   const search::Applied *child = final.Children();
   for (Edge::WordVec::const_iterator i(words.begin()); i != words.end(); ++i) {
     if (*i) {
@@ -62,7 +63,7 @@ void DetailedOutputInternal(std::ostream &o, const search::Applied final, const 
     } else {
       // One extra indent from the line we're currently on.  
       o << indent_str;
-      DetailedOutputInternal(o, *child, indent_str, indent + 1);
+      DerivationOutputInternal(o, *child, base_edge, indent_str, indent + 1);
       for (unsigned int i = 0; i < indent; ++i) o << indent_str;
       ++child;
     }
@@ -71,8 +72,8 @@ void DetailedOutputInternal(std::ostream &o, const search::Applied final, const 
 }
 } // namespace
 
-std::ostream &DetailedOutput(std::ostream &o, const search::Applied final, const char *indent_str) {
-  DetailedOutputInternal(o, final, indent_str, 0);
+std::ostream &DerivationOutput(std::ostream &o, const search::Applied final, const Edge *base_edge, const char *indent_str) {
+  DerivationOutputInternal(o, final, base_edge, indent_str, 0);
   return o;
 }
 

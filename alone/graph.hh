@@ -71,7 +71,7 @@ class Graph : boost::noncopyable {
       return edges_.New();
     }
 
-    const Edge *BaseEdge() {
+    const Edge *EdgeBase() {
       return &edges_[0];
     }
 
