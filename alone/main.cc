@@ -106,8 +106,7 @@ int main(int argc, char *argv[]) {
       ("weight,W", po::value<std::vector<std::string> >(&weights_strings)->multitoken()->composing(), "Specify weights on the command line i.e. -W WordPenalty=-1.0 Foo=3")
       ("beam,K", po::value<unsigned>(&beam)->required(), "Beam size aka pop limit")
       ("k_best,k", po::value<unsigned>(&nbest)->default_value(1), "k-best list size")
-      ("threads,t", po::value<unsigned>(&threads)->default_value(threads), "Number of threads to use")
-      ("help,h", "Show help message");
+      ("threads,t", po::value<unsigned>(&threads)->default_value(threads), "Number of threads to use");
 
     if (argc == 1) {
       std::cerr << options << std::endl;
@@ -118,10 +117,6 @@ int main(int argc, char *argv[]) {
     po::store(po::parse_command_line(argc, argv, options), vm);
     po::notify(vm);
 
-    if (vm.count("help")) {
-      std::cerr << options << std::endl;
-      return 1;
-    }
     UTIL_THROW_IF(!threads, util::Exception, "Thread count 0");
 
     feature::Weights weights;
