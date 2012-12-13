@@ -29,7 +29,7 @@ times -1/ln(10) for odd historical reasons dating back to Hiero.  The feature
 definitions are compatible with Moses and cdec.  
 
 Hypergraphs are stored in a directory with one file per sentence.  The files
-are named starting with 0.  The first line of each file is is
+are named starting with 0.  The first line of each file is
 
 total_vertex_count total_edge_count
 
