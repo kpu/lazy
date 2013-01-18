@@ -1,7 +1,8 @@
 path-constant TOP : . ;
-include $(TOP)/sanity.jam ;
+include $(TOP)/jam-files/sanity.jam ;
 
 boost 104200 ;
+
 external-lib z ;
 
 if ! [ option.get "without-tcmalloc" : : "yes" ] && [ test_library "tcmalloc_minimal" ] {
