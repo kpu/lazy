@@ -5,14 +5,8 @@ Moses (-search-algorithm 5) and cdec (--incremental_search lm).
 COMPILING
 Requires Boost >= 1.42.  Tested on linux.  
 
-Compile with "bjam".  
-
-If you do not have bjam, there is a copy in the root of a Moses checkout e.g.
-pushd ~
-git clone https://github.com/moses-smt/mosesdecoder.git
-popd
-~/mosesdecoder/bjam
-This code does not depend on Moses, just the bjam build system.  
+Compile with 
+./bjam
 
 USAGE
 After compiling, the decoder is bin/decode.  Run without an argument for help.
