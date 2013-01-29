@@ -155,9 +155,16 @@ class Vertex {
     }
 
   private:
-    template <class Output> friend class VertexGenerator;
+    friend class TreeMaker;
+
     template <class Output> friend class RootVertexGenerator;
     VertexNode root_;
+
+    // These will not be set for the root vertex.
+    // Branches only on left state.
+    VertexNode left_;
+    // Branches only on right state.
+    VertexNode right_;
 };
 
 } // namespace search

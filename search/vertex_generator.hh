@@ -31,14 +31,25 @@ struct Trie {
 
 void AddHypothesis(ContextBase &context, Trie &root, const NBestComplete &end);
 
+class TreeMaker {
+  public:
+    explicit TreeMaker(ContextBase &context, Vertex &gen);
+
+    void AddHypothesis(const NBestComplete &end);
+
+    void Finish();
+
+  private:
+    ContextBase &context_;
+    Trie alternate_, left_, right_;
+};
+
 #endif // BOOST_VERSION
 
 // Output makes the single-best or n-best list.   
 template <class Output> class VertexGenerator {
   public:
-    VertexGenerator(ContextBase &context, Vertex &gen, Output &nbest) : context_(context), gen_(gen), nbest_(nbest) {
-      gen.root_.InitRoot();
-    }
+    VertexGenerator(ContextBase &context, Vertex &gen, Output &nbest) : context_(context), gen_(gen), nbest_(nbest) {}
 
     void NewHypothesis(PartialEdge partial) {
       nbest_.Add(existing_[hash_value(partial.CompletedState())], partial);
@@ -46,13 +57,12 @@ template <class Output> class VertexGenerator {
 
     void FinishedSearch() {
 #if BOOST_VERSION > 104200
-      Trie root;
-      root.under = &gen_.root_;
+      TreeMaker maker(context_, gen_);
       for (typename Existing::iterator i(existing_.begin()); i != existing_.end(); ++i) {
-        AddHypothesis(context_, root, nbest_.Complete(i->second));
+        maker.AddHypothesis(nbest_.Complete(i->second));
       }
       existing_.clear();
-      root.under->SortAndSet(context_);
+      maker.Finish();
 #else
       UTIL_THROW(util::Exception, "Upgrade Boost to >= 1.42.0 to use incremental search.");
 #endif
