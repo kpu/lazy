@@ -139,10 +139,21 @@ class Vertex {
   public:
     Vertex() {}
 
-    PartialVertex RootPartial() const { return PartialVertex(root_); }
+    PartialVertex RootFirst() const { return PartialVertex(right_); }
+    PartialVertex RootAlternate() const { return PartialVertex(root_); }
+    PartialVertex RootLast() const { return PartialVertex(left_); }
+
+    bool Empty() const {
+      return root_.Empty();
+    }
+
+    Score Bound() const {
+      return root_.Bound();
+    }
 
     const History BestChild() const {
-      PartialVertex top(RootPartial());
+      // left_ and right_ are not set at the root.
+      PartialVertex top(RootAlternate());
       if (top.Empty()) {
         return History();
       } else {

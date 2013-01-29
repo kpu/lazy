@@ -24,7 +24,7 @@ template <class Model> void ReadEdge(feature::Computer &features, Model &model, 
 
   StringPiece got;
   std::vector<lm::WordIndex> words;
-  std::vector<search::PartialVertex> children;
+  std::vector<const search::Vertex*> children;
   unsigned long int terminals = 0;
   float below_score = 0.0;
   while ("|||" != (got = from.ReadDelimited())) {
@@ -36,12 +36,12 @@ template <class Model> void ReadEdge(feature::Computer &features, Model &model, 
       UTIL_THROW_IF(child >= graph.VertexSize(), FormatException, "Reference to vertex " << child << " but we only have " << graph.VertexSize() << " vertices.  Is the file in bottom-up format?");
       alone_edge.AppendWord(NULL);
       words.push_back(lm::kMaxWordIndex);
-      children.push_back(graph.GetVertex(child).RootPartial());
-      if (children.back().Empty()) {
+      children.push_back(&graph.GetVertex(child));
+      if (children.back()->Empty()) {
         from.ReadLine();
         return;
       }
-      below_score += children.back().Bound();
+      below_score += children.back()->Bound();
     } else {
       const Vocab::Entry &found = graph.MutableVocab().FindOrAdd(got);
       alone_edge.AppendWord(&found);
@@ -50,8 +50,20 @@ template <class Model> void ReadEdge(feature::Computer &features, Model &model, 
     }
   }
 
+  if (words.empty()) return;
   search::PartialEdge edge(generator.AllocateEdge(children.size()));
-  std::copy(children.begin(), children.end(), edge.NT());
+  std::vector<const search::Vertex*>::const_iterator i = children.begin();
+  search::PartialVertex *nt = edge.NT();
+  if (words.front() == lm::kMaxWordIndex) {
+    *(nt++) = (*i)->RootFirst();
+    ++i;
+  }
+  for (; i != children.end(); ++i, ++nt) {
+    *nt = (*i)->RootAlternate();
+  }
+  if (children.size() > 1 && words.back() == lm::kMaxWordIndex) {
+    edge.NT()[children.size() - 1] = children.back()->RootLast();
+  }
 
   edge.SetScore(below_score + features.Read(model, words, edge.Between(), from.ReadLine(), alone_edge.InitFeatures()));
 
