@@ -5,6 +5,8 @@
 #include "search/types.hh"
 #include "search/vertex.hh"
 
+#include "util/exception.hh"
+
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
 
