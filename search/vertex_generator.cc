@@ -81,10 +81,10 @@ void TreeMaker::AddHypothesis(const NBestComplete &end) {
   // Left words only.
   node = &left_;
   for (left = 0; left < state.left.length; ++left) {
-    FindOrInsert(context_, node, state.left.pointers[left], state, left, false, 0, false);
+    FindOrInsert(context_, node, state.left.pointers[left], state, left + 1, false, 0, false);
   }
   if (state.left.full) {
-    // One node for completion.
+    // One node for completion.  TODO: don't do if at order.
     FindOrInsert(context_, node, kCompleteAdd - 1, state, state.left.length, true, 0, false);
     // One node for all of right state.  TODO don't use hash table for this.
     FindOrInsert(context_, node, hash_value(state.right), state, state.left.length, true, state.right.length, true);
@@ -97,7 +97,7 @@ void TreeMaker::AddHypothesis(const NBestComplete &end) {
   // Right words only.
   node = &right_;
   for (right = 0; right < state.right.length; ++right) {
-    FindOrInsert(context_, node, state.right.words[right], state, 0, false, right, false);
+    FindOrInsert(context_, node, state.right.words[right], state, 0, false, right + 1, false);
   }
   if (state.left.full) {
     // One node for completion.
