@@ -84,13 +84,13 @@ void TreeMaker::AddHypothesis(const NBestComplete &end) {
     FindOrInsert(context_, node, state.left.pointers[left], state, left, false, 0, false);
   }
   if (state.left.full) {
-    // Jump straight to the conclusion since left determines right anyway.
-    FindOrInsert(context_, node, kCompleteAdd - 1, state, state.left.length, true, state.right.length, true);
-  } else {
     // One node for completion.
-    FindOrInsert(context_, node, kCompleteAdd, state, state.left.length, true, 0, false);
+    FindOrInsert(context_, node, kCompleteAdd - 1, state, state.left.length, true, 0, false);
     // One node for all of right state.  TODO don't use hash table for this.
     FindOrInsert(context_, node, hash_value(state.right), state, state.left.length, true, state.right.length, true);
+  } else {
+    // Jump straight to the conclusion since left determines right anyway.
+    FindOrInsert(context_, node, kCompleteAdd, state, state.left.length, true, state.right.length, true);
   }
   node->under->SetEnd(end.history, end.score);
 
@@ -100,13 +100,13 @@ void TreeMaker::AddHypothesis(const NBestComplete &end) {
     FindOrInsert(context_, node, state.right.words[right], state, 0, false, right, false);
   }
   if (state.left.full) {
-    // Jump straight to the conclusion.
-    FindOrInsert(context_, node, kCompleteAdd - 1, state, state.left.length, true, state.right.length, true);
-  } else {
     // One node for completion.
-    FindOrInsert(context_, node, kCompleteAdd, state, 0, false, state.right.length, true);
+    FindOrInsert(context_, node, kCompleteAdd - 1, state, 0, false, state.right.length, true);
     // One node for all of right state.  TODO don't use hash table for this.
     FindOrInsert(context_, node, hash_value(state.left), state, state.left.length, true, state.right.length, true);
+  } else {
+    // Jump straight to the conclusion.
+    FindOrInsert(context_, node, kCompleteAdd, state, state.left.length, true, state.right.length, true);
   }
   node->under->SetEnd(end.history, end.score);
 }
