@@ -26,6 +26,7 @@ class VertexNode {
       state_.left.length = 0;
       state_.right.length = 0;
       right_full_ = false;
+      niceness_ = 0;
       end_ = History();
     }
 
@@ -56,12 +57,15 @@ class VertexNode {
     const lm::ngram::ChartState &State() const { return state_; }
     bool RightFull() const { return right_full_; }
 
-    Score Bound() const {
-      return bound_;
+    void SetNiceness(unsigned char to) { niceness_ = to; }
+
+    // Priority relative to other non-terminals.  0 is highest.
+    unsigned char Niceness() const {
+      return niceness_;
     }
 
-    unsigned char Length() const {
-      return state_.left.length + state_.right.length;
+    Score Bound() const {
+      return bound_;
     }
 
     // Will be invalid unless this is a leaf.   
@@ -83,6 +87,8 @@ class VertexNode {
     lm::ngram::ChartState state_;
     bool right_full_;
 
+    unsigned char niceness_;
+
     Score bound_;
     History end_;
 };
@@ -102,7 +108,7 @@ class PartialVertex {
 
     Score Bound() const { return Complete() ? back_->Bound() : (*back_)[index_].Bound(); }
 
-    unsigned char Length() const { return back_->Length(); }
+    unsigned char Niceness() const { return back_->Niceness(); }
 
     bool HasAlternative() const {
       return index_ + 1 < back_->Size();

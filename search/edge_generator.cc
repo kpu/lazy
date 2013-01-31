@@ -57,17 +57,17 @@ template <class Model> PartialEdge EdgeGenerator::Pop(Context<Model> &context) {
   // Select victim or return if complete.   
   {
     Arity completed = 0;
-    unsigned char lowest_length = 255;
+    unsigned char lowest_niceness = 255;
     for (Arity i = 0; i != arity; ++i) {
       if (top_nt[i].Complete()) {
         ++completed;
-      } else if (top_nt[i].Length() < lowest_length) {
-        lowest_length = top_nt[i].Length();
+      } else if (top_nt[i].Niceness() < lowest_niceness) {
+        lowest_niceness = top_nt[i].Niceness();
         victim = i;
         victim_completed = completed;
       }
     }
-    if (lowest_length == 255) {
+    if (lowest_niceness == 255) {
       return top;
     }
     incomplete = arity - completed;
