@@ -54,10 +54,10 @@ template <class Model> PartialEdge EdgeGenerator::Pop(Context<Model> &context) {
   Arity victim = 0;
   Arity victim_completed;
   Arity incomplete;
+  unsigned char lowest_niceness = 255;
   // Select victim or return if complete.   
   {
     Arity completed = 0;
-    unsigned char lowest_niceness = 255;
     for (Arity i = 0; i != arity; ++i) {
       if (top_nt[i].Complete()) {
         ++completed;
@@ -92,10 +92,14 @@ template <class Model> PartialEdge EdgeGenerator::Pop(Context<Model> &context) {
     generate_.push(alternate);
   }
 
+#ifndef NDEBUG  
+  Score before = top.GetScore();
+#endif
   // top is now the continuation.
   FastScore(context, victim, victim - victim_completed, incomplete, old_value, top);
   // TODO: dedupe?  
   generate_.push(top);
+  assert(lowest_niceness != 254 || top.GetScore() == before);
 
   // Invalid indicates no new hypothesis generated.  
   return PartialEdge();
