@@ -16,6 +16,12 @@ namespace search {
 
 class ContextBase;
 
+struct HypoState {
+  History history;
+  lm::ngram::ChartState state;
+  Score score;
+};
+
 class VertexNode {
   public:
     VertexNode() {}
@@ -31,8 +37,17 @@ class VertexNode {
      */
     // Must default construct, call AppendHypothesis 1 or more times then do FinishedAppending.
     void AppendHypothesis(const NBestComplete &best) {
-      hypos_.push_back(best);
+      assert(hypos_.empty() || !(hypos_.front().state == *best.state));
+      HypoState hypo;
+      hypo.history = best.history;
+      hypo.state = *best.state;
+      hypo.score = best.score;
+      hypos_.push_back(hypo);
     }
+    void AppendHypothesis(const HypoState &hypo) {
+      hypos_.push_back(hypo);
+    }
+
     // Sort hypotheses for the root.
     void FinishRoot();
 
@@ -77,7 +92,7 @@ class VertexNode {
 
   private:
     // Hypotheses to be split.
-    std::vector<NBestComplete> hypos_;
+    std::vector<HypoState> hypos_;
 
     std::vector<VertexNode> extend_;
 

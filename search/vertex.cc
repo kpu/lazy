@@ -45,12 +45,12 @@ class DivideRight {
     unsigned char index_;
 };
 
-template <class Divider> void Split(const Divider &divider, const std::vector<NBestComplete> &hypos, std::vector<VertexNode> &extend) {
+template <class Divider> void Split(const Divider &divider, const std::vector<HypoState> &hypos, std::vector<VertexNode> &extend) {
   // Map from divider to index in extend.
   typedef boost::unordered_map<uint64_t, std::size_t> Lookup;
   Lookup lookup;
-  for (std::vector<NBestComplete>::const_iterator i = hypos.begin(); i != hypos.end(); ++i) {
-    uint64_t key = divider(*i->state);
+  for (std::vector<HypoState>::const_iterator i = hypos.begin(); i != hypos.end(); ++i) {
+    uint64_t key = divider(i->state);
     std::pair<Lookup::iterator, bool> res(lookup.insert(std::make_pair(key, extend.size())));
     if (res.second) {
       extend.resize(extend.size() + 1);
@@ -59,6 +59,7 @@ template <class Divider> void Split(const Divider &divider, const std::vector<NB
       extend[res.first->second].AppendHypothesis(*i);
     }
   }
+  //assert((extend.size() != 1) || (hypos.size() == 1));
 }
 
 lm::WordIndex Identify(const lm::ngram::Right &right, unsigned char index) {
@@ -112,8 +113,8 @@ const unsigned char kPolicyOneRight = 2;
 } // namespace
 
 namespace {
-struct GreaterByScore : public std::binary_function<const NBestComplete &, const NBestComplete &, bool> {
-  bool operator()(const NBestComplete &first, const NBestComplete &second) const {
+struct GreaterByScore : public std::binary_function<const HypoState &, const HypoState &, bool> {
+  bool operator()(const HypoState &first, const HypoState &second) const {
     return first.score > second.score;
   }
 };
@@ -138,22 +139,27 @@ void VertexNode::FinishRoot() {
     extend_.front().AppendHypothesis(hypos_.front());
     extend_.front().FinishedAppending(0, 0);
   }
+  if (hypos_.empty()) {
+    bound_ = -INFINITY;
+  } else {
+    bound_ = hypos_.front().score;
+  }
 }
 
 void VertexNode::FinishedAppending(const unsigned char common_left, const unsigned char common_right) {
   assert(!hypos_.empty());
   assert(extend_.empty());
   bound_ = hypos_.front().score;
-  state_ = *hypos_.front().state;
+  state_ = hypos_.front().state;
   bool all_full = state_.left.full;
   bool all_non_full = !state_.left.full;
   DetermineSame<lm::ngram::Left> left(state_.left, common_left);
   DetermineSame<lm::ngram::Right> right(state_.right, common_right);
-  for (std::vector<NBestComplete>::const_iterator i = hypos_.begin() + 1; i != hypos_.end(); ++i) {
-    all_full &= i->state->left.full;
-    all_non_full &= !i->state->left.full;
-    left.Consider(i->state->left);
-    right.Consider(i->state->right);
+  for (std::vector<HypoState>::const_iterator i = hypos_.begin() + 1; i != hypos_.end(); ++i) {
+    all_full &= i->state.left.full;
+    all_non_full &= !i->state.left.full;
+    left.Consider(i->state.left);
+    right.Consider(i->state.right);
   }
   state_.left.full = all_full && left.Complete();
   right_full_ = all_full && right.Complete();
@@ -192,7 +198,7 @@ void VertexNode::BuildExtend() {
   if (left_branch) {
     Split(DivideLeft(state_.left.length), hypos_, extend_);
   } else {
-    Split(DivideRight(state_.left.length), hypos_, extend_);
+    Split(DivideRight(state_.right.length), hypos_, extend_);
   }
   for (std::vector<VertexNode>::iterator i = extend_.begin(); i != extend_.end(); ++i) {
     // TODO: provide more here for branching?
