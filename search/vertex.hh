@@ -18,61 +18,57 @@ class ContextBase;
 
 class VertexNode {
   public:
-    VertexNode() : end_() {}
+    VertexNode() {}
 
-    void InitRoot() {
-      extend_.clear();
-      state_.left.full = false;
-      state_.left.length = 0;
-      state_.right.length = 0;
-      right_full_ = false;
-      niceness_ = 0;
-      end_ = History();
+    void InitRoot() { hypos_.clear(); }
+
+    /* The steps of building a VertexNode:
+     * 1. Default construct.
+     * 2. AppendHypothesis at least once, possibly multiple times.
+     * 3. FinishAppending with the number of words on left and right guaranteed
+     * to be common.
+     * 4. If !Complete(), call BuildExtend to construct the extensions
+     */
+    // Must default construct, call AppendHypothesis 1 or more times then do FinishedAppending.
+    void AppendHypothesis(const NBestComplete &best) {
+      hypos_.push_back(best);
     }
+    // Sort hypotheses for the root.
+    void FinishRoot();
 
-    lm::ngram::ChartState &MutableState() { return state_; }
-    bool &MutableRightFull() { return right_full_; }
+    void FinishedAppending(const unsigned char common_left, const unsigned char common_right);
 
-    void AddExtend(VertexNode *next) {
-      extend_.push_back(next);
-    }
-
-    void SetEnd(History end, Score score) {
-      assert(!end_);
-      end_ = end;
-      bound_ = score;
-    }
-    
-    void SortAndSet(ContextBase &context);
+    void BuildExtend();
 
     // Should only happen to a root node when the entire vertex is empty.   
     bool Empty() const {
-      return !end_ && extend_.empty();
+      return hypos_.empty() && extend_.empty();
     }
 
     bool Complete() const {
-      return end_;
+      // HACK: prevent root from being complete.  TODO: allow root to be complete.
+      return hypos_.size() == 1 && extend_.empty();
     }
 
     const lm::ngram::ChartState &State() const { return state_; }
     bool RightFull() const { return right_full_; }
 
-    void SetNiceness(unsigned char to) { niceness_ = to; }
-
     // Priority relative to other non-terminals.  0 is highest.
-    unsigned char Niceness() const {
-      return niceness_;
-    }
+    unsigned char Niceness() const { return niceness_; }
 
     Score Bound() const {
       return bound_;
     }
 
     // Will be invalid unless this is a leaf.   
-    const History End() const { return end_; }
+    const History End() const {
+      assert(hypos_.size() == 1);
+      return hypos_.front().history;
+    }
 
-    const VertexNode &operator[](size_t index) const {
-      return *extend_[index];
+    VertexNode &operator[](size_t index) {
+      assert(!extend_.empty());
+      return extend_[index];
     }
 
     size_t Size() const {
@@ -80,24 +76,26 @@ class VertexNode {
     }
 
   private:
-    void RecursiveSortAndSet(ContextBase &context, VertexNode *&parent);
+    // Hypotheses to be split.
+    std::vector<NBestComplete> hypos_;
 
-    std::vector<VertexNode*> extend_;
+    std::vector<VertexNode> extend_;
 
     lm::ngram::ChartState state_;
     bool right_full_;
 
     unsigned char niceness_;
 
+    unsigned char policy_;
+
     Score bound_;
-    History end_;
 };
 
 class PartialVertex {
   public:
     PartialVertex() {}
 
-    explicit PartialVertex(const VertexNode &back) : back_(&back), index_(0) {}
+    explicit PartialVertex(VertexNode &back) : back_(&back), index_(0) {}
 
     bool Empty() const { return back_->Empty(); }
 
@@ -110,13 +108,10 @@ class PartialVertex {
 
     unsigned char Niceness() const { return back_->Niceness(); }
 
-    bool HasAlternative() const {
-      return index_ + 1 < back_->Size();
-    }
-
     // Split into continuation and alternative, rendering this the continuation.
     bool Split(PartialVertex &alternative) {
       assert(!Complete());
+      back_->BuildExtend();
       bool ret;
       if (index_ + 1 < back_->Size()) {
         alternative.index_ = index_ + 1;
@@ -135,7 +130,7 @@ class PartialVertex {
     }
 
   private:
-    const VertexNode *back_;
+    VertexNode *back_;
     unsigned int index_;
 };
 
@@ -145,9 +140,9 @@ class Vertex {
   public:
     Vertex() {}
 
-    PartialVertex RootFirst() const { return PartialVertex(right_); }
-    PartialVertex RootAlternate() const { return PartialVertex(root_); }
-    PartialVertex RootLast() const { return PartialVertex(left_); }
+    //PartialVertex RootFirst() const { return PartialVertex(right_); }
+    PartialVertex RootAlternate() { return PartialVertex(root_); }
+    //PartialVertex RootLast() const { return PartialVertex(left_); }
 
     bool Empty() const {
       return root_.Empty();
@@ -157,7 +152,7 @@ class Vertex {
       return root_.Bound();
     }
 
-    const History BestChild() const {
+    const History BestChild() {
       // left_ and right_ are not set at the root.
       PartialVertex top(RootAlternate());
       if (top.Empty()) {
@@ -172,16 +167,15 @@ class Vertex {
     }
 
   private:
-    friend class TreeMaker;
-
+    template <class Output> friend class VertexGenerator;
     template <class Output> friend class RootVertexGenerator;
     VertexNode root_;
 
     // These will not be set for the root vertex.
     // Branches only on left state.
-    VertexNode left_;
+    //VertexNode left_;
     // Branches only on right state.
-    VertexNode right_;
+    //VertexNode right_;
 };
 
 } // namespace search

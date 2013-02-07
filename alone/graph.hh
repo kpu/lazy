@@ -63,7 +63,7 @@ class Graph : boost::noncopyable {
 
     std::size_t VertexSize() const { return vertices_.Size(); }
 
-    const Vertex &GetVertex(std::size_t index) const {
+    Vertex &GetVertex(std::size_t index) {
       return vertices_[index];
     }
 

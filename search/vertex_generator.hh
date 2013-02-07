@@ -5,11 +5,6 @@
 #include "search/types.hh"
 #include "search/vertex.hh"
 
-#include "util/exception.hh"
-
-#include <boost/unordered_map.hpp>
-#include <boost/version.hpp>
-
 namespace lm {
 namespace ngram {
 class ChartState;
@@ -19,32 +14,6 @@ class ChartState;
 namespace search {
 
 class ContextBase;
-
-#if BOOST_VERSION > 104200
-// Parallel structure to VertexNode.  
-struct Trie {
-  Trie() : under(NULL) {}
-
-  VertexNode *under;
-  boost::unordered_map<uint64_t, Trie> extend;
-};
-
-void AddHypothesis(ContextBase &context, Trie &root, const NBestComplete &end);
-
-class TreeMaker {
-  public:
-    explicit TreeMaker(ContextBase &context, Vertex &gen);
-
-    void AddHypothesis(const NBestComplete &end);
-
-    void Finish();
-
-  private:
-    ContextBase &context_;
-    Trie alternate_, left_, right_;
-};
-
-#endif // BOOST_VERSION
 
 // Output makes the single-best or n-best list.   
 template <class Output> class VertexGenerator {
@@ -56,16 +25,12 @@ template <class Output> class VertexGenerator {
     }
 
     void FinishedSearch() {
-#if BOOST_VERSION > 104200
-      TreeMaker maker(context_, gen_);
+      gen_.root_.InitRoot();
       for (typename Existing::iterator i(existing_.begin()); i != existing_.end(); ++i) {
-        maker.AddHypothesis(nbest_.Complete(i->second));
+        gen_.root_.AppendHypothesis(nbest_.Complete(i->second));
       }
       existing_.clear();
-      maker.Finish();
-#else
-      UTIL_THROW(util::Exception, "Upgrade Boost to >= 1.42.0 to use incremental search.");
-#endif
+      gen_.root_.FinishRoot();
     }
 
     const Vertex &Generating() const { return gen_; }
@@ -95,8 +60,8 @@ template <class Output> class RootVertexGenerator {
 
     void FinishedSearch() {
       gen_.root_.InitRoot();
-      NBestComplete completed(out_.Complete(combine_));
-      gen_.root_.SetEnd(completed.history, completed.score);
+      gen_.root_.AppendHypothesis(out_.Complete(combine_));
+      gen_.root_.FinishRoot();
     }
 
   private:
