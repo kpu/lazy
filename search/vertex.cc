@@ -123,17 +123,13 @@ struct GreaterByScore : public std::binary_function<const HypoState &, const Hyp
 void VertexNode::FinishRoot() {
   std::sort(hypos_.begin(), hypos_.end(), GreaterByScore());
   extend_.clear();
-//  if (hypos_.empty()) {
-    state_.left.full = false;
-    state_.left.length = 0;
-    state_.right.length = 0;
-    right_full_ = false;
-    niceness_ = 0;
-    policy_ = kPolicyAlternate;
-/*  } else {
-    FinishedAppending(0, 0);
-  }*/
   // HACK: extend to one hypo so that root can be blank.
+  state_.left.full = false;
+  state_.left.length = 0;
+  state_.right.length = 0;
+  right_full_ = false;
+  niceness_ = 0;
+  policy_ = kPolicyAlternate;
   if (hypos_.size() == 1) {
     extend_.resize(1);
     extend_.front().AppendHypothesis(hypos_.front());
