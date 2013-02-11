@@ -33,7 +33,7 @@ template <class Output> class VertexGenerator {
       gen_.root_.FinishRoot();
     }
 
-    const Vertex &Generating() const { return gen_; }
+    Vertex &Generating() { return gen_; }
 
   private:
     ContextBase &context_;

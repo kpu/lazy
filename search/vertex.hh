@@ -119,7 +119,7 @@ class PartialVertex {
     const lm::ngram::ChartState &State() const { return back_->State(); }
     bool RightFull() const { return back_->RightFull(); }
 
-    Score Bound() const { return Complete() ? back_->Bound() : (*back_)[index_].Bound(); }
+    Score Bound() const { return index_ ? (*back_)[index_].Bound() : back_->Bound(); }
 
     unsigned char Niceness() const { return back_->Niceness(); }
 
