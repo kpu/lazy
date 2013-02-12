@@ -24,9 +24,19 @@ struct HypoState {
 
 class VertexNode {
   public:
+    // Custom enum to save memory: valid values of policy_.
+    // Alternate and there is still alternation to do.
+    static const unsigned char kPolicyAlternate = 0;
+    // Branch based on left state only, because right ran out or this is a left tree.
+    static const unsigned char kPolicyOneLeft = 1;
+    // Branch based on right state only.
+    static const unsigned char kPolicyOneRight = 2;
+
     VertexNode() {}
 
     void InitRoot() { hypos_.clear(); }
+
+    void LazyInitDirected(const VertexNode &alternating, unsigned char policy);
 
     /* The steps of building a VertexNode:
      * 1. Default construct.
@@ -51,7 +61,7 @@ class VertexNode {
     // Sort hypotheses for the root.
     void FinishRoot();
 
-    void FinishedAppending(const unsigned char common_left, const unsigned char common_right);
+    void FinishedAppending(const unsigned char parent_policy, const unsigned char common_left, const unsigned char common_right);
 
     void BuildExtend();
 
@@ -91,6 +101,9 @@ class VertexNode {
     }
 
   private:
+    // Initialize everything except hypos_.
+    void SetupRoot(unsigned char policy);
+
     // Hypotheses to be split.
     std::vector<HypoState> hypos_;
 
@@ -155,9 +168,19 @@ class Vertex {
   public:
     Vertex() {}
 
-    //PartialVertex RootFirst() const { return PartialVertex(right_); }
     PartialVertex RootAlternate() { return PartialVertex(root_); }
-    //PartialVertex RootLast() const { return PartialVertex(left_); }
+
+    // Faster case for edges beginning with a non-terminal.
+    PartialVertex RootFirst() {
+      first_.LazyInitDirected(root_, VertexNode::kPolicyOneRight);
+      return PartialVertex(first_);
+    }
+
+    // Faster case for edges ending with a non-terminal.
+    PartialVertex RootLast() {
+      last_.LazyInitDirected(root_, VertexNode::kPolicyOneLeft);
+      return PartialVertex(last_);
+    }
 
     bool Empty() const {
       return root_.Empty();
@@ -186,11 +209,10 @@ class Vertex {
     template <class Output> friend class RootVertexGenerator;
     VertexNode root_;
 
-    // These will not be set for the root vertex.
-    // Branches only on left state.
-    //VertexNode left_;
     // Branches only on right state.
-    //VertexNode right_;
+    VertexNode first_;
+    // Branches only on left state.
+    VertexNode last_;
 };
 
 } // namespace search

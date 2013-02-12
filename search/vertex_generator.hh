@@ -31,6 +31,8 @@ template <class Output> class VertexGenerator {
       }
       existing_.clear();
       gen_.root_.FinishRoot();
+      gen_.first_.InitRoot();
+      gen_.last_.InitRoot();
     }
 
     Vertex &Generating() { return gen_; }
@@ -62,6 +64,8 @@ template <class Output> class RootVertexGenerator {
       gen_.root_.InitRoot();
       gen_.root_.AppendHypothesis(out_.Complete(combine_));
       gen_.root_.FinishRoot();
+      gen_.first_.InitRoot();
+      gen_.last_.InitRoot();
     }
 
   private:

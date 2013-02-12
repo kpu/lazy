@@ -54,16 +54,16 @@ template <class Model> void ReadEdge(feature::Computer &features, Model &model, 
   search::PartialEdge edge(generator.AllocateEdge(children.size()));
   std::vector<search::Vertex*>::const_iterator i = children.begin();
   search::PartialVertex *nt = edge.NT();
-/*  if (words.front() == lm::kMaxWordIndex) {
+  if (words.front() == lm::kMaxWordIndex) {
     *(nt++) = (*i)->RootFirst();
     ++i;
-  }*/
+  }
   for (; i != children.end(); ++i, ++nt) {
     *nt = (*i)->RootAlternate();
   }
-/*  if (children.size() > 1 && words.back() == lm::kMaxWordIndex) {
+  if (children.size() > 1 && words.back() == lm::kMaxWordIndex) {
     edge.NT()[children.size() - 1] = children.back()->RootLast();
-  }*/
+  }
 
   edge.SetScore(below_score + features.Read(model, words, edge.Between(), from.ReadLine(), alone_edge.InitFeatures()));
 

@@ -1,5 +1,6 @@
 #include "search/vertex.hh"
 
+#include "lm/max_order.hh"
 #include "search/context.hh"
 
 #include <boost/unordered_map.hpp>
@@ -100,19 +101,6 @@ template <class Side> class DetermineSame {
     bool complete_;
 };
 
-// Custom enum to save memory: valid values of policy_.
-// Alternate and there is still alternation to do.
-const unsigned char kPolicyAlternate = 0;
-// Branch based on left state only, because right ran out or this is a left tree.
-const unsigned char kPolicyOneLeft = 1;
-// Branch based on right state only.
-const unsigned char kPolicyOneRight = 2;
-// Reveal everything in the next branch.  Used to terminate the left/right policies.
-//    static const unsigned char kPolicyEverything = 3;
-
-} // namespace
-
-namespace {
 struct GreaterByScore : public std::binary_function<const HypoState &, const HypoState &, bool> {
   bool operator()(const HypoState &first, const HypoState &second) const {
     return first.score > second.score;
@@ -120,29 +108,18 @@ struct GreaterByScore : public std::binary_function<const HypoState &, const Hyp
 };
 } // namespace
 
-void VertexNode::FinishRoot() {
-  std::sort(hypos_.begin(), hypos_.end(), GreaterByScore());
-  extend_.clear();
-  // HACK: extend to one hypo so that root can be blank.
-  state_.left.full = false;
-  state_.left.length = 0;
-  state_.right.length = 0;
-  right_full_ = false;
-  niceness_ = 0;
-  policy_ = kPolicyAlternate;
-  if (hypos_.size() == 1) {
-    extend_.resize(1);
-    extend_.front().AppendHypothesis(hypos_.front());
-    extend_.front().FinishedAppending(0, 0);
-  }
-  if (hypos_.empty()) {
-    bound_ = -INFINITY;
-  } else {
-    bound_ = hypos_.front().score;
-  }
+void VertexNode::LazyInitDirected(const VertexNode &alternating, unsigned char policy) {
+  if (!hypos_.empty()) return;
+  hypos_ = alternating.hypos_;
+  SetupRoot(policy);
 }
 
-void VertexNode::FinishedAppending(const unsigned char common_left, const unsigned char common_right) {
+void VertexNode::FinishRoot() {
+  std::sort(hypos_.begin(), hypos_.end(), GreaterByScore());
+  SetupRoot(kPolicyAlternate);
+}
+
+void VertexNode::FinishedAppending(const unsigned char parent_policy, const unsigned char common_left, const unsigned char common_right) {
   assert(!hypos_.empty());
   assert(extend_.empty());
   bound_ = hypos_.front().score;
@@ -163,15 +140,26 @@ void VertexNode::FinishedAppending(const unsigned char common_left, const unsign
   state_.right.length = right.Shared();
 
   if (!all_full && !all_non_full) {
-    policy_ = kPolicyAlternate;
+    policy_ = parent_policy;
+    niceness_ = state_.left.length + state_.right.length;
   } else if (left.Complete()) {
     policy_ = kPolicyOneRight;
   } else if (right.Complete()) {
     policy_ = kPolicyOneLeft;
   } else {
-    policy_ = kPolicyAlternate;
+    policy_ = parent_policy;
   }
-  niceness_ = state_.left.length + state_.right.length;
+  switch (policy_) {
+    case kPolicyAlternate:
+      niceness_ = state_.left.length + state_.right.length;
+      break;
+    case kPolicyOneLeft:
+      niceness_ = state_.left.length * 2;
+      break;
+    case kPolicyOneRight:
+      niceness_ = state_.right.length * 2;
+      break;
+  }
 }
 
 void VertexNode::BuildExtend() {
@@ -179,26 +167,35 @@ void VertexNode::BuildExtend() {
   if (!extend_.empty()) return;
   // Nothing to build since this is a leaf.
   if (hypos_.size() <= 1) return;
-  bool left_branch = true;
-  switch (policy_) {
-    case kPolicyAlternate:
-      left_branch = (state_.left.length <= state_.right.length);
-      break;
-    case kPolicyOneLeft:
-      left_branch = true;
-      break;
-    case kPolicyOneRight:
-      left_branch = false;
-      break;
-  }
-  if (left_branch) {
+  if ((policy_ == kPolicyAlternate && state_.left.length <= state_.right.length) || policy_ == kPolicyOneLeft) {
     Split(DivideLeft(state_.left.length), hypos_, extend_);
   } else {
     Split(DivideRight(state_.right.length), hypos_, extend_);
   }
   for (std::vector<VertexNode>::iterator i = extend_.begin(); i != extend_.end(); ++i) {
-    // TODO: provide more here for branching?
-    i->FinishedAppending(state_.left.length, state_.right.length);
+    // TODO: tell it more known words, namely what we branched on?
+    i->FinishedAppending(policy_, state_.left.length, state_.right.length);
+  }
+}
+
+void VertexNode::SetupRoot(unsigned char policy) {
+  extend_.clear();
+  // HACK: extend to one hypo so that root can be blank.
+  state_.left.full = false;
+  state_.left.length = 0;
+  state_.right.length = 0;
+  right_full_ = false;
+  niceness_ = 0;
+  policy_ = policy;
+  if (hypos_.size() == 1) {
+    extend_.resize(1);
+    extend_.front().AppendHypothesis(hypos_.front());
+    extend_.front().FinishedAppending(policy_, 0, 0);
+  }
+  if (hypos_.empty()) {
+    bound_ = -INFINITY;
+  } else {
+    bound_ = hypos_.front().score;
   }
 }
 
