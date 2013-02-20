@@ -3,7 +3,7 @@ Before using this, consider that the same algorithm is natively implemented in
 Moses (-search-algorithm 5) and cdec (--incremental_search lm).  
 
 COMPILING
-Requires Boost >= 1.42.  Tested on linux.  
+Requires Boost >= 1.41.  Tested on linux.  
 
 Compile with 
 ./bjam

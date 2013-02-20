@@ -50,7 +50,7 @@
 path-constant TOP : . ;
 include $(TOP)/jam-files/sanity.jam ;
 
-boost 104200 ;
+boost 104100 ;
 
 external-lib z ;
 

@@ -100,11 +100,23 @@ int main(int argc, char *argv[]) {
     weights_help += feature::Computer::kWordPenaltyName;
     weights_help += ".";
     options.add_options()
-      ("graph_dir,i", po::value<std::string>(&graph_dir)->required(), "Directory in which input hypergraphs live.  The directory should contain one file per sentence, numbered consecutively starting with 0.")
-      ("lm,l", po::value<std::string>(&lm_file)->required(), "Language model file to be loaded with KenLM.  Binary is preferred, but ARPA is also accepted.")
+      ("graph_dir,i", po::value<std::string>(&graph_dir)
+#if BOOST_VERSION >= 104200
+->required()
+#endif
+, "Directory in which input hypergraphs live.  The directory should contain one file per sentence, numbered consecutively starting with 0.")
+      ("lm,l", po::value<std::string>(&lm_file)
+#if BOOST_VERSION >= 104200
+->required()
+#endif
+, "Language model file to be loaded with KenLM.  Binary is preferred, but ARPA is also accepted.")
       ("weights,w", po::value<std::vector<std::string> >(&weights_files)->multitoken()->composing(), weights_help.c_str())
       ("weight,W", po::value<std::vector<std::string> >(&weights_strings)->multitoken()->composing(), "Specify weights on the command line i.e. -W WordPenalty=-1.0 Foo=3")
-      ("beam,K", po::value<unsigned>(&beam)->required(), "Beam size aka pop limit")
+      ("beam,K", po::value<unsigned>(&beam)
+#if BOOST_VERSION >= 104200
+->required()
+#endif
+, "Beam size aka pop limit")
       ("k_best,k", po::value<unsigned>(&nbest)->default_value(1), "k-best list size")
       ("threads,t", po::value<unsigned>(&threads)->default_value(threads), "Number of threads to use");
 
@@ -116,6 +128,13 @@ int main(int argc, char *argv[]) {
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
     po::notify(vm);
+
+#if BOOST_VERSION < 104200
+    if (!vm.count("lm") || !vm.count("beam") || !vm.count("graph_dir")) {
+      std::cerr << "Missing a required option.  Use Boost >= 1.42.0 for a better error message." << std::endl;
+      return 1;
+    }
+#endif
 
     UTIL_THROW_IF(!threads, util::Exception, "Thread count 0");
 
