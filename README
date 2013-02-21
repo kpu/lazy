@@ -18,7 +18,7 @@ the file name.
 
 Feaure weights can be specified in a file using -w or on the command line with
 -W.  Weights are key=value pairs like cdec.  The hard-coded features are
-KLanguageModel, KLanguageModel_OOV, and WordPenalty.  WordPenalty is word count
+LanguageModel, LanguageModel_OOV, and WordPenalty.  WordPenalty is word count
 times -1/ln(10) for odd historical reasons dating back to Hiero.  The feature
 definitions are compatible with Moses and cdec.  
 
