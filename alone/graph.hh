@@ -37,8 +37,12 @@ template <class T> class FixedAllocator : boost::noncopyable {
       return ret;
     }
 
-    std::size_t Size() const {
+    std::size_t Capacity() const {
       return end_ - array_.get();
+    }
+
+    std::size_t Size() const {
+      return current_ - array_.get();
     }
 
   private:
@@ -60,6 +64,8 @@ class Graph : boost::noncopyable {
     Vertex *NewVertex() {
       return vertices_.New();
     }
+
+    std::size_t VertexCapacity() const { return vertices_.Capacity(); }
 
     std::size_t VertexSize() const { return vertices_.Size(); }
 

@@ -21,8 +21,8 @@ namespace alone {
 namespace {
 // Return root's history.  
 template <class Model, class Best> search::History InnerDecode(feature::Computer &features, search::Context<Model> &context, Graph &graph, util::FilePiece &in, Best &best) {
-  assert(graph.VertexSize());
-  for (std::size_t v = 0; v < graph.VertexSize() - 1; ++v) {
+  assert(graph.VertexCapacity());
+  for (std::size_t v = 0; v < graph.VertexCapacity() - 1; ++v) {
     search::EdgeGenerator edges;
     ReadEdges(features, context.LanguageModel(), in, graph, edges);
     search::VertexGenerator<Best> vertex_gen(context, *graph.NewVertex(), best);
@@ -41,7 +41,7 @@ template <class Model> void Decode(search::Context<Model> &context, feature::Com
   Graph graph(context.LanguageModel().GetVocabulary());
   ReadGraphCounts(*in, graph);
   if (context.GetConfig().GetNBest().size == 1) {
-    if (!graph.VertexSize()) {
+    if (!graph.VertexCapacity()) {
       out << sentence_id << '\n';
       return;
     }
@@ -54,7 +54,7 @@ template <class Model> void Decode(search::Context<Model> &context, feature::Com
       WriteNBest(out, sentence_id, as_vec, features, context.LanguageModel());
     }
   } else {
-    if (!graph.VertexSize()) return;
+    if (!graph.VertexCapacity()) return;
     search::NBest n_best(context.GetConfig().GetNBest());
     WriteNBest(out, sentence_id, n_best.Extract(InnerDecode(features, context, graph, *in, n_best)), features, context.LanguageModel());
   }
