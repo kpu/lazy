@@ -2,6 +2,7 @@
 
 #include "alone/output.hh"
 #include "alone/graph.hh"
+#include "alone/lattice_output.hh"
 #include "alone/read.hh"
 #include "alone/vocab.hh"
 #include "lm/model.hh"
@@ -40,7 +41,11 @@ template <class Model> void Decode(search::Context<Model> &context, feature::Com
   boost::scoped_ptr<util::FilePiece> in(in_ptr);
   Graph graph(context.LanguageModel().GetVocabulary());
   ReadGraphCounts(*in, graph);
-  if (context.GetConfig().GetNBest().size == 1) {
+
+  LatticeOutput lattice(graph.EdgeBase());
+  InnerDecode(features, context, graph, *in, lattice);
+  // TODO: config option for lattice output.  
+  /*if (context.GetConfig().GetNBest().size == 1) {
     if (!graph.VertexCapacity()) {
       out << sentence_id << '\n';
       return;
@@ -57,7 +62,7 @@ template <class Model> void Decode(search::Context<Model> &context, feature::Com
     if (!graph.VertexCapacity()) return;
     search::NBest n_best(context.GetConfig().GetNBest());
     WriteNBest(out, sentence_id, n_best.Extract(InnerDecode(features, context, graph, *in, n_best)), features, context.LanguageModel());
-  }
+  }*/
 }
 } // namespace
 

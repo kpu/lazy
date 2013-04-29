@@ -1,4 +1,4 @@
-fakelib standalone : output.cc features.cc feature_computer.cc read.cc threading.cc vocab.cc ../lm//kenlm ../util//kenutil ../util/double-conversion//double-conversion ../search//search : <include>.. : : <include>.. <threading>multi:<library>..//boost_thread ;
+fakelib standalone : output.cc features.cc feature_computer.cc lattice_output.cc read.cc threading.cc vocab.cc ../lm//kenlm ../util//kenutil ../util/double-conversion//double-conversion ../search//search : <include>.. : : <include>.. <threading>multi:<library>..//boost_thread ;
 
 exe decode : main.cc standalone /top//boost_program_options ;
 
