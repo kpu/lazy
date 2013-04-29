@@ -70,3 +70,18 @@ DIRECTORY LAYOUT
 util and lm: copied from KenLM
 search: core search algorithm and portable to other decoders.  
 alone: a standalone wrapper around the search implementation.  
+
+LATTICE OUTPUT
+Lattices are written to stdout as
+
+Sentence sequential_sentence_id
+Vertex sequential_vertex_id number_of_arcs
+
+then number_of_arcs arcs of form (all on one line):
+
+edge_index_in_input
+edge_arity
+the sequential_vertex_id backpointer (one for each edge_arity)
+arc weight
+
+Note that there are some arcs that may not be used later.

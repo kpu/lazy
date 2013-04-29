@@ -42,6 +42,7 @@ template <class Model> void Decode(search::Context<Model> &context, feature::Com
   Graph graph(context.LanguageModel().GetVocabulary());
   ReadGraphCounts(*in, graph);
 
+  std::cout << "Sentence " << sentence_id << '\n';
   LatticeOutput lattice(graph.EdgeBase());
   InnerDecode(features, context, graph, *in, lattice);
   // TODO: config option for lattice output.  
