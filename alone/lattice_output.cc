@@ -12,7 +12,7 @@ search::NBestComplete LatticeOutput::Complete(std::vector<search::PartialEdge> &
   using namespace search;
   if (partials.empty())
     return NBestComplete(NULL, lm::ngram::ChartState(), -INFINITY);
-  std::cout << "Vertex " << (counter_++) << ' ' << partials.size() << '\n';
+  std::cout << "Vertex " << counter_ << ' ' << partials.size() << '\n';
   Score max_score = -INFINITY;
   for (std::vector<PartialEdge>::const_iterator i = partials.begin(); i != partials.end(); ++i) {
     max_score = std::max(max_score, i->GetScore());
@@ -23,9 +23,9 @@ search::NBestComplete LatticeOutput::Complete(std::vector<search::PartialEdge> &
       std::cout << ' ' << reinterpret_cast<intptr_t>(i->NT()[a].End());
       relative -= i->NT()[a].Bound();
     }
-    std::cout << ' ' << relative;
+    std::cout << ' ' << relative << '\n';
   }
-  return NBestComplete(reinterpret_cast<void*>(counter_), partials.front().CompletedState(), max_score);
+  return NBestComplete(reinterpret_cast<void*>(counter_++), partials.front().CompletedState(), max_score);
 }
 
 } // namespace alone
