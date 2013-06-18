@@ -5,6 +5,8 @@
 #include "search/types.hh"
 #include "search/vertex.hh"
 
+#include <boost/unordered_map.hpp>
+
 namespace lm {
 namespace ngram {
 class ChartState;
