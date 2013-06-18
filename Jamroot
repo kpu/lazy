@@ -6,7 +6,7 @@
 #
 #zlib and Boost >= 1.36.0 are required.  Don't have Boost?  You can compile the
 #queries part with ./compile_query_only.sh .  
-#--with=boost=/path/to/boost uses a Boost install from a custom path.
+#--with-boost=/path/to/boost uses a Boost install from a custom path.
 #
 #The following optional packages are autodetected:
 #libtcmalloc_minimal from google-perftools
@@ -64,7 +64,9 @@ project : default-build <threading>multi <warnings>on <variant>release ;
 
 build-projects search lm util ;
 
-install-bin-libs alone//decode lm//programs ;
+lib kenlm : lm//kenlm ;
+install-bin-libs alone//decode lm//programs kenlm ;
+
 install-headers headers : [ glob-tree *.hh : dist include ] : . ;
 alias install : prefix-bin prefix-lib prefix-include ; 
 explicit headers ;

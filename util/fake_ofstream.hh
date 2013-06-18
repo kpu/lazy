@@ -16,7 +16,7 @@ class FakeOFStream {
   public:
     static const std::size_t kOutBuf = 1048576;
 
-    // Takes ownership of the output file.
+    // Does not take ownership of out.
     explicit FakeOFStream(int out)
       : buf_(util::MallocOrThrow(kOutBuf)),
         builder_(static_cast<char*>(buf_.get()), kOutBuf),
@@ -25,7 +25,7 @@ class FakeOFStream {
         fd_(out) {}
 
     ~FakeOFStream() {
-      Flush();
+      if (buf_.get()) Flush();
     }
 
     FakeOFStream &operator<<(float value) {
@@ -44,7 +44,7 @@ class FakeOFStream {
     FakeOFStream &operator<<(StringPiece str) {
       if (str.size() > kOutBuf) {
         Flush();
-        util::WriteOrThrow(fd_.get(), str.data(), str.size());
+        util::WriteOrThrow(fd_, str.data(), str.size());
       } else {
         EnsureRemaining(str.size());
         builder_.AddSubstring(str.data(), str.size());
@@ -65,13 +65,22 @@ class FakeOFStream {
 
     // Note this does not sync.
     void Flush() {
-      util::WriteOrThrow(fd_.get(), buf_.get(), builder_.position());
+      util::WriteOrThrow(fd_, buf_.get(), builder_.position());
       builder_.Reset();
+    }
+
+    // Not necessary, but does assure the data is cleared.
+    void Finish() {
+      Flush();
+      // It will segfault trying to null terminate otherwise.
+      builder_.Finalize();
+      buf_.reset();
+      util::FSyncOrThrow(fd_);
     }
 
   private:
     void EnsureRemaining(std::size_t amount) {
-      if (static_cast<std::size_t>(builder_.size() - builder_.position()) < amount) {
+      if (static_cast<std::size_t>(builder_.size() - builder_.position()) <= amount) {
         Flush();
       }
     }
@@ -79,7 +88,7 @@ class FakeOFStream {
     util::scoped_malloc buf_;
     double_conversion::StringBuilder builder_;
     double_conversion::DoubleToStringConverter convert_;
-    scoped_fd fd_;
+    int fd_;
 };
 
 } // namespace
