@@ -76,7 +76,7 @@ class VertexNode {
     }
 
     // Will be invalid unless this is a leaf.   
-    const History End() const {
+    History End() const {
       assert(hypos_.size() == 1);
       return hypos_.front().history;
     }
@@ -140,7 +140,7 @@ class PartialVertex {
       return ret;
     }
 
-    const History End() const {
+    History End() const {
       return back_->End();
     }
 
@@ -167,7 +167,7 @@ class Vertex {
       return root_.Bound();
     }
 
-    const History BestChild() {
+    History BestChild() {
       // left_ and right_ are not set at the root.
       PartialVertex top(RootAlternate());
       if (top.Empty()) {
