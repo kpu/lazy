@@ -1,6 +1,7 @@
 This code takes in a hypergraph and a language model then outputs a sentence.  
-Before using this, consider that the same algorithm is natively implemented in
-Moses (-search-algorithm 5) and cdec (--incremental_search lm).  
+It is split into a library (search/) and a standalone wrapper (alone/).  The
+library is also in Moses (-search-algorithm 5) and cdec (--incremental_search
+$lm).  
 
 COMPILING
 Requires Boost >= 1.41.  Tested on linux.  
