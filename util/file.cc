@@ -114,9 +114,10 @@ void ResizeOrThrow(int fd, uint64_t to) {
 namespace {
 std::size_t GuardLarge(std::size_t size) {
   // The following operating systems have broken read/write/pread/pwrite that
-  // only supports up to 2^31.
+  // only supports up to 2^31 - 1. But that's a bad number because it subsequent reads
+  // will be unaligned.  So I guess 2^30.
 #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID)
-  return std::min(static_cast<std::size_t>(static_cast<unsigned>(-1)), size);
+  return std::min(static_cast<std::size_t>(1ULL << 30), size);
 #else
   return size;
 #endif
